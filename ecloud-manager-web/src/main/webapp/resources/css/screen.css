@@ -1,0 +1,322 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2016  Altisource
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+/* Core styles for the page */
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #eff3f6;
+  font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+  font-size: 0.8em;
+  color:#363636;
+}
+
+#container {
+  margin: 0 auto;
+  padding: 0 20px 10px 20px;
+  width: 90%; /* subtract 40px from banner width for padding */
+  background: #dfe4e6;
+  padding-top: 22px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+  box-shadow: 3px 3px 15px #d5d5d5;
+}
+#content {
+  float: left;
+  width: 100%;
+  margin: 20px;
+}
+#aside {
+  font-size: 0.9em;
+  width: 275px;
+  float: left;
+  margin: 20px 0px;
+  border: 1px solid #D5D5D5;
+  background: #F1F1F1;
+  background-image: url(#{request.contextPath}/resources/gfx/asidebkg.png);
+  background-repeat: repeat-x;
+  padding: 20px;
+}
+
+#aside ul {
+  padding-left: 30px;
+}
+.logo {
+  /*float: right;*/
+    padding-left: 20px;
+    padding-top: 1px;
+}
+#footer {
+  clear: both;
+  text-align: center;
+  color: #666666;
+  font-size: 0.85em;
+}
+code {
+  font-size: 1.1em;
+}
+a {
+  color: #4a5d75;
+  text-decoration: none;
+}
+a:hover {
+  color: #369;
+  text-decoration: underline;
+}
+h1 {
+  color:#243446;
+  font-size: 2.25em;
+}
+h2 {
+  font-size: 1em;
+}
+h3 {
+  color:#243446;
+}
+h4 {
+}
+h5 {
+}
+h6 {
+}
+/* Member registration styles */
+span.invalid {
+  padding-left: 3px;
+  color: red;
+}
+form {
+  padding: 1em;
+  font: 80%/1 sans-serif;
+  /*width: 375px;*/
+  border: 1px solid #D5D5D5;
+}
+label {
+  float: left;
+  width: 90%;
+  margin-left: 20px;
+  margin-right: 0.5em;
+  padding-top: 0.2em;
+  text-align: right;
+  font-weight: bold;
+  color:#363636;
+}
+/*input {*/
+  /*margin-bottom: 8px;*/
+/*}*/
+.register {
+  float: left;
+  margin-left: 85px;
+}
+
+/*  -----  table style  -------  */
+
+
+/*  = Simple Table style (black header, grey/white stripes  */
+
+.simpletablestyle {
+  background-color:#E6E7E8;
+  clear:both;
+  width: 550px;
+}
+
+.simpletablestyle img {
+  border:0px;
+}
+
+.simpletablestyle td {
+  height:2em;
+  padding-left: 6px;
+  font-size:11px;
+  padding:5px 5px;
+}
+
+.simpletablestyle th {
+	background: url(#{request.contextPath}/resources/gfx/bkg-blkheader.png) black repeat-x top left;
+  font-size:12px;
+  font-weight:normal;
+  padding:0 10px 0 5px;
+  border-bottom:#999999 dotted 1px;
+}
+
+.simpletablestyle thead {
+  background: url(#{request.contextPath}/resources/gfx/bkg-blkheader.png) black repeat-x top left;
+  height:31px;
+  font-size:10px;
+  font-weight:bold;
+  color:#FFFFFF;
+  text-align:left;
+}
+
+.simpletablestyle .header a {
+  color:#94aebd;
+}
+
+.simpletablestype tfoot {
+	height: 20px;
+  font-size: 10px;
+  font-weight: bold;
+  background-color: #EAECEE;
+  text-align: center;
+}
+
+.simpletablestyle tr.header td {
+  padding: 0px 10px 0px 5px;
+}
+
+
+.simpletablestyle .subheader {
+  background-color: #e6e7e8;
+  font-size:10px;
+  font-weight:bold;
+  color:#000000;
+  text-align:left;
+}
+
+/* Using new CSS3 selectors for styling*/
+.simpletablestyle tr:nth-child(odd) {
+  background: #f4f3f3;
+}
+.simpletablestyle tr:nth-child(even) {
+  background: #ffffff;
+}
+
+.simpletablestyle td a:hover {
+  color:#3883ce;
+  text-decoration:none; 
+}
+.alignRight
+{
+  text-align:right;
+}
+
+.contentForm {
+    width: auto;
+    margin-right: 20px;
+    border-top: 0;
+    overflow: hidden;
+}
+
+.menubar {
+  margin-right: 20px;
+}
+
+.greenButton {
+  background: #49dd49 -webkit-gradient(linear, left top, left bottom, from(rgba(255,255,255,0.8)), to(rgba(255,255,255,0)));
+}
+
+.ui-datatable tbody td.wrap, .preformatted {
+  white-space: pre-wrap;
+}
+
+.ui-datatable tbody td.wrapWords {
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+.log-INFO {
+  background-color: #5DFF5D;
+}
+.log-ERROR, .log-FATAL {
+  background-color: #FF9999;
+}
+.log-WARN {
+  background-color: #FFFF77;
+}
+.log-DEBUG, .log-TRACE {
+  background-color: #F7F7FA;
+}
+
+.logRow {
+  opacity: 0.7;
+}
+
+form > button.ui-button {
+    margin: 1em 2px;
+}
+
+#buttons > button.ui-button {
+    margin: 0 2px;
+}
+
+.ui-paginator .ui-paginator-next .ui-icon,
+.ui-paginator .ui-paginator-prev .ui-icon,
+.ui-paginator .ui-paginator-first .ui-icon,
+.ui-paginator .ui-paginator-last .ui-icon {
+    height: 10px;
+    overflow: visible;
+    transform: translateY(-3px);
+}
+
+.ui-paginator .ui-paginator-page {
+    margin-top: 0px;
+    margin-bottom: 1px;
+}
+
+.ui-paginator .ui-paginator-next,
+.ui-paginator .ui-paginator-last,
+.ui-paginator .ui-paginator-first,
+.ui-paginator .ui-paginator-prev {
+    margin-top: -3px;
+}
+
+.cytoscapeContainer {
+    background-color: #ffffff;
+}
+
+.ecloudCaption a {
+    margin-left: 13px;
+    font-family: Verdana, Geneva, sans-serif;
+    font-size: 2.4em;
+    font-weight: bold;
+}
+
+.ecloudCaption {
+    display: inline-block;
+    margin-top: 4px;
+}
+
+.cloudLogo {
+    margin-left: 1px;
+    float: left;
+    font-size: 2.2em;
+}
+
+.ui-menu .ui-menuitem-link .ui-menuitem-icon {
+    overflow: visible;
+}
+
+.ui-menubar .ui-menuitem-link {
+    margin-left: 0.3em;
+}
+
+.selectRecipe {
+    margin: 0.8em 5px 0 0;
+    text-align: center;
+    vertical-align: bottom;
+    width: 40% !important;
+}
+
+.runlistPanel {
+    border: 1px solid #D5D5D5;
+    padding: 1em;
+}

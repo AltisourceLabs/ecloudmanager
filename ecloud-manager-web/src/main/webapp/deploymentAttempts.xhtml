@@ -1,0 +1,78 @@
+<!--
+  ~ MIT License
+  ~
+  ~ Copyright (c) 2016  Altisource
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/templates/default.xhtml">
+    <ui:define name="content">
+        <p:outputPanel id="out">
+            <h:panelGroup>
+                <p:confirmDialog global="true" showEffect="fade" hideEffect="fade">
+                    <p:commandButton value="Yes" type="button" styleClass="ui-confirmdialog-yes" icon="ui-icon-check"/>
+                    <p:commandButton value="No" type="button" styleClass="ui-confirmdialog-no" icon="ui-icon-close"/>
+                </p:confirmDialog>
+
+                <h:form styleClass="contentForm" style="height: 90%">
+                    <p:dataTable id="deploymentAttempts" var="deploymentAttempt" value="#{deploymentAttemptsController.deploymentAttempts}"
+                                 paginator="true" rows="10" resizableColumns="true" liveResize="true">
+                        <f:facet name="header">
+                            Deployment History for: #{deploymentAttemptsController.deployment.name}
+                        </f:facet>
+                        <p:column headerText="Action">
+                            <h:outputText value="#{deploymentAttempt.action.label}"/>
+                        </p:column>
+                        <p:column width="15%" headerText="Status">
+                            <h:outputText value="#{deploymentAttempt.action.status}"/>
+                        </p:column>
+                        <p:column width="20%" headerText="Time">
+                            <h:outputText value="#{deploymentAttempt.timestamp}"/>
+                        </p:column>
+
+                        <p:column width="60">
+                            <p:button outcome="deploymentAction" icon="ui-icon-search">
+                                <f:param name="deploymentAttempt" value="#{deploymentAttempt.id.toString()}"/>
+                            </p:button>
+                            <p:commandButton title="Delete" icon="ui-icon-close"
+                                             update="out"
+                                             action="#{deploymentAttemptsController.delete(deploymentAttempt)}">
+                                <p:confirm header="Confirmation" message="Are you sure? Altering the deployment history may make some deployment actions unavailable!" icon="ui-icon-alert"/>
+                            </p:commandButton>
+                        </p:column>
+
+                    </p:dataTable>
+                    <p:growl id="messages" sticky="true" showDetail="true"/>
+                </h:form>
+                <h:form id="buttons" styleClass="contentForm">
+                    <p:button outcome="appdeployment" value="Go Back to Deployment">
+                        <f:param name="deployment" value="#{deploymentAttemptsController.deployment.id.toString()}"/>
+                    </p:button>
+                </h:form>
+            </h:panelGroup>
+
+        </p:outputPanel>
+    </ui:define>
+</ui:composition>

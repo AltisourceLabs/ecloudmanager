@@ -1,0 +1,135 @@
+<!--
+  ~ MIT License
+  ~
+  ~ Copyright (c) 2016  Altisource
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:ec="http://ecloudmanager.org/ecloud"
+                template="/WEB-INF/templates/default.xhtml">
+    <ui:define name="content">
+        <f:metadata>
+            <f:viewParam name="deployment" value="#{deploymentActionController.deployment}" converter="applicationDeploymentConverter"/>
+            <f:viewParam name="actionType" value="#{deploymentActionController.actionType}"/>
+        </f:metadata>
+
+        <script type="text/javascript">
+            $ = jQuery;
+
+            //////////////////////
+            // Autoscroll to bottom on update when the user scrolls the main window to bottom
+            var autoscrollOn = false;
+            $(window).scroll(function() {
+                if($(window).scrollTop() + $(window).height() > $(document).height() - 10) {
+                    autoscrollOn = true;
+                } else {
+                    autoscrollOn = false;
+                }
+            });
+            function autoscroll() {
+                if (autoscrollOn) {
+                    $(window).scrollTop($(document).height());
+                }
+            }
+            ////////////////////////
+            // Restore scroll position of the datatable on ajax update in case if it is scrollable
+            // and autoscroll main window otherwise
+            var scrollPos;
+
+            function saveScrollPos() {
+                scrollPos = $(".ui-datatable-scrollable-body").scrollTop();
+            }
+            function getScrollPos() {
+                $(".ui-datatable-scrollable-body").scrollTop(scrollPos);
+                autoscroll();
+            }
+        </script>
+
+        <p:outputPanel id="out">
+            <h:panelGroup>
+                <h:form id="graphCs" styleClass="contentForm cytoscapeContainer" style="padding: 5px;">
+                    <ec:cytoscape widgetVar="cs" value="#{deploymentActionController.graphModel}" style="height: 600px;">
+                        <p:poll interval="5" listener="#{deploymentActionController.loadActionStatuses}" onstart="saveScrollPos()" oncomplete="getScrollPos()" onsuccess="PrimeFaces.widgets.cs.synchronize()" update=":log:logs"/>
+                        <p:ajax event="selectNode" listener="#{deploymentActionController.onSelectNode}" update=":log:logs" />
+                        <p:ajax event="unselectNode" listener="#{deploymentActionController.onUnselectNode}" update=":log:logs" />
+                    </ec:cytoscape>
+                </h:form>
+                <h:form id="buttons" styleClass="contentForm">
+                    <p:commandButton widgetVar="runButton" value="Run Deployment Action"
+                                     actionListener="#{deploymentActionController.executeAction}"
+                                     styleClass="greenButton"
+                                     rendered="#{empty deploymentActionController.deploymentAttempt}"
+                                     oncomplete="PrimeFaces.widgets.runButton.disable()"/>
+                    <p:button value="Back To Deployment History" outcome="deploymentAttempts" rendered="#{not empty deploymentActionController.deploymentAttempt}">
+                        <f:param name="deployment" value="#{deploymentActionController.deployment.id.toString()}"/>
+                    </p:button>
+                    <p:button value="Back To Deployment" outcome="appdeployment">
+                        <f:param name="deployment" value="#{deploymentActionController.deployment.id.toString()}"/>
+                    </p:button>
+                    <p:button value="Layout View" onclick="PrimeFaces.widgets.cs.doLayout(); return false;"/>
+                </h:form>
+                <h:form id="log" styleClass="contentForm">
+                    <!--<o:scrollPosition autoSaveScrollPos="true" for="logs.ui-datatable-scrollable-body"/>-->
+                    <p:dataTable
+                            id="logs" widgetVar="logsTable" var="logMessage" value="#{deploymentActionController.logs}"
+                            scrollable="true" resizableColumns="true"
+                            expandedRow="#{deploymentActionController.isLogMessageExpanded(logMessage)}"
+                            rowStyleClass="log-#{logMessage.level} logRow"
+                    >
+                        <f:facet name="header">
+                            Logs for a selected action: #{deploymentActionController.selectedActionLabel}
+                            <!--<p:commandButton id="toggler" type="button" value="Columns" style="float:right" icon="ui-icon-calculator" />-->
+                            <!--<p:columnToggler datasource="logs" trigger="toggler" />-->
+                        </f:facet>
+
+                        <p:column width="16">
+                            <p:rowToggler rendered="#{logMessage.throwableEntity != null}"/>
+                        </p:column>
+                        <p:column headerText="Time" width="70">
+                            <h:outputText value="#{logMessage.date}"/>
+                        </p:column>
+                        <p:column headerText="Level" width="60">
+                            <h:outputText value="#{logMessage.level}"/>
+                        </p:column>
+                        <p:column headerText="Logger" width="450" styleClass="wrapWords">
+                            <h:outputText value="#{logMessage.loggerName}"/>
+                        </p:column>
+                        <p:column headerText="Message" styleClass="wrap">
+                            <h:outputText value="#{logMessage.uncoloredMessageStr}"/>
+                        </p:column>
+
+                        <p:rowExpansion>
+                            <h:outputText value="#{logMessage.throwableEntity}" styleClass="preformatted"/>
+                        </p:rowExpansion>
+
+                        <p:ajax event="rowToggle" listener="#{deploymentActionController.onRowToggle}"/>
+                    </p:dataTable>
+                </h:form>
+                <!--<p:resizable for="log" handles="s" minHeight="300"/>-->
+            </h:panelGroup>
+            <p:growl id="messages" sticky="true" showDetail="true"/>
+        </p:outputPanel>
+    </ui:define>
+</ui:composition>

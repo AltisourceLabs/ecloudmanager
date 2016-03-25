@@ -1,0 +1,245 @@
+<!--
+  ~ MIT License
+  ~
+  ~ Copyright (c) 2016  Altisource
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:ui="http://java.sun.com/jsf/facelets"
+	xmlns:f="http://java.sun.com/jsf/core"
+	xmlns:h="http://java.sun.com/jsf/html"
+	xmlns:p="http://primefaces.org/ui"
+	template="/WEB-INF/templates/default.xhtml">
+	<ui:define name="content">
+
+		<h:form styleClass="contentForm">
+			<p:contextMenu>
+				<p:menuitem value="Homepage" url="/" icon="ui-icon-extlink" />
+			</p:contextMenu>
+			<h:panelGrid columns="2" cellpadding="10">
+				<p:outputLabel for="themeId" value="Theme:" />
+				<p:themeSwitcher id="themeId" style="width:165px" effect="fade"
+					var="t">
+					<f:selectItem itemLabel="Choose Theme" itemValue="" />
+					<f:selectItems value="#{themes}" var="theme"
+						itemLabel="#{theme.displayName}" itemValue="#{theme.name}" />
+
+					<p:column>
+						<h:outputText styleClass="ui-theme ui-theme-"
+							style="display-block" />
+					</p:column>
+
+					<p:column>
+
+					</p:column>
+				</p:themeSwitcher>
+			</h:panelGrid>
+			<p:growl id="growl" sticky="true" showDetail="true" />
+
+			<p:wizard flowListener="#{vmWizardController.onFlowProcess}">
+				<p:tab id="organization" title="Catalog">
+					<p:panel header="VM Details">
+						<p:messages />
+						<h:panelGrid columns="2" columnClasses="label, value">
+							<h3 style="margin-top: 0">VM Name: *</h3>
+							<p:inputText id="vmNameInputText"
+								value="#{vmWizardController.vmName}" label="VM Name" />
+
+							<h3 style="margin-top: 0">Organization: *</h3>
+							<p:selectOneMenu id="org" value="#{vmWizardController.org}"
+								style="width:125px" required="true">
+								<f:selectItem itemLabel="Select One" itemValue="" />
+								<f:selectItems value="#{vmWizardController.organizations}"
+									var="entry" itemLabel="#{entry.name}" itemValue="#{entry}" />
+								<f:converter converterId="organizationConverter" />
+								<p:ajax
+									listener="#{vmWizardController.handleOrganizationChange}"
+									update="catalogs" />
+							</p:selectOneMenu>
+
+							<h3 style="margin-top: 0">CatalogEntries: *</h3>
+							<p:selectOneMenu id="catalogs"
+								value="#{vmWizardController.catalogEntryByOrg}"
+								style="width:125px" required="true">
+								<f:selectItem itemLabel="Select a Catalog" itemValue="" />
+								<f:selectItems value="#{vmWizardController.catalogEntriesByOrg}"
+									var="entry" itemLabel="#{entry.name}" itemValue="#{entry}" />
+								<f:converter converterId="catalogEntriesConverter" />
+								<p:ajax
+									listener="#{vmWizardController.handleNetworkMappingsByCatalogEntryId}" />
+							</p:selectOneMenu>
+
+							<h:outputText value="Skip to last: " />
+							<h:selectBooleanCheckbox value="#{vmWizardController.skip}" />
+						</h:panelGrid>
+					</p:panel>
+				</p:tab>
+
+				<p:tab id="environments" title="Environment">
+					<p:panel header="Environment Details">
+						<p:messages />
+						<h3 style="margin-top: 0">Environment: *</h3>
+						<p:selectOneMenu id="env" value="#{vmWizardController.env}"
+							style="width:125px" required="true">
+							<f:selectItem itemLabel="Select One" itemValue="" />
+							<f:selectItems value="#{vmWizardController.environments}"
+								var="entry" itemLabel="#{entry.name}" itemValue="#{entry}" />
+							<f:converter converterId="environmentConverter" />
+							<p:ajax listener="#{vmWizardController.handleEnvironmentChange}"
+								update="nets" />
+						</p:selectOneMenu>
+						<h3 style="margin-top: 0">Networks: *</h3>
+						<p:selectOneMenu id="nets"
+							value="#{vmWizardController.selectedNetwork}" style="width:125px" required="true">
+							<f:selectItem itemLabel="Select One" itemValue="" />
+							<f:selectItems value="#{vmWizardController.networksList}"
+								var="entry" itemLabel="#{entry.name}" itemValue="#{entry}" />
+							<f:converter converterId="networkConverter" />
+						</p:selectOneMenu>
+					</p:panel>
+				</p:tab>
+
+				<p:tab id="computePools" title="ComputePools">
+					<p:panel header="ComputePools Details">
+						<p:messages />
+						<p:outputLabel for="cp" value="ComputePool:" />
+						<p:selectOneMenu id="cp" value="#{vmWizardController.computePool}"
+							style="width:125px" required="true">
+							<f:selectItem itemLabel="Select One" itemValue="" />
+							<f:selectItems value="#{vmWizardController.computePools}"
+								var="entry" itemLabel="#{entry.name}" itemValue="#{entry}" />
+							<f:converter converterId="computePoolConverter" />
+							<!-- p:ajax event="change"
+								listener="#{vmWizardController.handleComputePoolChange}"
+								update="vmTable" / -->
+						</p:selectOneMenu>
+					</p:panel>
+					<!-- h:dataTable title="Existing VM's" id="vmTable" var="vm"
+						value="#{vmWizardController.virtualMachinesForselectedComputePool}"
+						rendered="#{not empty members}" styleClass="simpletablestyle">
+						<h:column>
+							<f:facet name="header">Name</f:facet>
+			                #{vm.name}
+			            </h:column>
+						<h:column>
+							<f:facet name="header">HRef</f:facet>
+			                #{vm.href}
+			            </h:column>
+						<h:column>
+							<f:facet name="header">Type</f:facet>
+			                #{vm.type}
+			            </h:column>
+					</h:dataTable -->
+				</p:tab>
+
+				<p:tab id="layoutDetails" title="Layout Details">
+					<p:panel header="Layout Details">
+						<p:messages />
+						<p:outputLabel for="layoutRow" value="RowLayout:" />
+						<p:selectOneMenu id="layoutRow"
+							value="#{vmWizardController.rowLayout}" style="width:125px" required="true">
+							<f:selectItem itemLabel="Select One" itemValue="" />
+							<f:selectItems value="#{vmWizardController.rowLayouts}"
+								var="entry" itemLabel="#{entry.name}" itemValue="#{entry}" />
+							<f:converter converterId="rowLayoutConverter" />
+							<p:ajax event="change"
+								listener="#{vmWizardController.handleGrouplayout}"
+								update="layoutGroup" />
+						</p:selectOneMenu>
+					</p:panel>
+
+					<p:panel header="Layout Group">
+						<p:outputLabel for="layoutGroup" value="GroupLayoutByRow:" />
+						<p:selectOneMenu id="layoutGroup"
+							value="#{vmWizardController.groupLayout}" style="width:125px" required="true">
+							<f:selectItem itemLabel="Select One" itemValue="" />
+							<f:selectItems value="#{vmWizardController.groupLayouts}"
+								var="entry" itemLabel="#{entry.name}" itemValue="#{entry}" />
+							<f:converter converterId="groupLayoutConverter" />
+						</p:selectOneMenu>
+					</p:panel>
+				</p:tab>
+
+				<p:tab id="deviceDetails" title="Device Details">
+					<p:panel header="Device Details">
+						<p:messages />
+						<h3 style="margin-top: 0">Processors: *</h3>
+						<p:selectOneRadio id="processor"
+							value="#{vmWizardController.processorCount}" required="true">
+							<f:selectItem itemLabel="1" itemValue="1" />
+							<f:selectItem itemLabel="2" itemValue="2" />
+							<f:selectItem itemLabel="4" itemValue="4" />
+							<f:selectItem itemLabel="8" itemValue="8" />
+						</p:selectOneRadio>
+						<p:spacer height="20px" width="100%" />
+						<h3 style="margin-top: 0">Memory: *</h3>
+						<p:inputText id="vmMemoryInputText"
+							value="#{vmWizardController.vmMemory}" label="VM Memory" required="true"/>
+						<h:outputText value="MB" />
+						<p:spacer height="20px" width="100%" />
+						<h3 style="margin-top: 0">Description</h3>
+						<h:inputTextarea rows="5" cols="30" counter="display"
+							maxlength="10" counterTemplate="{0} characters remaining."
+							autoResize="false" />
+						<h:outputText id="display" />
+					</p:panel>
+				</p:tab>
+
+				<p:tab id="confirm" title="Confirmation">
+					<p:panel header="Confirmation">
+						<h:panelGrid id="confirmation" columns="3"
+							columnClasses="grid,grid,grid">
+							<h:panelGrid columns="1" columnClasses="label, value">
+								<h:outputText value="Processors " />
+								<h:outputText value="#{vmWizardController.processorCount}"
+									styleClass="outputLabel" />
+
+								<h:outputText value="Memory: " />
+								<h:outputText value="#{vmWizardController.vmMemory}"
+									styleClass="outputLabel" />
+							</h:panelGrid>
+							<h:panelGrid columns="1" columnClasses="label, value">
+								<h:outputText value="Layout Row: " />
+								<h:outputText value="#{vmWizardController.rowLayout.name}"
+									styleClass="outputLabel" />
+								<h:outputText value="Layout Row: " />
+
+								<h:outputText value="Layout Group: " />
+								<h:outputText value="#{vmWizardController.groupLayout.name}"
+									styleClass="outputLabel" />
+							</h:panelGrid>
+
+							<h:panelGrid columns="1" columnClasses="label, value">
+								<h:outputText value="Catalog: " />
+								<h:outputText value="#{vmWizardController.catalogEntryByOrg.name}"
+									styleClass="outputLabel" />
+							</h:panelGrid>
+						</h:panelGrid>
+						<p:commandButton value="Submit" onclick="this.disabled=true;"
+							actionListener="#{vmWizardController.save}" update="growl"
+							process="@this" />
+					</p:panel>
+				</p:tab>
+			</p:wizard>
+
+		</h:form>
+	</ui:define>
+</ui:composition>

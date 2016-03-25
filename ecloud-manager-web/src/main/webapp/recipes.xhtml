@@ -1,0 +1,271 @@
+<!--
+  ~ MIT License
+  ~
+  ~ Copyright (c) 2016  Altisource
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/templates/default.xhtml">
+    <ui:define name="content">
+        <p:outputPanel id="out">
+            <p:confirmDialog id="confirm" global="true" showEffect="fade" hideEffect="fade">
+                <h:form id="yes_no">
+                    <p:commandButton id="yes" value="Yes" type="button" styleClass="ui-confirmdialog-yes"
+                                     icon="ui-icon-check"/>
+                    <p:commandButton id="no" value="No" type="button" styleClass="ui-confirmdialog-no"
+                                     icon="ui-icon-close"/>
+                </h:form>
+            </p:confirmDialog>
+            <h:panelGroup>
+                <h:form id="recipes" styleClass="contentForm">
+                    <p:layout id="layout" style="min-width:400px;min-height:600px;">
+                        <p:layoutUnit id="west" position="west" size="200">
+                            <p:outputPanel id="list">
+                                <p:toolbar id="toolbar">
+                                    <f:facet name="left">
+                                        <p:commandButton id="new" icon="ui-icon-plusthick" update=":recipes"
+                                                         disabled="#{recipesController.changed}">
+                                            <p:collector value="#{recipesController.newRecipe}"
+                                                         addTo="#{recipesController.recipes}" unique="true"/>
+                                        </p:commandButton>
+
+                                        <p:commandButton id="delete" title="Delete" icon="ui-icon-minusthick"
+                                                         update=":recipes"
+                                                         action="#{recipesController.deleteSelected()}"
+                                                         disabled="#{recipesController.selected == null}">
+                                            <p:confirm header="Confirmation" message="Are you sure?"
+                                                       icon="ui-icon-alert"/>
+                                            <p:collector value="#{recipesController.selected}"
+                                                         removeFrom="#{recipesController.recipes}" unique="true"/>
+                                        </p:commandButton>
+                                        <p:commandButton id="copy" title="Copy" icon="ui-icon-copy" update=":recipes"
+                                                         disabled="#{recipesController.selected == null}"
+                                        >
+                                            <p:collector value="#{recipesController.createCopy()}"
+                                                         addTo="#{recipesController.recipes}" unique="true"/>
+                                        </p:commandButton>
+                                    </f:facet>
+
+
+                                </p:toolbar>
+                                <p:dataTable disabledSelection="#{recipesController.changed}" id="table" var="recipe"
+                                             value="#{recipesController.recipes}" selectionMode="single"
+                                             selection="#{recipesController.selected}" rowKey="#{recipe.id}">
+                                    <p:ajax event="rowSelect" listener="#{recipesController.onRowSelect}"
+                                            update=":recipes"/>
+                                    <p:ajax event="rowUnselect" listener="#{recipesController.onRowUnselect}"
+                                            update=":recipes"/>
+
+                                    <p:column id="column_id" headerText="Recipes" filterBy="#{recipe.id}"
+                                              filterMatchMode="contains">
+                                        <h:outputText value="#{recipe.id}"/>
+                                    </p:column>
+                                </p:dataTable>
+                            </p:outputPanel>
+                        </p:layoutUnit>
+
+                        <p:layoutUnit id="center" position="center">
+                            <p:outputPanel id="details" rendered="#{recipesController.selected != null}">
+                                <h:form id="recipe">
+                                    <p:ajax disabled="#{recipesController.changed}" event="keyup"
+                                            update=":recipes:recipe:recipe_buttons"
+                                            listener="#{recipesController.changedEvent}"
+                                    />
+                                    <p:panelGrid id="panelgrid_recipe" columns="3" style="margin-bottom:10px"
+                                                 styleClass="ui-panelgrid-blank" cellpadding="5">
+                                        <p:outputLabel id="label_id" for="id" value="Id:"/>
+                                        <p:inputText id="id" value="#{recipesController.selected.id}" required="true">
+                                            <p:ajax disabled="#{recipesController.changed}" event="keyup"
+                                                    update=":recipes:recipe:recipe_buttons"
+                                                    listener="#{recipesController.changedEvent}"
+                                            />
+                                            <f:validator validatorId="recipeIdValidator"/>
+                                            <f:attribute name="oldId" value="#{recipesController.selected.oldId}"/>
+                                        </p:inputText>
+                                        <p:message id="message_id" for="id"/>
+                                        <p:outputLabel id="label_description" for="input_description"
+                                                       value="Description:"/>
+                                        <p:inputTextarea id="input_description" rows="1" cols="33"
+                                                         value="#{recipesController.selected.description}">
+                                            <p:ajax disabled="#{recipesController.changed}" event="keyup"
+                                                    update=":recipes:recipe:recipe_buttons"
+                                                    listener="#{recipesController.changedEvent}"
+                                            />
+                                        </p:inputTextarea>
+                                        <p:message id="message_description" for="input_description"/>
+                                        <p:outputLabel id="label_version" for="input_version" value="Version:"/>
+                                        <p:inputText id="input_version" value="#{recipesController.selected.version}">
+                                            <p:ajax disabled="#{recipesController.changed}" event="keyup"
+                                                    update=":recipes:recipe:recipe_buttons"
+                                                    listener="#{recipesController.changedEvent}"
+                                            />
+                                            <f:validateRegex
+                                                    pattern="(&lt;|&gt;|=|&lt;=|&gt;=|~=) ([0-9]*).([0-9]+)(.[0-9]*)?"/>
+                                        </p:inputText>
+                                        <p:message id="message_version" for="input_version"/>
+
+                                        <p:outputLabel id="label_produced" for="input_produced"
+                                                       value="Endpoints"/>
+                                        <p:inputTextarea id="input_produced" rows="1" cols="33"
+                                                         value="#{recipesController.selected.endpoints}"
+                                                         converter="stringListConverter">
+                                            <p:ajax disabled="#{recipesController.changed}" event="keyup"
+                                                    update=":recipes:recipe:recipe_buttons"
+                                                    listener="#{recipesController.changedEvent}"
+                                            />
+                                        </p:inputTextarea>
+                                        <p:message id="message_produced" for="input_produced"/>
+
+                                    </p:panelGrid>
+                                    <p:panelGrid id="panelgrid_attributes" columns="1" style="margin-bottom:10px"
+                                                 styleClass="ui-panelgrid-blank" cellpadding="5">
+                                        <p:outputPanel id="attr_panel">
+                                            <p:toolbar id="toolbar_attr">
+                                                <f:facet name="left">
+                                                    <p:commandButton id="new_attr" icon="ui-icon-plusthick"
+                                                                     update="dlg_edit"
+                                                                     disabled="#{recipesController.selected == null}"
+                                                                     oncomplete="PF('dlg_edit').show()">
+                                                        <p:collector value="#{recipesController.newChefAttribute}"
+                                                                     addTo="#{recipesController.selected.attributes}"
+                                                                     unique="true"/>
+                                                    </p:commandButton>
+
+                                            <span class="ui-separator">
+                                                    <span class="ui-icon ui-icon-grip-dotted-vertical"/>
+                                                <!--p:outputLabel value="Chef Attributes" /-->
+                                            </span>
+                                                </f:facet>
+
+                                            </p:toolbar>
+
+                                            <p:dataTable id="table_attributes" var="attribute"
+                                                         value="#{recipesController.selected.attributes}"
+                                                         rowKey="#{attribute.name}">
+                                                <p:column id="column_key" width="30%" headerText="Name">
+                                                    <h:outputText value="#{attribute.name}"/>
+                                                </p:column>
+                                                <p:column id="column_value" headerText="Value">
+                                                    <h:outputText value="#{attribute.value}"/>
+                                                </p:column>
+                                                <p:column id="column_env" width="15%" headerText="Environment">
+                                                    <h:outputText
+                                                            value="#{attribute.environmentAttribute ? (attribute.environmentDefaultAttribute ? 'Default' : 'Override') : 'No'}"/>
+                                                </p:column>
+                                                <p:column id="column_node" width="5%" headerText="Node">
+                                                    <h:outputText value="#{attribute.nodeAttribute ? 'Yes' : 'No'}"/>
+                                                </p:column>
+                                                <p:column id="column_buttons" style="width:64px;text-align: center">
+                                                    <p:commandButton id="btn_attr_edit" update="dlg_edit"
+                                                                     action="#{recipesController.setSelectedAttribute(attribute)}"
+                                                                     oncomplete="PF('dlg_edit').show()"
+                                                                     icon="ui-icon-search" title="View">
+                                                    </p:commandButton>
+                                                    <p:commandButton id="delete_attr" title="Delete"
+                                                                     icon="ui-icon-minusthick" update=":recipes"
+                                                                     action="#{recipesController.deleteSelectedAttribute()}"
+                                                                     disabled="#{recipesController.selected == null}">
+                                                        <p:confirm header="Confirmation" message="Are you sure?"
+                                                                   icon="ui-icon-alert"/>
+                                                        <f:setPropertyActionListener value="#{attribute}"
+                                                                                     target="#{recipesController.selectedAttribute}"/>
+                                                    </p:commandButton>
+                                                </p:column>
+                                            </p:dataTable>
+
+                                        </p:outputPanel>
+
+                                    </p:panelGrid>
+                                    <p:panelGrid id="recipe_buttons" columns="2" style="margin-bottom:10px"
+                                                 styleClass="ui-panelgrid-blank" cellpadding="5">
+                                        <p:commandButton id="button_save" value="save"
+                                                         update=":recipes"
+                                                         action="#{recipesController.save}"/>
+                                        <p:commandButton id="button_cancel" value="cancel" immediate="true"
+                                                         update=":recipes"
+                                                         actionListener="#{recipesController.cancel}"/>
+                                    </p:panelGrid>
+                                    <p:growl id="messages" sticky="true" showDetail="true"/>
+                                </h:form>
+                            </p:outputPanel>
+                        </p:layoutUnit>
+                    </p:layout>
+
+                </h:form>
+            </h:panelGroup>
+            <p:dialog header="Edit attribute" widgetVar="dlg_edit" closeOnEscape="true" height="600"
+                      width="900" id="dlg_edit">
+                <p:ajax event="close" listener="#{recipesController.handleClose}"/>
+
+
+                <p:outputPanel id="attrDetail" style="text-align:center;">
+                    <h:form id="attr_edit" style="width: 95%;height: 95%">
+                        <p:panelGrid id="panel_attr_details" columns="3" style="margin-bottom:10px"
+                                     styleClass="ui-panelgrid-blank" cellpadding="5"
+                                     rendered="#{not empty recipesController.selectedAttribute}">
+
+                            <p:outputLabel id="label_op_name" for="op_key" value="Name:"/>
+                            <p:inputText id="op_key"
+                                         value="#{recipesController.selectedAttribute.name}">
+                            </p:inputText>
+                            <p:message id="message_op_key" for="op_key"/>
+                            <p:outputLabel id="label_op_value" for="op_value" value="Value:"/>
+                            <p:inputTextarea id="op_value"
+                                             value="#{recipesController.selectedAttribute.value}"
+                                             cols="100">
+
+                            </p:inputTextarea>
+                            <p:message id="message_op_value" for="op_value"/>
+
+                            <p:outputLabel id="label_env" for="input_env" value="Environment:"/>
+                            <p:selectOneButton id="input_env"
+                                               value="#{recipesController.editAttributeEnv}">
+                                <f:selectItem itemLabel="Override" itemValue="Override"/>
+                                <f:selectItem itemLabel="Default" itemValue="Default"/>
+                                <f:selectItem itemLabel="None" itemValue="No"/>
+                            </p:selectOneButton>
+                            <p:message id="message_env" for="input_env"/>
+
+                            <p:outputLabel id="label_node" for="input_node" value="Node:"/>
+                            <p:selectBooleanCheckbox id="input_node"
+                                                     value="#{recipesController.selectedAttribute.nodeAttribute}">
+                                <p:ajax disabled="#{recipesController.changed}" event="keyup"
+                                        update=":recipes:recipe:recipe_buttons"
+                                        listener="#{recipesController.changedEvent}"
+                                />
+                            </p:selectBooleanCheckbox>
+                            <p:message id="message_node" for="input_node"/>
+                        </p:panelGrid>
+                        <p:commandButton value="Save" id="btnAll" ajax="false" process="@this"
+                                         update=":recipes:recipe:table_attributes"
+                                         actionListener="#{recipesController.save}"/>
+
+                    </h:form>
+                </p:outputPanel>
+            </p:dialog>
+
+        </p:outputPanel>
+    </ui:define>
+</ui:composition>

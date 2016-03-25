@@ -1,0 +1,215 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2016  Altisource
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+package org.ecloudmanager.service.aws;
+
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.regions.RegionUtils;
+import com.amazonaws.services.ec2.AmazonEC2;
+import com.amazonaws.services.ec2.model.*;
+import com.amazonaws.services.ec2.model.Tag;
+import com.amazonaws.services.route53.AmazonRoute53;
+import com.amazonaws.services.route53.model.*;
+import com.google.common.collect.Lists;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.Logger;
+import org.ecloudmanager.deployment.vm.VMDeployer;
+import org.ecloudmanager.deployment.vm.VMDeployment;
+import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployer;
+import org.ecloudmanager.service.execution.ActionException;
+import org.ecloudmanager.service.execution.SynchronousPoller;
+import org.jetbrains.annotations.NotNull;
+
+import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.concurrent.Callable;
+import java.util.function.Predicate;
+
+import static org.ecloudmanager.deployment.vm.infrastructure.AWSInfrastructureDeployer.*;
+
+public class AWSVmService {
+    @Inject
+    private Logger log;
+    @Inject
+    private AWSClientService awsClientService;
+    @Inject
+    SynchronousPoller synchronousPoller;
+
+    public Instance createVm(VMDeployment vmDeployment) {
+        String name = vmDeployment.getConfigValue(VMDeployer.VM_NAME);
+        log.info("Creating AWS instance " + name);
+
+        String regionStr = getAwsRegion(vmDeployment);
+
+        AmazonEC2 amazonEC2 = awsClientService.getAmazonEC2(RegionUtils.getRegion(regionStr));
+
+        // Set 'delete on termination'
+        BlockDeviceMapping mapping = new BlockDeviceMapping().withDeviceName("/dev/sda1").withEbs(new EbsBlockDevice
+            ().withDeleteOnTermination(true));
+
+        RunInstancesRequest runInstancesRequest = new RunInstancesRequest()
+            .withMaxCount(1)
+            .withMinCount(1)
+            .withSubnetId(getAwsSubnet(vmDeployment))
+            .withImageId(getAwsAmi(vmDeployment))
+            .withInstanceType(getAwsInstanceType(vmDeployment))
+            .withKeyName(getAwsKeypair(vmDeployment))
+            .withBlockDeviceMappings(mapping);
+
+        String securityGroup = getAwsSecurityGroup(vmDeployment);
+        if (securityGroup != null) {
+            runInstancesRequest = runInstancesRequest.withSecurityGroups(securityGroup);
+        }
+
+        RunInstancesResult runInstancesResult = amazonEC2.runInstances(runInstancesRequest);
+        Instance inst = runInstancesResult.getReservation().getInstances().get(0);
+
+        Callable<DescribeInstancesResult> poll = () -> amazonEC2.describeInstances(new DescribeInstancesRequest()
+            .withInstanceIds(inst.getInstanceId()));
+        Predicate<DescribeInstancesResult> check =
+            (result) -> "running".equals(result.getReservations().get(0).getInstances().get(0).getState().getName());
+        DescribeInstancesResult result = synchronousPoller.poll(
+                poll, check,
+                1, 600, 20,
+                "wait for instance " + inst.getInstanceId() + " to become ready."
+            );
+
+        // Instance with IP address assigned
+        Instance instance = result.getReservations().get(0).getInstances().get(0);
+        log.info("AWS instance " + name + " created with IP " + instance.getPrivateIpAddress());
+
+        String userId;
+        try {
+            userId = awsClientService.getIamClient().getUser().getUser().getUserId();
+        } catch (AmazonServiceException e) {
+            userId = e.getErrorMessage().replaceAll("^[^/]*/", "").replaceAll(" is not authorized .*", "");
+        }
+
+        ArrayList<Tag> tags = new ArrayList<>();
+        tags.add(new Tag("Name", name));
+        tags.add(new Tag("Creator", userId));
+        tags.add(new Tag("Group", getGroupAwsTag(vmDeployment)));
+        tags.add(new Tag("Cost Center", getCostCenterAwsTag(vmDeployment)));
+        CreateTagsRequest createTagsRequest = new CreateTagsRequest()
+            .withResources(instance.getInstanceId())
+            .withTags(tags);
+
+        log.info("Adding tags to AWS instance " + name);
+        amazonEC2.createTags(createTagsRequest);
+
+        createDnsRecord(instance, vmDeployment);
+
+        return instance;
+    }
+
+    private void createDnsRecord(Instance instance, VMDeployment vmDeployment) {
+        String name = vmDeployment.getConfigValue(VMDeployer.VM_NAME);
+        log.info("Creating route53 record for " + name);
+        AmazonRoute53 route53 = awsClientService.getRoute53Client();
+
+        String awsHostedZone = getAwsHostedZone(vmDeployment);
+        HostedZone hostedZone = getHostedZone(awsHostedZone, route53);
+
+        ResourceRecord resourceRecord = new ResourceRecord(instance.getPrivateIpAddress());
+        ResourceRecordSet resourceRecordSet = new ResourceRecordSet(name + "." + awsHostedZone, RRType.A).withTTL
+            (60L).withResourceRecords(resourceRecord);
+        ChangeBatch changeBatch = new ChangeBatch(Lists.newArrayList(new Change(ChangeAction.CREATE,
+            resourceRecordSet)));
+        ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest = new ChangeResourceRecordSetsRequest()
+            .withHostedZoneId(hostedZone.getId()).withChangeBatch(changeBatch);
+        route53.changeResourceRecordSets(changeResourceRecordSetsRequest);
+    }
+
+    private void deleteDnsRecord(VMDeployment vmDeployment) {
+        String name = vmDeployment.getConfigValue(VMDeployer.VM_NAME);
+
+        log.info("Deleting route53 record for " + name);
+        if (StringUtils.isEmpty(name)) {
+            log.error("Cannot delete route53 record - name is empty.");
+            return;
+        }
+
+        AmazonRoute53 route53 = awsClientService.getRoute53Client();
+
+        String awsHostedZone = getAwsHostedZone(vmDeployment);
+        HostedZone hostedZone = getHostedZone(awsHostedZone, route53);
+
+        String recordSetName = name + "." + awsHostedZone;
+        ListResourceRecordSetsRequest listResourceRecordSetsRequest =
+            new ListResourceRecordSetsRequest(hostedZone.getId()).withStartRecordName(recordSetName);
+        ListResourceRecordSetsResult listResourceRecordSetsResult = route53.listResourceRecordSets
+            (listResourceRecordSetsRequest);
+        if (listResourceRecordSetsResult.getResourceRecordSets().size() < 1) {
+            log.error("Cannot delete route53 record - record not found. Skipping this step.");
+            return;
+        }
+
+        ResourceRecordSet resourceRecordSet = listResourceRecordSetsResult.getResourceRecordSets().get(0);
+        if (!recordSetName.equals(resourceRecordSet.getName())) {
+            log.error("Cannot delete route53 record - record not found. Skipping this step.");
+            return;
+        }
+
+        ChangeBatch changeBatch = new ChangeBatch(Lists.newArrayList(new Change(ChangeAction.DELETE,
+            resourceRecordSet)));
+        ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest = new ChangeResourceRecordSetsRequest()
+            .withHostedZoneId(hostedZone.getId()).withChangeBatch(changeBatch);
+        ChangeResourceRecordSetsResult changeResourceRecordSetsResult = route53.changeResourceRecordSets
+            (changeResourceRecordSetsRequest);
+        log.info(changeResourceRecordSetsResult.getChangeInfo().toString());
+    }
+
+    @NotNull
+    private HostedZone getHostedZone(String awsHostedZone, AmazonRoute53 route53) {
+        ListHostedZonesResult listHostedZonesResult = route53.listHostedZones();
+        HostedZone hostedZone = listHostedZonesResult.getHostedZones().stream()
+            .filter(z -> z.getName().equals(awsHostedZone))
+            .findAny()
+            .orElse(null);
+        if (hostedZone == null) {
+            throw new ActionException("Create route53 record failed - cannot find hosted zone for name: " +
+                awsHostedZone);
+        }
+        return hostedZone;
+    }
+
+    public void deleteVm(VMDeployment vmDeployment) {
+        String instanceId = InfrastructureDeployer.getVmId(vmDeployment);
+        String regionStr = getAwsRegion(vmDeployment);
+
+        AmazonEC2 amazonEC2 = awsClientService.getAmazonEC2(RegionUtils.getRegion(regionStr));
+
+        TerminateInstancesRequest terminateInstancesRequest = new TerminateInstancesRequest().withInstanceIds
+            (instanceId);
+        amazonEC2.terminateInstances(terminateInstancesRequest);
+
+        Callable<DescribeInstancesResult> poll =
+            () -> amazonEC2.describeInstances(new DescribeInstancesRequest().withInstanceIds(instanceId));
+        Predicate<DescribeInstancesResult> check =
+            (result) -> "terminated".equals(result.getReservations().get(0).getInstances().get(0).getState().getName());
+        synchronousPoller.poll(poll, check, 1, 600, "wait for instance " + instanceId + " to terminate.");
+
+        deleteDnsRecord(vmDeployment);
+    }
+}

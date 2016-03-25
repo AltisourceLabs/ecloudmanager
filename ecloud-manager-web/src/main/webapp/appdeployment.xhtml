@@ -1,0 +1,136 @@
+<!--
+  ~ MIT License
+  ~
+  ~ Copyright (c) 2016  Altisource
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:pe="http://primefaces.org/ui/extensions"
+                template="/WEB-INF/templates/default.xhtml">
+    <ui:define name="content">
+        <p:outputPanel id="out">
+            <h:panelGroup>
+                <h:form id="edit" styleClass="contentForm" style="height: 40%">
+                    <p:treeTable id="tree" value="#{applicationDeploymentController.getTree()}" var="document"
+                                 selectionMode="single" selection="#{applicationDeploymentController.selectedNode}">
+                        <p:ajax event="select" listener="#{applicationDeploymentController.onNodeSelect}"
+                                update=":fields"/>
+                        <p:column headerText="Name">
+                            <h:outputText value="#{document}"/>
+                        </p:column>
+                        <p:column style="width:24px">
+                            <h:outputText styleClass="ui-icon ui-icon-notice"
+                                          rendered="#{document['class'].simpleName ne 'String' and not document.satisfied()}"/>
+                            <h:outputText styleClass="ui-icon ui-icon-check"
+                                          rendered="#{document['class'].simpleName ne 'String' and document.satisfied()}"/>
+                        </p:column>
+                    </p:treeTable>
+                </h:form>
+                <h:form id="fields" styleClass="contentForm" style="height: 40%">
+                    <p:dataTable var="constraint" rowIndexVar="rowIndex" value="#{applicationDeploymentController.constraints}">
+                        <p:ajax event="cellEdit" update=":edit"/>
+                        <p:column headerText="Constraint">
+                            <h:outputText value="#{constraint}"/>
+                        </p:column>
+                        <p:column headerText="Options" style="width:205px; white-space: nowrap">
+                            <p:selectOneButton value="#{constraint.option}" rendered="#{not constraint.readOnly}">
+                                <f:selectItem itemLabel="Default" itemValue="DEFAULT" itemDisabled="#{not constraint.hasDefaultValue()}"/>
+                                <f:selectItem itemLabel="Value" itemValue="VALUE" />
+                                <f:selectItem itemLabel="Reference" itemValue="REFERENCE" />
+                                <p:ajax update=":fields :edit"/>
+                            </p:selectOneButton>
+                        </p:column>
+                        <p:column headerText="Value">
+                            <p:autoComplete value="#{constraint.value}"
+                                            dropdown="true"
+                                            completeMethod="#{constraint.getSuggestions}"
+                                            style="width:98%"
+                                            inputStyle="width:95%"
+                                            label="Value"
+                                            widgetVar="constraintAutocomplete_#{rowIndex}"
+                                            rendered="#{constraint.ui eq 'autocompleteConstraint'}">
+                                <p:ajax update=":fields :edit"/>
+                                <p:ajax event="itemSelect" update=":fields :edit"/>
+                                <p:ajax event="change"
+                                        update=":fields :edit"
+                                        onstart="if(PF('constraintAutocomplete_#{rowIndex}').panel.is(':visible')) {return false;}"
+                                />
+                            </p:autoComplete>
+                            <p:inputText value="#{constraint.value}"
+                                         style="width:98%"
+                                         label="Value"
+                                         rendered="#{constraint.ui eq 'simpleConstraint'}">
+                                <p:ajax update=":fields :edit"/>
+                            </p:inputText>
+                            <p:inputTextarea value="#{constraint.value}"
+                                             style="width:98%"
+                                             label="Value"
+                                             rendered="#{constraint.ui eq 'multilineConstraint'}">
+                                <p:ajax update=":fields :edit"/>
+                            </p:inputTextarea>
+                            <h:outputText value="#{constraint.value}"
+                                           style="width:98%"
+                                           label="Value"
+                                           rendered="#{constraint.ui eq 'readonlyConstraint'}"/>
+                            <h:outputText value="#{constraint.defaultValue}"
+                                          rendered="#{constraint.ui eq 'defaultConstraint'}"/>
+                            <p:selectOneMenu value="#{constraint.reference}"
+                                             style="width:98%"
+                                             rendered="#{constraint.ui eq 'referenceConstraint'}" editable="true">
+                                <f:selectItems value="#{applicationDeploymentController.constraintList}" />
+                                <p:ajax update=":fields :edit"/>
+                            </p:selectOneMenu>
+                        </p:column>
+                    </p:dataTable>
+                </h:form>
+                <h:form id="buttons" styleClass="contentForm" style="height: 40%">
+                    <p:commandButton value="Save" update="out" action="#{applicationDeploymentController.save}"/>
+                    <p:commandButton value="Generate Chef Env."
+                                     actionListener="#{applicationDeploymentController.generateChefEnv}" update="dlg1" oncomplete="PF('dlg1').show();" />
+                    <p:commandButton id="deployButton" value="Deploy..." action="#{applicationDeploymentController.saveAndRedirectToAction}"
+                                     disabled="#{not applicationDeploymentController.canDeploy()}">
+                        <f:param name="actionType" value="CREATE"/>
+                        <f:param name="deployment" value="#{applicationDeploymentController.deployment.id.toString()}"/>
+                    </p:commandButton>
+                    <p:commandButton id="undeployButton" value="Undeploy..." action="#{applicationDeploymentController.saveAndRedirectToAction}"
+                                     disabled="#{not applicationDeploymentController.canUndeploy()}">
+                        <f:param name="actionType" value="DELETE"/>
+                        <f:param name="deployment" value="#{applicationDeploymentController.deployment.id.toString()}"/>
+                    </p:commandButton>
+                    <p:commandButton value="Scale Component Groups" action="#{applicationDeploymentController.scaleComponentGroups}" update=":edit"/>
+                    <p:button id="historyButton" value="Deployment History" outcome="deploymentAttempts">
+                        <f:param name="deployment" value="#{applicationDeploymentController.deployment.id.toString()}"/>
+                    </p:button>
+                    <p:poll interval="5" update="deployButton, undeployButton"/>
+                </h:form>
+                <p:dialog id="dlg1" header="Generated JSON" widgetVar="dlg1" minHeight="40">
+                    <pe:codeMirror id="codeMirror" mode="application/json" smartIndent="true"
+                                   value="#{applicationDeploymentController.jsonString}" lineNumbers="true"/>
+                </p:dialog>
+            </h:panelGroup>
+            <p:growl id="messages" sticky="true" showDetail="true"/>
+        </p:outputPanel>
+    </ui:define>
+</ui:composition>

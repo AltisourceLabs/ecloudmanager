@@ -1,0 +1,410 @@
+<!--
+  ~ MIT License
+  ~
+  ~ Copyright (c) 2016  Altisource
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/templates/default.xhtml">
+    <ui:define name="content">
+        <p:outputPanel id="out">
+            <h:panelGroup>
+
+                <p:confirmDialog id="confirm" global="true" showEffect="fade" hideEffect="fade">
+                    <p:commandButton value="Yes" type="button" styleClass="ui-confirmdialog-yes" icon="ui-icon-check"/>
+                    <p:commandButton value="No" type="button" styleClass="ui-confirmdialog-no" icon="ui-icon-close"/>
+                </p:confirmDialog>
+                <h:form styleClass="contentForm" style="height: 90%">
+                    <p:dataTable id="templates" var="appTemplate" value="#{applicationTemplateController.appTemplates}"
+                                 paginator="true" rows="10" resizableColumns="true" liveResize="true">
+                        <p:column width="20%" headerText="Name" sortBy="#{appTemplate.name}">
+                            <h:outputText value="#{appTemplate.name}"/>
+                        </p:column>
+                        <p:column headerText="Services">
+                            <h:outputText value="#{appTemplate.children}"/>
+                        </p:column>
+                        <p:column width="80">
+                            <p:commandButton title="Edit" icon="ui-icon-pencil"
+                                             update="dlg_edit"
+                                             action="#{applicationTemplateController.applicationEntityEditorController.startEdit(appTemplate)}"
+                                             oncomplete="PF('dlg_edit').show();"/>
+                            <p:commandButton title="Delete" icon="ui-icon-close"
+                                             update="out"
+                                             action="#{applicationTemplateController.applicationEntityEditorController.delete(appTemplate)}">
+                                <p:confirm header="Confirmation" message="Are you sure?" icon="ui-icon-alert"/>
+                            </p:commandButton>
+                            <p:commandButton title="Download" icon="ui-icon-arrowstop-1-s"
+                                             ajax="false"
+                                             action="#{applicationTemplateController.download(appTemplate)}" />
+
+                        </p:column>
+                        <p:column width="100">
+                            <p:menuButton value="Deploy...">
+                                <p:menuitem value="Deploy to Verizon" outcome="appdeployment"
+                                            icon="ui-icon-circle-triangle-e">
+                                    <f:param name="template" value="#{appTemplate.id.toString()}"/>
+                                    <f:param name="infrastructure" value="VERIZON"/>
+                                </p:menuitem>
+                                <p:menuitem value="Deploy to AWS" outcome="appdeployment"
+                                            icon="ui-icon-circle-triangle-e">
+                                    <f:param name="template" value="#{appTemplate.id.toString()}"/>
+                                    <f:param name="infrastructure" value="AWS"/>
+                                </p:menuitem>
+                                <p:menuitem value="Deploy..." outcome="appdeployment"
+                                            icon="ui-icon-circle-triangle-e">
+                                    <f:param name="template" value="#{appTemplate.id.toString()}"/>
+                                </p:menuitem>
+                            </p:menuButton>
+                        </p:column>
+
+                    </p:dataTable>
+                    <p:commandButton value="New" icon="ui-icon-plus"
+                                     update="dlg_edit" oncomplete="PF('dlg_edit').show();"/>
+                    <p:commandButton value="Import" icon="ui-icon-plus" action="#{applicationTemplateController.applicationEntityEditorController.startImport}"
+                                     update="dlg_edit" oncomplete="PF('dlg_edit').show();"/>
+
+                    <p:growl id="messages" sticky="true" showDetail="true"/>
+                </h:form>
+            </h:panelGroup>
+
+            <p:dialog header="Edit Application template" widgetVar="dlg_edit" modal="true" closeOnEscape="true" height="600" width="600" id="dlg_edit">
+                <p:ajax event="close" listener="#{applicationTemplateController.applicationEntityEditorController.handleClose}" />
+                <h:panelGroup>
+                    <h:form id="edit" style="width: 95%;height: 95%">
+                        <h:panelGroup rendered="#{applicationTemplateController.applicationEntityEditorController.edit}">
+                            <h3>Edit template</h3>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{!applicationTemplateController.applicationEntityEditorController.edit}">
+                            <h3>Add template</h3>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{applicationTemplateController.applicationEntityEditorController.importing}">
+                                <p:fileUpload fileUploadListener="#{applicationTemplateController.applicationEntityEditorController.handleFileUpload}" mode="advanced"
+                                              update="edit" auto="true" />
+                        </h:panelGroup>
+                        <p>Name: <p:inputText value="#{applicationTemplateController.applicationEntityEditorController.selected.name}"/></p>
+                        <p>Provides:</p>
+                        <p:dataTable id="provides" var="srv"
+                                     value="#{applicationTemplateController.applicationEntityEditorController.selected.children}"
+                                     resizableColumns="true" liveResize="true">
+
+                            <p:column width="30%" headerText="Name" sortBy="#{srv.name}">
+                                <h:outputText value="#{srv}"/>
+                            </p:column>
+                            <p:column headerText="Description">
+                                <h:outputText value="#{srv.description}"/>
+                            </p:column>
+                            <p:column width="60">
+                                <p:commandButton title="Edit" icon="ui-icon-pencil"
+                                                 action="#{applicationTemplateController.templateEntityEditorController.startEdit(srv)}"
+                                />
+                                <p:commandButton title="Delete" icon="ui-icon-close"
+                                                 update="out"
+                                                 action="#{applicationTemplateController.deleteChild(srv)}"
+                                                 oncomplete="PF('dlg_edit').show();">
+                                    <p:confirm header="Confirmation" message="Are you sure?" icon="ui-icon-alert"/>
+                                </p:commandButton>
+                            </p:column>
+                        </p:dataTable>
+                        <p:menuButton value="New...">
+                            <p:menuitem value="ProducedService"
+                                        action="#{applicationTemplateController.templateEntityEditorController.newProducedService}">
+                            </p:menuitem>
+                            <p:menuitem value="ExternalService"
+                                        action="#{applicationTemplateController.templateEntityEditorController.newExternalService}">
+                            </p:menuitem>
+                            <p:menuitem value="VM"
+                                        action="#{applicationTemplateController.templateEntityEditorController.newVmRef}">
+                            </p:menuitem>
+                        </p:menuButton>
+
+                        <h:panelGroup rendered="#{applicationTemplateController.applicationEntityEditorController.edit}">
+                            <p><p:commandButton value="save" update="out" action="#{applicationTemplateController.applicationEntityEditorController.save}"/>
+                                <p:commandButton value="cancel" update="out" action="#{applicationTemplateController.applicationEntityEditorController.cancel}"/>
+                            </p>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{!applicationTemplateController.applicationEntityEditorController.edit}">
+                            <p><p:commandButton value="add" update="out"
+                                                action="#{applicationTemplateController.applicationEntityEditorController.add}"/><p:commandButton value="cancel"
+                                                                                                       update="out"
+                                                                                                       action="#{applicationTemplateController.applicationEntityEditorController.cancel}"/>
+                            </p>
+                        </h:panelGroup>
+                    </h:form>
+                </h:panelGroup>
+            </p:dialog>
+
+            <p:dialog header="Edit Service" widgetVar="dlg_edit_service" modal="true" closeOnEscape="true" height="600"
+                      width="600" id="dlg_edit_service">
+                <p:ajax event="close"
+                        listener="#{applicationTemplateController.templateEntityEditorController.handleClose}"/>
+                <h:panelGroup>
+                    <h:form style="width: 95%;height: 95%">
+                        <h:panelGroup
+                                rendered="#{applicationTemplateController.templateEntityEditorController.selected['class'].simpleName eq 'ProducedServiceTemplate'}">
+
+                            <p>Name: <p:inputText
+                                    value="#{applicationTemplateController.templateEntityEditorController.selected.name}"/>
+                            </p>
+                            <p>Public: <p:selectBooleanCheckbox
+                                    value="#{applicationTemplateController.templateEntityEditorController.selected.publicHostname}"/>
+                            </p>
+                        <p>
+                            <h:outputText value="HAProxy Frontend configuration:" />
+                        </p>
+                        <p:inputTextarea rows="6" cols="33"
+                                         value="#{applicationTemplateController.templateEntityEditorController.selected.haProxyFrontendConfig.config}"
+                                         converter="stringListConverter"/>
+                        <p>Component Groups:</p>
+                            <p:dataTable id="cg" var="cg"
+                                         value="#{applicationTemplateController.templateEntityEditorController.selected.componentGroups}"
+                                         resizableColumns="true" liveResize="true">
+
+                            <p:column width="30%" headerText="Name" sortBy="#{cg.name}">
+                                <h:outputText value="#{cg.name}"/>
+                            </p:column>
+                            <p:column width="40%" headerText="VM">
+                                <h:outputText value="#{cg.virtualMachineTemplate}"/>
+                            </p:column>
+                            <p:column width="60">
+                                <p:commandButton title="Edit" icon="ui-icon-pencil"
+                                                 update="dlg_edit_cg"
+                                                 action="#{applicationTemplateController.componentGroupTemplateEntityEditorController.startEdit(cg)}"
+                                                 oncomplete="PF('dlg_edit_cg').show();"/>
+                                <p:commandButton title="Delete" icon="ui-icon-close"
+                                                 update="out"
+                                                 action="#{applicationTemplateController.componentGroupTemplateEntityEditorController.delete(cg)}" oncomplete="PF('dlg_edit_service').show();">
+                                    <p:confirm header="Confirmation" message="Are you sure?" icon="ui-icon-alert"/>
+                                </p:commandButton>
+                            </p:column>
+                        </p:dataTable>
+                        <p:commandButton value="New" icon="ui-icon-plus"
+                                         update="dlg_edit_cg" oncomplete="PF('dlg_edit_cg').show();"/>
+
+                        <p>Firewall rules:</p>
+                            <p:dataTable id="fw" var="fw"
+                                         value="#{applicationTemplateController.templateEntityEditorController.selected.firewallRules}"
+                                         resizableColumns="true" liveResize="true">
+
+                            <p:column width="20%" headerText="Protocol" sortBy="#{fw.protocol}">
+                                <h:outputText value="#{fw.protocol}"/>
+                            </p:column>
+                            <p:column width="20%" headerText="Port">
+                                <h:outputText value="#{fw.port}"/>
+                            </p:column>
+                            <p:column width="40%" headerText="Description">
+                                <h:outputText value="#{fw.description}"/>
+                            </p:column>
+                            <p:column width="60" >
+                                <p:commandButton title="Edit" icon="ui-icon-pencil"
+                                                 update="dlg_edit_fw"
+                                                 action="#{applicationTemplateController.firewallRuleEntityEditorController.startEdit(fw)}"
+                                                 oncomplete="PF('dlg_edit_fw').show();"/>
+                                <p:commandButton title="Delete" icon="ui-icon-close"
+                                                 update="out"
+                                                 action="#{applicationTemplateController.firewallRuleEntityEditorController.delete(fw)}" oncomplete="PF('dlg_edit_service').show();">
+                                    <p:confirm header="Confirmation" message="Are you sure?" icon="ui-icon-alert"/>
+                                </p:commandButton>
+                            </p:column>
+                        </p:dataTable>
+                        <p:commandButton value="New" icon="ui-icon-plus"
+                                         update="dlg_edit_fw" oncomplete="PF('dlg_edit_fw').show();"/>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{applicationTemplateController.templateEntityEditorController.edit}">
+                            <p><p:commandButton value="save" update="out"
+                                                action="#{applicationTemplateController.saveChild}"/>
+                                <p:commandButton value="cancel" update="out"
+                                                 action="#{applicationTemplateController.templateEntityEditorController.cancel}"
+                                                 oncomplete="PF('dlg_edit').show();"/>
+                            </p>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{!applicationTemplateController.templateEntityEditorController.edit}">
+                            <p><p:commandButton value="add" update="out"
+                                                action="#{applicationTemplateController.addChild}"
+                            />
+                                <p:commandButton value="cancel" update="out"
+                                                 action="#{applicationTemplateController.templateEntityEditorController.cancel}"
+                                                 oncomplete="PF('dlg_edit').show();"/>
+                            </p>
+                        </h:panelGroup>
+                    </h:form>
+                </h:panelGroup>
+            </p:dialog>
+
+            <p:dialog header="Edit External Service" widgetVar="dlg_edit_ext_service" modal="true" closeOnEscape="true"
+                      height="600" width="600" id="dlg_edit_ext_service">
+                <p:ajax event="close"
+                        listener="#{applicationTemplateController.templateEntityEditorController.handleClose}"/>
+                <h:panelGroup>
+                    <h:form style="width: 95%;height: 95%">
+                        <h:panelGroup
+                                rendered="#{applicationTemplateController.templateEntityEditorController.selected['class'].simpleName eq 'ExternalServiceTemplate'}">
+                        <p>Name: <p:inputText
+                                value="#{applicationTemplateController.templateEntityEditorController.selected.name}"/>
+                        </p>
+
+                        <p>Description: <p:inputText
+                                value="#{applicationTemplateController.templateEntityEditorController.selected.description}"/>
+                        </p>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{applicationTemplateController.templateEntityEditorController.edit}">
+                            <p><p:commandButton value="save" update="out"
+                                                action="#{applicationTemplateController.saveChild}"
+                            />
+                                <p:commandButton value="cancel" update="out"
+                                                 action="#{applicationTemplateController.templateEntityEditorController.cancel}"
+                                                 oncomplete="PF('dlg_edit').show();"/>
+                            </p>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{!applicationTemplateController.templateEntityEditorController.edit}">
+                            <p><p:commandButton value="add" update="out"
+                                                action="#{applicationTemplateController.addChild}"/>
+                                <p:commandButton value="cancel" update="out"
+                                                 action="#{applicationTemplateController.templateEntityEditorController.cancel}"
+                                                 oncomplete="PF('dlg_edit').show();"/>
+                            </p>
+                        </h:panelGroup>
+                    </h:form>
+                </h:panelGroup>
+            </p:dialog>
+
+            <p:dialog header="Edit VM Template reference" widgetVar="dlg_edit_vm_ref" modal="true" closeOnEscape="true"
+                      height="600" width="600" id="dlg_edit_vm_ref">
+                <p:ajax event="close"
+                        listener="#{applicationTemplateController.templateEntityEditorController.handleClose}"/>
+                <h:panelGroup>
+                    <h:form style="width: 95%;height: 95%">
+                        <h:panelGroup
+                                rendered="#{applicationTemplateController.templateEntityEditorController.selected['class'].simpleName eq 'VMTemplateReference'}">
+
+                            <p>VM: <p:selectOneMenu
+                                    value="#{applicationTemplateController.templateEntityEditorController.selected.virtualMachineTemplate}"
+                                    converter="vmTemplateConverter">
+                                <f:selectItem itemLabel="None" itemValue=""/>
+                                <f:selectItems value="#{applicationTemplateController.virtualMachineTemplates}"
+                                               var="templ"
+                                               itemLabel="#{templ.name}" itemValue="#{templ}"/>
+                            </p:selectOneMenu></p>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{applicationTemplateController.templateEntityEditorController.edit}">
+                            <p><p:commandButton value="save" update="out"
+                                                action="#{applicationTemplateController.saveChild}"
+                            />
+                                <p:commandButton value="cancel" update="out"
+                                                 action="#{applicationTemplateController.templateEntityEditorController.cancel}"
+                                                 oncomplete="PF('dlg_edit').show();"/>
+                            </p>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{!applicationTemplateController.templateEntityEditorController.edit}">
+                            <p><p:commandButton value="add" update="out"
+                                                action="#{applicationTemplateController.addChild}"
+                                                oncomplete="PF('dlg_edit').show();"/>
+                                <p:commandButton value="cancel" update="out"
+                                                 action="#{applicationTemplateController.templateEntityEditorController.cancel}"
+                                                 oncomplete="PF('dlg_edit').show();"/>
+                            </p>
+                        </h:panelGroup>
+                    </h:form>
+                </h:panelGroup>
+            </p:dialog>
+
+
+            <p:dialog header="Edit Firewall Rule" widgetVar="dlg_edit_fw" modal="true" closeOnEscape="true"
+                      height="600" width="600" id="dlg_edit_fw">
+                <p:ajax event="close"
+                        listener="#{applicationTemplateController.firewallRuleEntityEditorController.handleClose}"/>
+                <h:panelGroup>
+                    <h:form style="width: 95%;height: 95%">
+                        <p>Protocol: <p:selectOneMenu value="#{applicationTemplateController.firewallRuleEntityEditorController.selected.protocol}">
+                            <f:selectItems value="#{applicationTemplateController.firewallRuleProtocols}" var="protocol"
+                                           itemLabel="#{protocol}" itemValue="#{protocol}"/>
+                        </p:selectOneMenu></p>
+
+                        <p>Port: <p:inputText
+                                value="#{applicationTemplateController.firewallRuleEntityEditorController.selected.port}"/>
+                        </p>
+
+                        <p>Description: <p:inputText
+                                value="#{applicationTemplateController.firewallRuleEntityEditorController.selected.description}"/>
+                        </p>
+                        <h:panelGroup rendered="#{applicationTemplateController.firewallRuleEntityEditorController.edit}">
+                            <p><p:commandButton value="save" update="out"
+                                                action="#{applicationTemplateController.firewallRuleEntityEditorController.save}"
+                                                oncomplete="PF('dlg_edit_service').show();"/>
+                                <p:commandButton value="cancel" update="out"
+                                                 action="#{applicationTemplateController.firewallRuleEntityEditorController.cancel}"
+                                                 oncomplete="PF('dlg_edit_service').show();"/>
+                            </p>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{!applicationTemplateController.firewallRuleEntityEditorController.edit}">
+                            <p><p:commandButton value="add" update="out"
+                                                action="#{applicationTemplateController.firewallRuleEntityEditorController.add}"
+                                                oncomplete="PF('dlg_edit_service').show();"/>
+                                <p:commandButton value="cancel" update="out"
+                                                 action="#{applicationTemplateController.firewallRuleEntityEditorController.cancel}"
+                                                 oncomplete="PF('dlg_edit_service').show();"/>
+                            </p>
+                        </h:panelGroup>
+                    </h:form>
+                </h:panelGroup>
+            </p:dialog>
+
+            <p:dialog header="Edit Component Group " widgetVar="dlg_edit_cg" modal="true" closeOnEscape="true" height="600" width="600" id="dlg_edit_cg">
+                <p:ajax event="close" listener="#{applicationTemplateController.componentGroupTemplateEntityEditorController.handleClose}" />
+                <h:panelGroup>
+                    <h:form style="width: 95%;height: 95%">
+                        <p>Name: <p:inputText value="#{applicationTemplateController.componentGroupTemplateEntityEditorController.selected.name}"/></p>
+                        <p>
+                            <h:outputText value="HAProxy Backend configuration:" />
+                        </p>
+
+                        <p:inputTextarea rows="6" cols="33"
+                                             value="#{applicationTemplateController.componentGroupTemplateEntityEditorController.selected.haProxyBackendConfig.config}"
+                                             converter="stringListConverter"/>
+                        <p>VM: <p:selectOneMenu value="#{applicationTemplateController.componentGroupTemplateEntityEditorController.selected.virtualMachineTemplate}"
+                                                     converter="vmTemplateConverter">
+                            <f:selectItem itemLabel="None" itemValue=""/>
+                            <f:selectItems value="#{applicationTemplateController.virtualMachineTemplates}" var="templ"
+                                           itemLabel="#{templ.name}" itemValue="#{templ}"/>
+                        </p:selectOneMenu></p>
+                        <h:panelGroup rendered="#{applicationTemplateController.componentGroupTemplateEntityEditorController.edit}">
+                            <p><p:commandButton value="save" update="out" action="#{applicationTemplateController.componentGroupTemplateEntityEditorController.save}" oncomplete="PF('dlg_edit_service').show();"/>
+                                <p:commandButton value="cancel" update="out" action="#{applicationTemplateController.componentGroupTemplateEntityEditorController.cancel}" oncomplete="PF('dlg_edit_service').show();"/>
+                            </p>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{!applicationTemplateController.componentGroupTemplateEntityEditorController.edit}">
+                            <p><p:commandButton value="add" update="out"
+                                                action="#{applicationTemplateController.componentGroupTemplateEntityEditorController.add}" oncomplete="PF('dlg_edit_service').show();"/>
+                                <p:commandButton value="cancel" update="out" action="#{applicationTemplateController.componentGroupTemplateEntityEditorController.cancel}" oncomplete="PF('dlg_edit_service').show();"/>
+                            </p>
+                        </h:panelGroup>
+                    </h:form>
+                </h:panelGroup>
+            </p:dialog>
+
+
+
+        </p:outputPanel>
+    </ui:define>
+</ui:composition>

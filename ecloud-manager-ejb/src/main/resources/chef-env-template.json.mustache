@@ -1,0 +1,23 @@
+{
+"name": "{{name}}",
+"description": "{{description}}",
+{{=<% %>=}}
+"cookbook_versions": {
+<%#cookbook_versions%>
+"<%value.key%>": "{{<%value.value%>}}"<%^last%>,<%/last%>
+<%/cookbook_versions%>
+},
+<%={{ }}=%>
+"json_class": "Chef::Environment",
+"chef_type": "environment",
+"default_attributes": {
+{{#default_attributes}}
+    "{{value.key}}": {{value.value}}{{^last}},{{/last}}
+{{/default_attributes}}
+},
+"override_attributes": {
+{{#override_attributes}}
+    "{{value.key}}": {{value.value}}{{^last}},{{/last}}
+{{/override_attributes}}
+}
+}
