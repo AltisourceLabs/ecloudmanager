@@ -64,9 +64,11 @@ public class AWSVmService {
 
         AmazonEC2 amazonEC2 = awsClientService.getAmazonEC2(RegionUtils.getRegion(regionStr));
 
-        // Set 'delete on termination'
+        int storage = vmDeployment.getVirtualMachineTemplate().getStorage();
+
+        // Set 'delete on termination' and size
         BlockDeviceMapping mapping = new BlockDeviceMapping().withDeviceName("/dev/sda1").withEbs(new EbsBlockDevice
-            ().withDeleteOnTermination(true));
+            ().withDeleteOnTermination(true).withVolumeSize(storage));
 
         RunInstancesRequest runInstancesRequest = new RunInstancesRequest()
             .withMaxCount(1)
