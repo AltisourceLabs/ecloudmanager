@@ -101,6 +101,16 @@ public class AWSVmService {
         Instance instance = result.getReservations().get(0).getInstances().get(0);
         log.info("AWS instance " + name + " created with IP " + instance.getPrivateIpAddress());
 
+        String instanceId = instance.getInstanceId();
+
+        createTags(instanceId, vmDeployment, amazonEC2);
+
+        createDnsRecord(instance, vmDeployment);
+
+        return instance;
+    }
+
+    private void createTags(String instanceId, VMDeployment vmDeployment, AmazonEC2 amazonEC2) {
         String userId;
         try {
             userId = awsClientService.getIamClient().getUser().getUser().getUserId();
@@ -108,21 +118,19 @@ public class AWSVmService {
             userId = e.getErrorMessage().replaceAll("^[^/]*/", "").replaceAll(" is not authorized .*", "");
         }
 
+        String vmName = vmDeployment.getConfigValue(VMDeployer.VM_NAME);
+
         ArrayList<Tag> tags = new ArrayList<>();
-        tags.add(new Tag("Name", name));
+        tags.add(new Tag("Name", vmName));
         tags.add(new Tag("Creator", userId));
         tags.add(new Tag("Group", getGroupAwsTag(vmDeployment)));
         tags.add(new Tag("Cost Center", getCostCenterAwsTag(vmDeployment)));
         CreateTagsRequest createTagsRequest = new CreateTagsRequest()
-            .withResources(instance.getInstanceId())
+            .withResources(instanceId)
             .withTags(tags);
 
-        log.info("Adding tags to AWS instance " + name);
+        log.info("Updating tags of AWS instance " + vmName);
         amazonEC2.createTags(createTagsRequest);
-
-        createDnsRecord(instance, vmDeployment);
-
-        return instance;
     }
 
     private void createDnsRecord(Instance instance, VMDeployment vmDeployment) {
@@ -179,7 +187,7 @@ public class AWSVmService {
             .withHostedZoneId(hostedZone.getId()).withChangeBatch(changeBatch);
         ChangeResourceRecordSetsResult changeResourceRecordSetsResult = route53.changeResourceRecordSets
             (changeResourceRecordSetsRequest);
-        log.info(changeResourceRecordSetsResult.getChangeInfo().toString());
+        log.info("Submitted delete recordset request " + changeResourceRecordSetsResult.getChangeInfo().toString());
     }
 
     @NotNull
@@ -213,5 +221,118 @@ public class AWSVmService {
         synchronousPoller.poll(poll, check, 1, 600, "wait for instance " + instanceId + " to terminate.");
 
         deleteDnsRecord(vmDeployment);
+    }
+
+    public void updateVm(VMDeployment before, VMDeployment after, String instanceId) {
+        String oldName = before.getConfigValue(VMDeployer.VM_NAME);
+        String newName = after.getConfigValue(VMDeployer.VM_NAME);
+
+        String regionStr = getAwsRegion(after);
+
+        AmazonEC2 amazonEC2 = awsClientService.getAmazonEC2(RegionUtils.getRegion(regionStr));
+
+        createTags(instanceId, after, amazonEC2);
+
+        log.info("Obtaining information for AWS instance " + instanceId + "(" + newName + ")");
+        DescribeInstancesResult result =
+                amazonEC2.describeInstances(new DescribeInstancesRequest().withInstanceIds(instanceId));
+        Instance instance = result.getReservations().get(0).getInstances().get(0);
+
+        // Maybe need to set shutdown behavior to "stop" if it is "terminate"
+
+        String newInstanceType = getAwsInstanceType(after);
+        boolean needUpdateInstanceType = !StringUtils.equals(instance.getInstanceType(), newInstanceType);
+        boolean needResizeStorage = before.getVirtualMachineTemplate().getStorage() != after.getVirtualMachineTemplate().getStorage();
+        if (needUpdateInstanceType || needResizeStorage) {
+            log.info("Stopping AWS instance " + instanceId + "(" + newName + ")");
+            StopInstancesRequest stopInstancesRequest = new StopInstancesRequest().withInstanceIds(instanceId);
+            amazonEC2.stopInstances(stopInstancesRequest);
+
+            Callable<DescribeInstancesResult> poll =
+                    () -> amazonEC2.describeInstances(new DescribeInstancesRequest().withInstanceIds(instanceId));
+            Predicate<DescribeInstancesResult> check =
+                    (stopResult) -> "stopped".equals(stopResult.getReservations().get(0).getInstances().get(0).getState().getName());
+            synchronousPoller.poll(poll, check, 1, 600, "wait for instance " + instanceId + " to stop.");
+        }
+
+        if (needUpdateInstanceType) {
+            log.info("Changing instance type of AWS instance " + instanceId + "(" + newName + ") to " + newInstanceType);
+            ModifyInstanceAttributeRequest modifyInstanceAttributeRequest =
+                    new ModifyInstanceAttributeRequest().withInstanceId(instanceId).withInstanceType(newInstanceType);
+            amazonEC2.modifyInstanceAttribute(modifyInstanceAttributeRequest);
+        }
+
+        if (needResizeStorage) {
+            log.info("Resizing root volume of AWS instance " + instanceId + "(" + newName + ")");
+            InstanceBlockDeviceMapping blockDeviceMapping = instance.getBlockDeviceMappings().get(0);
+            String volumeId = blockDeviceMapping.getEbs().getVolumeId();
+            log.info("Creating snapshot of AWS volume " + volumeId + " attached to instance " + instanceId + "(" + newName + ")");
+            CreateSnapshotRequest createSnapshotRequest = new CreateSnapshotRequest(volumeId, "Resize instance " + instanceId);
+            CreateSnapshotResult createSnapshotResult = amazonEC2.createSnapshot(createSnapshotRequest);
+            String snapshotId = createSnapshotResult.getSnapshot().getSnapshotId();
+
+            Callable<DescribeSnapshotsResult> poll =
+                    () -> amazonEC2.describeSnapshots(new DescribeSnapshotsRequest().withSnapshotIds(snapshotId));
+            Predicate<DescribeSnapshotsResult> check =
+                    (snapshotResult) -> "completed".equals(snapshotResult.getSnapshots().get(0).getState());
+            synchronousPoller.poll(poll, check, 1, 600, "wait for snapshot " + snapshotId + " to be completed.");
+
+            DescribeVolumesRequest describeVolumesRequest = new DescribeVolumesRequest().withVolumeIds(volumeId);
+            DescribeVolumesResult describeVolumesResult = amazonEC2.describeVolumes(describeVolumesRequest);
+            String availabilityZone = describeVolumesResult.getVolumes().get(0).getAvailabilityZone();
+
+            log.info("Creating new volume " + volumeId + " in availability zone " + availabilityZone + " from snapshot " + snapshotId);
+            CreateVolumeRequest createVolumeRequest =
+                    new CreateVolumeRequest(snapshotId, availabilityZone).withSize(after.getVirtualMachineTemplate().getStorage());
+            CreateVolumeResult createVolumeResult = amazonEC2.createVolume(createVolumeRequest);
+            String newVolumeId = createVolumeResult.getVolume().getVolumeId();
+
+            log.info("New volume " + newVolumeId + " was created from snapshot " + snapshotId);
+
+            Callable<DescribeVolumesResult> pollVol =
+                    () -> amazonEC2.describeVolumes(new DescribeVolumesRequest().withVolumeIds(newVolumeId));
+            Predicate<DescribeVolumesResult> checkVol =
+                    (volResult) -> "available".equals(volResult.getVolumes().get(0).getState());
+            synchronousPoller.poll(pollVol, checkVol, 1, 600, "wait for volume " + newVolumeId + " to become available.");
+
+            log.info("Detaching old volume " + volumeId + " from " + instanceId + "(" + newName + ")");
+            amazonEC2.detachVolume(new DetachVolumeRequest(volumeId));
+
+            log.info("Attaching new volume " + newVolumeId + " to instance " + instanceId + "(" + newName + ")");
+            AttachVolumeRequest attachVolumeRequest = new AttachVolumeRequest(newVolumeId, instanceId, blockDeviceMapping.getDeviceName());
+            amazonEC2.attachVolume(attachVolumeRequest);
+
+            log.info("Deleting old volume " + volumeId);
+            amazonEC2.deleteVolume(new DeleteVolumeRequest(volumeId));
+
+            log.info("Deleting snapshot " + snapshotId);
+            amazonEC2.deleteSnapshot(new DeleteSnapshotRequest(snapshotId));
+        }
+
+        if (needUpdateInstanceType || needResizeStorage) {
+            log.info("Starting AWS instance " + instanceId + "(" + newName + ")");
+            amazonEC2.startInstances(new StartInstancesRequest().withInstanceIds(instanceId));
+
+            Callable<DescribeInstancesResult> poll =
+                    () -> amazonEC2.describeInstances(new DescribeInstancesRequest().withInstanceIds(instanceId));
+            Predicate<DescribeInstancesResult> check =
+                    (describeResult) -> "running".equals(describeResult.getReservations().get(0).getInstances().get(0).getState().getName());
+            synchronousPoller.poll(
+                    poll, check,
+                    1, 600, 20,
+                    "wait for instance " + instanceId + " to become ready."
+            );
+        }
+
+        if (
+            !StringUtils.equals(oldName, newName) ||
+            !StringUtils.equals(getAwsHostedZone(before), getAwsHostedZone(after)) ||
+            !StringUtils.equals(getIP(before), instance.getPrivateIpAddress()) ||
+            needUpdateInstanceType
+        ) {
+            log.info("Recreate route53 record for AWS instance " + instanceId);
+            deleteDnsRecord(before);
+            createDnsRecord(instance, after);
+        }
     }
 }

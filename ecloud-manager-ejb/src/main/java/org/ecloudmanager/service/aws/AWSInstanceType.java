@@ -123,4 +123,15 @@ public enum AWSInstanceType {
                 .findFirst()
                 .orElse(D2_8XLARGE);
     }
+
+    public static AWSInstanceType get(String instanceTypeName) {
+        return Stream.of(values())
+                .filter(it -> it.getInstanceTypeName().equals(instanceTypeName))
+                .findAny()
+                .orElse(null);
+    }
+
+    public boolean isCompatible(AWSInstanceType other) {
+        return isEbs() && other.isEbs();
+    }
 }

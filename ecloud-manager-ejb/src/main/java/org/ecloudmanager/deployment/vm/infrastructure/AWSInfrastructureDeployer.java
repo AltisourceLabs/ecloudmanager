@@ -87,7 +87,7 @@ public class AWSInfrastructureDeployer extends InfrastructureDeployer {
 
     @Override
     public Action getUpdateAction(DeploymentAttempt lastAttempt, VMDeployment before, VMDeployment after) {
-        return null;
+        return awsVmActions.getUpdateVmAction(before, after);
     }
 
     private static DeploymentObject getAWSConfig(VMDeployment deployment) {
@@ -100,8 +100,26 @@ public class AWSInfrastructureDeployer extends InfrastructureDeployer {
     }
 
     @Override
-    public boolean isRecreateActionRequired(VMDeployment deployment, VMDeployment changeSet) {
-        return false;
+    public boolean isRecreateActionRequired(VMDeployment before, VMDeployment after) {
+        AWSInstanceType beforeInstanceType = AWSInstanceType.get(getAwsInstanceType(before));
+        AWSInstanceType afterInstanceType = AWSInstanceType.get(getAwsInstanceType(after));
+        if (beforeInstanceType == null || afterInstanceType == null || !afterInstanceType.isCompatible(beforeInstanceType)) {
+            return true;
+        }
+
+        if (before.getVirtualMachineTemplate().getStorage() != after.getVirtualMachineTemplate().getStorage()) {
+            if (
+                !(beforeInstanceType.isEbs() && afterInstanceType.isEbs()) ||
+                before.getVirtualMachineTemplate().getStorage() > after.getVirtualMachineTemplate().getStorage()
+            ) {
+                return true;
+            }
+        }
+
+        return !getAwsRegion(after).equals(getAwsRegion(before)) ||
+               !getAwsSubnet(after).equals(getAwsSubnet(before)) ||
+               !getAwsAmi(after).equals(getAwsAmi(before)) ||
+               !getAwsKeypair(after).equals(getAwsKeypair(before));
     }
 
     public static String getAwsRegion(VMDeployment deployment) {

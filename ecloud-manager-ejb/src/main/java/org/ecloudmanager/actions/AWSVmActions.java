@@ -88,13 +88,12 @@ public class AWSVmActions {
             }, vmDeployment);
     }
 
-//    public Action getUpdateVmAction(VMDeployment vmDeployment) {
-//        return Action.single("Update VM", () -> {
-//            String vmId = InfrastructureDeployer.getVmId(vmDeployment);
-//            vmService.updateHardwareConfiguration(vmId, vmDeployment);
-//            vmService.updateVmNameAndLayout(vmId, vmDeployment);
-//        }, vmDeployment);
-//    }
+    public Action getUpdateVmAction(VMDeployment before, VMDeployment after) {
+        return Action.single("Update VM", () -> {
+            String vmId = InfrastructureDeployer.getVmId(before);
+            vmService.updateVm(before, after, vmId);
+        }, after);
+    }
 
 
     private void clearVmConstraints(VMDeployment vmDeployment) {
