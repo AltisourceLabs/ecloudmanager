@@ -48,12 +48,11 @@ public class ApplicationTemplate extends MongoObject implements Template<Applica
     private String name;
     private String description;
     private List<Link> links = new ArrayList<>();
+    private List<Template> children = new ArrayList<>();
 
     public List<Template> getChildren() {
         return children;
     }
-
-    private List<Template> children = new ArrayList<>();
 
     public ApplicationTemplate() {
     }

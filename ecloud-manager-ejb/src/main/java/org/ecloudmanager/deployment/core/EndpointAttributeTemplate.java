@@ -26,6 +26,39 @@ package org.ecloudmanager.deployment.core;
 
 public class EndpointAttributeTemplate {
     private String name;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
+    }
+
+    public boolean is_final() {
+        return _final;
+    }
+
+    public void set_final(boolean _final) {
+        this._final = _final;
+    }
+
     private String description;
     private String value;
     private boolean _final;

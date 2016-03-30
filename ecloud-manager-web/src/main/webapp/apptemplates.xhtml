@@ -33,8 +33,10 @@
             <h:panelGroup>
 
                 <p:confirmDialog id="confirm" global="true" showEffect="fade" hideEffect="fade">
-                    <p:commandButton value="Yes" type="button" styleClass="ui-confirmdialog-yes" icon="ui-icon-check"/>
-                    <p:commandButton value="No" type="button" styleClass="ui-confirmdialog-no" icon="ui-icon-close"/>
+                    <h:form id="yes_no">
+                        <p:commandButton id="yes" value="Yes" type="button" styleClass="ui-confirmdialog-yes" icon="ui-icon-check"/>
+                        <p:commandButton id="no" value="No" type="button" styleClass="ui-confirmdialog-no" icon="ui-icon-close"/>
+                    </h:form>
                 </p:confirmDialog>
                 <h:form styleClass="contentForm" style="height: 90%">
                     <p:dataTable id="templates" var="appTemplate" value="#{applicationTemplateController.appTemplates}"

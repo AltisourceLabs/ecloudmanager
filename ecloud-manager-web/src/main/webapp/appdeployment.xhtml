@@ -126,8 +126,10 @@
                     <p:poll interval="5" update="deployButton, undeployButton"/>
                 </h:form>
                 <p:dialog id="dlg1" header="Generated JSON" widgetVar="dlg1" minHeight="40">
-                    <pe:codeMirror id="codeMirror" mode="application/json" smartIndent="true"
-                                   value="#{applicationDeploymentController.jsonString}" lineNumbers="true"/>
+                    <h:form id="cm">
+                        <pe:codeMirror id="codeMirror" mode="application/json" smartIndent="true"
+                                       value="#{applicationDeploymentController.jsonString}" lineNumbers="true"/>
+                    </h:form>
                 </p:dialog>
             </h:panelGroup>
             <p:growl id="messages" sticky="true" showDetail="true"/>

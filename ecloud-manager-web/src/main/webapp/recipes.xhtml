@@ -27,6 +27,7 @@
                 xmlns:f="http://java.sun.com/jsf/core"
                 xmlns:h="http://java.sun.com/jsf/html"
                 xmlns:p="http://primefaces.org/ui"
+                xmlns:components="http://java.sun.com/jsf/composite/components"
                 template="/WEB-INF/templates/default.xhtml">
     <ui:define name="content">
         <p:outputPanel id="out">
@@ -46,7 +47,7 @@
                                 <p:toolbar id="toolbar">
                                     <f:facet name="left">
                                         <p:commandButton id="new" icon="ui-icon-plusthick" update=":recipes"
-                                                         disabled="#{recipesController.changed}">
+                                                         disabled="#{recipeController.changed}">
                                             <p:collector value="#{recipesController.newRecipe}"
                                                          addTo="#{recipesController.recipes}" unique="true"/>
                                         </p:commandButton>
@@ -54,25 +55,25 @@
                                         <p:commandButton id="delete" title="Delete" icon="ui-icon-minusthick"
                                                          update=":recipes"
                                                          action="#{recipesController.deleteSelected()}"
-                                                         disabled="#{recipesController.selected == null}">
+                                                         disabled="#{recipeController.value == null}">
                                             <p:confirm header="Confirmation" message="Are you sure?"
                                                        icon="ui-icon-alert"/>
-                                            <p:collector value="#{recipesController.selected}"
+                                            <p:collector value="#{recipeController.value}"
                                                          removeFrom="#{recipesController.recipes}" unique="true"/>
                                         </p:commandButton>
                                         <p:commandButton id="copy" title="Copy" icon="ui-icon-copy" update=":recipes"
-                                                         disabled="#{recipesController.selected == null}"
+                                                         disabled="#{recipeController.value == null}"
                                         >
-                                            <p:collector value="#{recipesController.createCopy()}"
+                                            <p:collector value="#{recipeController.createCopy()}"
                                                          addTo="#{recipesController.recipes}" unique="true"/>
                                         </p:commandButton>
                                     </f:facet>
 
 
                                 </p:toolbar>
-                                <p:dataTable disabledSelection="#{recipesController.changed}" id="table" var="recipe"
+                                <p:dataTable disabledSelection="#{recipeController.changed}" id="table" var="recipe"
                                              value="#{recipesController.recipes}" selectionMode="single"
-                                             selection="#{recipesController.selected}" rowKey="#{recipe.id}">
+                                             selection="#{recipeController.value}" rowKey="#{recipe.id}">
                                     <p:ajax event="rowSelect" listener="#{recipesController.onRowSelect}"
                                             update=":recipes"/>
                                     <p:ajax event="rowUnselect" listener="#{recipesController.onRowUnselect}"
@@ -87,117 +88,13 @@
                         </p:layoutUnit>
 
                         <p:layoutUnit id="center" position="center">
-                            <p:outputPanel id="details" rendered="#{recipesController.selected != null}">
+                            <p:outputPanel id="details" rendered="#{recipeController.value != null}">
                                 <h:form id="recipe">
-                                    <p:ajax disabled="#{recipesController.changed}" event="keyup"
+                                    <p:ajax disabled="#{recipeController.changed}" event="keyup"
                                             update=":recipes:recipe:recipe_buttons"
-                                            listener="#{recipesController.changedEvent}"
+                                            listener="#{recipeController.changedEvent}"
                                     />
-                                    <p:panelGrid id="panelgrid_recipe" columns="3" style="margin-bottom:10px"
-                                                 styleClass="ui-panelgrid-blank" cellpadding="5">
-                                        <p:outputLabel id="label_id" for="id" value="Id:"/>
-                                        <p:inputText id="id" value="#{recipesController.selected.id}" required="true">
-                                            <p:ajax disabled="#{recipesController.changed}" event="keyup"
-                                                    update=":recipes:recipe:recipe_buttons"
-                                                    listener="#{recipesController.changedEvent}"
-                                            />
-                                            <f:validator validatorId="recipeIdValidator"/>
-                                            <f:attribute name="oldId" value="#{recipesController.selected.oldId}"/>
-                                        </p:inputText>
-                                        <p:message id="message_id" for="id"/>
-                                        <p:outputLabel id="label_description" for="input_description"
-                                                       value="Description:"/>
-                                        <p:inputTextarea id="input_description" rows="1" cols="33"
-                                                         value="#{recipesController.selected.description}">
-                                            <p:ajax disabled="#{recipesController.changed}" event="keyup"
-                                                    update=":recipes:recipe:recipe_buttons"
-                                                    listener="#{recipesController.changedEvent}"
-                                            />
-                                        </p:inputTextarea>
-                                        <p:message id="message_description" for="input_description"/>
-                                        <p:outputLabel id="label_version" for="input_version" value="Version:"/>
-                                        <p:inputText id="input_version" value="#{recipesController.selected.version}">
-                                            <p:ajax disabled="#{recipesController.changed}" event="keyup"
-                                                    update=":recipes:recipe:recipe_buttons"
-                                                    listener="#{recipesController.changedEvent}"
-                                            />
-                                            <f:validateRegex
-                                                    pattern="(&lt;|&gt;|=|&lt;=|&gt;=|~=) ([0-9]*).([0-9]+)(.[0-9]*)?"/>
-                                        </p:inputText>
-                                        <p:message id="message_version" for="input_version"/>
-
-                                        <p:outputLabel id="label_produced" for="input_produced"
-                                                       value="Endpoints"/>
-                                        <p:inputTextarea id="input_produced" rows="1" cols="33"
-                                                         value="#{recipesController.selected.endpoints}"
-                                                         converter="stringListConverter">
-                                            <p:ajax disabled="#{recipesController.changed}" event="keyup"
-                                                    update=":recipes:recipe:recipe_buttons"
-                                                    listener="#{recipesController.changedEvent}"
-                                            />
-                                        </p:inputTextarea>
-                                        <p:message id="message_produced" for="input_produced"/>
-
-                                    </p:panelGrid>
-                                    <p:panelGrid id="panelgrid_attributes" columns="1" style="margin-bottom:10px"
-                                                 styleClass="ui-panelgrid-blank" cellpadding="5">
-                                        <p:outputPanel id="attr_panel">
-                                            <p:toolbar id="toolbar_attr">
-                                                <f:facet name="left">
-                                                    <p:commandButton id="new_attr" icon="ui-icon-plusthick"
-                                                                     update="dlg_edit"
-                                                                     disabled="#{recipesController.selected == null}"
-                                                                     oncomplete="PF('dlg_edit').show()">
-                                                        <p:collector value="#{recipesController.newChefAttribute}"
-                                                                     addTo="#{recipesController.selected.attributes}"
-                                                                     unique="true"/>
-                                                    </p:commandButton>
-
-                                            <span class="ui-separator">
-                                                    <span class="ui-icon ui-icon-grip-dotted-vertical"/>
-                                                <!--p:outputLabel value="Chef Attributes" /-->
-                                            </span>
-                                                </f:facet>
-
-                                            </p:toolbar>
-
-                                            <p:dataTable id="table_attributes" var="attribute"
-                                                         value="#{recipesController.selected.attributes}"
-                                                         rowKey="#{attribute.name}">
-                                                <p:column id="column_key" width="30%" headerText="Name">
-                                                    <h:outputText value="#{attribute.name}"/>
-                                                </p:column>
-                                                <p:column id="column_value" headerText="Value">
-                                                    <h:outputText value="#{attribute.value}"/>
-                                                </p:column>
-                                                <p:column id="column_env" width="15%" headerText="Environment">
-                                                    <h:outputText
-                                                            value="#{attribute.environmentAttribute ? (attribute.environmentDefaultAttribute ? 'Default' : 'Override') : 'No'}"/>
-                                                </p:column>
-                                                <p:column id="column_node" width="5%" headerText="Node">
-                                                    <h:outputText value="#{attribute.nodeAttribute ? 'Yes' : 'No'}"/>
-                                                </p:column>
-                                                <p:column id="column_buttons" style="width:64px;text-align: center">
-                                                    <p:commandButton id="btn_attr_edit" update="dlg_edit"
-                                                                     action="#{recipesController.setSelectedAttribute(attribute)}"
-                                                                     oncomplete="PF('dlg_edit').show()"
-                                                                     icon="ui-icon-search" title="View">
-                                                    </p:commandButton>
-                                                    <p:commandButton id="delete_attr" title="Delete"
-                                                                     icon="ui-icon-minusthick" update=":recipes"
-                                                                     action="#{recipesController.deleteSelectedAttribute()}"
-                                                                     disabled="#{recipesController.selected == null}">
-                                                        <p:confirm header="Confirmation" message="Are you sure?"
-                                                                   icon="ui-icon-alert"/>
-                                                        <f:setPropertyActionListener value="#{attribute}"
-                                                                                     target="#{recipesController.selectedAttribute}"/>
-                                                    </p:commandButton>
-                                                </p:column>
-                                            </p:dataTable>
-
-                                        </p:outputPanel>
-
-                                    </p:panelGrid>
+                                    <components:recipe value="#{recipeController.value}" id="recipe"/>
                                     <p:panelGrid id="recipe_buttons" columns="2" style="margin-bottom:10px"
                                                  styleClass="ui-panelgrid-blank" cellpadding="5">
                                         <p:commandButton id="button_save" value="save"
@@ -215,57 +112,9 @@
 
                 </h:form>
             </h:panelGroup>
-            <p:dialog header="Edit attribute" widgetVar="dlg_edit" closeOnEscape="true" height="600"
-                      width="900" id="dlg_edit">
-                <p:ajax event="close" listener="#{recipesController.handleClose}"/>
-
-
-                <p:outputPanel id="attrDetail" style="text-align:center;">
-                    <h:form id="attr_edit" style="width: 95%;height: 95%">
-                        <p:panelGrid id="panel_attr_details" columns="3" style="margin-bottom:10px"
-                                     styleClass="ui-panelgrid-blank" cellpadding="5"
-                                     rendered="#{not empty recipesController.selectedAttribute}">
-
-                            <p:outputLabel id="label_op_name" for="op_key" value="Name:"/>
-                            <p:inputText id="op_key"
-                                         value="#{recipesController.selectedAttribute.name}">
-                            </p:inputText>
-                            <p:message id="message_op_key" for="op_key"/>
-                            <p:outputLabel id="label_op_value" for="op_value" value="Value:"/>
-                            <p:inputTextarea id="op_value"
-                                             value="#{recipesController.selectedAttribute.value}"
-                                             cols="100">
-
-                            </p:inputTextarea>
-                            <p:message id="message_op_value" for="op_value"/>
-
-                            <p:outputLabel id="label_env" for="input_env" value="Environment:"/>
-                            <p:selectOneButton id="input_env"
-                                               value="#{recipesController.editAttributeEnv}">
-                                <f:selectItem itemLabel="Override" itemValue="Override"/>
-                                <f:selectItem itemLabel="Default" itemValue="Default"/>
-                                <f:selectItem itemLabel="None" itemValue="No"/>
-                            </p:selectOneButton>
-                            <p:message id="message_env" for="input_env"/>
-
-                            <p:outputLabel id="label_node" for="input_node" value="Node:"/>
-                            <p:selectBooleanCheckbox id="input_node"
-                                                     value="#{recipesController.selectedAttribute.nodeAttribute}">
-                                <p:ajax disabled="#{recipesController.changed}" event="keyup"
-                                        update=":recipes:recipe:recipe_buttons"
-                                        listener="#{recipesController.changedEvent}"
-                                />
-                            </p:selectBooleanCheckbox>
-                            <p:message id="message_node" for="input_node"/>
-                        </p:panelGrid>
-                        <p:commandButton value="Save" id="btnAll" ajax="false" process="@this"
-                                         update=":recipes:recipe:table_attributes"
-                                         actionListener="#{recipesController.save}"/>
-
-                    </h:form>
-                </p:outputPanel>
-            </p:dialog>
 
         </p:outputPanel>
+
+
     </ui:define>
 </ui:composition>

@@ -47,7 +47,8 @@
           </div>
       </div>
       <div id="content">
-         <p:menubar styleClass="menubar">
+          <h:form id="menu_form">
+         <p:menubar styleClass="menubar" id="menubar">
             <p:menuitem value="Application Templates" outcome="apptemplates"/>
             <p:menuitem value="VM Templates" outcome="vmtemplates"/>
             <p:menuitem value="Recipes" outcome="recipes"/>
@@ -58,6 +59,7 @@
                  <p:menuitem value="AWS Configuration" outcome="awsConfiguration"/>
              </p:submenu>
          </p:menubar>
+          </h:form>
          <ui:insert name="content">
                     [Template content will be inserted here]
          </ui:insert>

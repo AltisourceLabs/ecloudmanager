@@ -31,7 +31,7 @@ public class EndpointTemplate {
     private String description;
     private List<EndpointAttributeTemplate> attributes;
 
-    private EndpointTemplate() {
+    public EndpointTemplate() {
     }
 
     public EndpointTemplate(String name) {

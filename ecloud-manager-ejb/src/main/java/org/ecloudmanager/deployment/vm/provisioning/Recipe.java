@@ -44,7 +44,7 @@ public class Recipe extends DomainObject implements App, Persistable<String> {
     private String version = "= 0.1.0";
     @Transient
     private String oldId = null;
-    private List<EndpointTemplate> endpoints = new LinkedList<>();
+    private List<EndpointTemplate> endpoints = new ArrayList<>();
 
     public Recipe() {
     }

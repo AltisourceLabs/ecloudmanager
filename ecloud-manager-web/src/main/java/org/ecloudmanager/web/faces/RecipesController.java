@@ -42,39 +42,18 @@ import java.util.List;
 
 @Controller
 public class RecipesController extends FacesSupport implements Serializable {
-    public final static String NEW_RECIPE_ID = "(new)";
-    private static final String ENV_DEFAULT = "Default";
-    private static final String ENV_OVERRIDE = "Override";
-    private static final String ENV_NO = "No";
     private static final long serialVersionUID = -7592006943742318320L;
-    private Recipe selected;
-    private String editAttributeEnv;
-    private ChefAttribute selectedAttribute;
+    public final static String NEW_RECIPE_ID = "(new)";
     @Inject
     private transient RecipeRepository recipeRepository;
     @Inject
     private transient RecipeService recipeService;
     @Inject
     private transient Cloner cloner;
-
+    @Inject
+    private transient RecipeController recipeController;
 
     private List<Recipe> recipes;
-    private boolean changed = false;
-
-    public ChefAttribute getSelectedAttribute() {
-        return selectedAttribute;
-    }
-
-    public void setSelectedAttribute(ChefAttribute selectedAttribute) {
-        this.selectedAttribute = selectedAttribute;
-    }
-
-    public ChefAttribute getEditAttribute() {
-        if (selectedAttribute != null) {
-            return selectedAttribute;
-        }
-        return new ChefAttribute();
-    }
 
     @PostConstruct
     private void init() {
@@ -90,41 +69,30 @@ public class RecipesController extends FacesSupport implements Serializable {
         return recipes;
     }
 
-    public Recipe getSelected() {
-        return selected;
-    }
-
-    public void setSelected(Recipe selected) {
-        if (this.selected != selected) {
-            this.selected = selected;
-            changed = false;
-            this.selectedAttribute = null;
-        }
-    }
-
     public void save() {
-        changed = false;
-        if (selected == null) {
+        recipeController.setChanged(false);
+        Recipe value = recipeController.getValue();
+        if (value == null) {
             return;
         }
-        if (selected.isNew()) {
-            recipeService.save(selected);
+        if (value.isNew()) {
+            recipeService.save(value);
         } else {
-            recipeService.update(selected);
+            recipeService.update(value);
         }
     }
 
     public void cancel() {
-        if (selected.isNew()) {
-            recipes.remove(selected);
-            selected = null;
+        Recipe value = recipeController.getValue();
+        if (value.isNew()) {
+            recipes.remove(value);
         } else {
-            Recipe reloaded = recipeRepository.get(selected.getOldId());
-            int idx = recipes.indexOf(selected);
+            Recipe reloaded = recipeRepository.get(value.getOldId());
+            int idx = recipes.indexOf(value);
             recipes.set(idx, reloaded);
-            selected = null;
         }
-        changed = false;
+        recipeController.setValue(null);
+        recipeController.setChanged(false);
     }
 
     public void onRowSelect(SelectEvent event) {
@@ -143,76 +111,20 @@ public class RecipesController extends FacesSupport implements Serializable {
 
     }
 
-    public boolean isChanged() {
-        return changed;
-    }
-
-    public void changedEvent() {
-        this.changed = true;
-    }
 
     public Recipe getNewRecipe() {
-        selected = new Recipe(NEW_RECIPE_ID);
-        changed = true;
-        return selected;
-    }
-
-    public ChefAttribute getNewChefAttribute() {
-        selectedAttribute = new ChefAttribute();
-        selectedAttribute.setName("(new)");
-        changed = true;
-        return selectedAttribute;
+        recipeController.setValue(new Recipe(NEW_RECIPE_ID));
+        recipeController.setChanged(true);
+        return recipeController.getValue();
     }
 
     public void deleteSelected() {
-        if (selected != null) {
-            recipeService.remove(selected);
+        if (recipeController.getValue() != null) {
+            recipeService.remove(recipeController.getValue());
         }
-        selected = null;
+        recipeController.setValue(null);
     }
 
-    public void deleteSelectedAttribute() {
-        if (selectedAttribute != null && selected != null) {
-            selected.getAttributes().remove(selectedAttribute);
-        }
-        selectedAttribute = null;
-    }
-
-    public Recipe createCopy() {
-        if (selected == null) {
-            return null;
-        }
-        Recipe r = cloner.deepClone(selected);
-        r.setId(r.getId() + "[1]"); //FIXME
-        selected = r;
-        changed = true;
-        return r;
-    }
-
-    public String getEditAttributeEnv() {
-        if (getEditAttribute().isEnvironmentAttribute()) {
-            if (getEditAttribute().isEnvironmentDefaultAttribute()) {
-                return ENV_DEFAULT;
-            } else {
-                return ENV_OVERRIDE;
-            }
-        } else {
-            return ENV_NO;
-        }
-    }
-
-    public void setEditAttributeEnv(String editAttributeEnv) {
-        if (ENV_NO.equals(editAttributeEnv)) {
-            selectedAttribute.setEnvironmentAttribute(false);
-        } else if (ENV_DEFAULT.equals(editAttributeEnv)) {
-            selectedAttribute.setEnvironmentAttribute(true);
-            selectedAttribute.setEnvironmentDefaultAttribute(true);
-        } else {
-            selectedAttribute.setEnvironmentAttribute(true);
-            selectedAttribute.setEnvironmentDefaultAttribute(false);
-
-        }
-    }
 
     public void handleClose(CloseEvent event) {
         event.getSource();
