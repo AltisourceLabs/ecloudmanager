@@ -25,6 +25,7 @@
 package org.ecloudmanager.deployment.vm.infrastructure;
 
 import org.ecloudmanager.actions.AWSVmActions;
+import org.ecloudmanager.deployment.core.Config;
 import org.ecloudmanager.deployment.core.ConstraintField;
 import org.ecloudmanager.deployment.core.DeploymentConstraint;
 import org.ecloudmanager.deployment.core.DeploymentObject;
@@ -55,9 +56,27 @@ public class AWSInfrastructureDeployer extends InfrastructureDeployer {
     @Override
     public void specifyConstraints(VMDeployment vmDeployment) {
         DeploymentConstraint constraint = getAWSConfig(vmDeployment);
-        constraint.addField(AWS_REGION, "AWS Region");
-        constraint.addField(AWS_SUBNET, "AWS Subnet");
-        constraint.addField(AWS_AMI, "AWS AMI");
+        constraint.addField(
+                ConstraintField.builder()
+                        .name(AWS_REGION)
+                        .description("AWS Region")
+                        .suggestionsProvider(AWSSuggestionsProviders.createRegionSuggestionsProvider())
+                        .build()
+            );
+        constraint.addField(
+                ConstraintField.builder()
+                        .name(AWS_SUBNET)
+                        .description("AWS Subnet")
+                        .suggestionsProvider(AWSSuggestionsProviders.createSubnetSuggestionsProvider())
+                        .build()
+        );
+        constraint.addField(
+                ConstraintField.builder()
+                        .name(AWS_AMI)
+                        .description("AWS AMI")
+                        //.suggestionsProvider(AWSSuggestionsProviders.createAmiSuggestionsProvider())
+                        .build()
+        );
         VirtualMachineTemplate vmTemplate = vmDeployment.getVirtualMachineTemplate();
         AWSInstanceType defaultInstanceType =
                 AWSInstanceType.get(vmTemplate.getProcessorCount(), vmTemplate.getMemory());
@@ -65,14 +84,45 @@ public class AWSInfrastructureDeployer extends InfrastructureDeployer {
                 .name(AWS_INSTANCE_TYPE)
                 .description("AWS Instance Type")
                 .defaultValue(defaultInstanceType.getInstanceTypeName())
+                .suggestionsProvider(AWSSuggestionsProviders.createInstanceTypeSuggestionsProvider())
                 .build()
             );
-        constraint.addField(AWS_KEYPAIR, "AWS Keypair Name");
-        constraint.addField(AWS_HOSTED_ZONE, "AWS Hosted Zone Name");
-        constraint.addField(GROUP_AWS_TAG, "Group AWS Tag");
-        constraint.addField(COST_CENTER_AWS_TAG, "Cost Center AWS Tag");
+        constraint.addField(
+                ConstraintField.builder()
+                        .name(AWS_KEYPAIR)
+                        .description("AWS Keypair Name")
+                        .suggestionsProvider(AWSSuggestionsProviders.createKeypairSuggestionsProvider())
+                        .build()
+        );
+        constraint.addField(
+                ConstraintField.builder()
+                        .name(AWS_HOSTED_ZONE)
+                        .description("AWS Hosted Zone Name")
+                        .suggestionsProvider(AWSSuggestionsProviders.createHostedZoneSuggestionsProvider())
+                        .build()
+        );
+        constraint.addField(
+                ConstraintField.builder()
+                        .name(GROUP_AWS_TAG)
+                        .description("Group AWS Tag")
+                        .suggestionsProvider(AWSSuggestionsProviders.createTagSuggestionsProvider("Group"))
+                        .build()
+        );
+        constraint.addField(
+                ConstraintField.builder()
+                        .name(COST_CENTER_AWS_TAG)
+                        .description("Cost Center AWS Tag")
+                        .suggestionsProvider(AWSSuggestionsProviders.createTagSuggestionsProvider("Cost Center"))
+                        .build()
+        );
+        constraint.addField(
+                ConstraintField.builder()
+                        .name(AWS_SECURITY_GROUP)
+                        .description("AWS Security Group Name")
+                        .suggestionsProvider(AWSSuggestionsProviders.createSecurityGroupSuggestionsProvider())
+                        .build()
+        );
         constraint.addOptionalField(AWS_TAGS, "AWS Tags");
-        constraint.addOptionalField(AWS_SECURITY_GROUP, "AWS Security Group Name");
     }
 
     @Override
@@ -120,6 +170,10 @@ public class AWSInfrastructureDeployer extends InfrastructureDeployer {
                !getAwsSubnet(after).equals(getAwsSubnet(before)) ||
                !getAwsAmi(after).equals(getAwsAmi(before)) ||
                !getAwsKeypair(after).equals(getAwsKeypair(before));
+    }
+
+    public static String getAwsRegion(Config config) {
+        return config.getConfigValue(AWS_REGION);
     }
 
     public static String getAwsRegion(VMDeployment deployment) {
