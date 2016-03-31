@@ -31,16 +31,15 @@
                 template="/WEB-INF/templates/default.xhtml">
     <ui:define name="content">
         <p:outputPanel id="out">
-            <p:confirmDialog id="confirm" global="true" showEffect="fade" hideEffect="fade">
-                <h:form id="yes_no">
-                    <p:commandButton id="yes" value="Yes" type="button" styleClass="ui-confirmdialog-yes"
-                                     icon="ui-icon-check"/>
-                    <p:commandButton id="no" value="No" type="button" styleClass="ui-confirmdialog-no"
-                                     icon="ui-icon-close"/>
-                </h:form>
-            </p:confirmDialog>
             <h:panelGroup>
                 <h:form id="recipes" styleClass="contentForm">
+                    <p:confirmDialog id="confirm" global="true" showEffect="fade" hideEffect="fade">
+                        <p:commandButton id="yes" value="Yes" type="button" styleClass="ui-confirmdialog-yes"
+                                         icon="ui-icon-check"/>
+                        <p:commandButton id="no" value="No" type="button" styleClass="ui-confirmdialog-no"
+                                         icon="ui-icon-close"/>
+                    </p:confirmDialog>
+
                     <p:layout id="layout" style="min-width:400px;min-height:600px;">
                         <p:layoutUnit id="west" position="west" size="200">
                             <p:outputPanel id="list">

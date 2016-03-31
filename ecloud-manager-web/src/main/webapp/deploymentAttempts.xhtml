@@ -31,12 +31,12 @@
     <ui:define name="content">
         <p:outputPanel id="out">
             <h:panelGroup>
-                <p:confirmDialog global="true" showEffect="fade" hideEffect="fade">
-                    <p:commandButton value="Yes" type="button" styleClass="ui-confirmdialog-yes" icon="ui-icon-check"/>
-                    <p:commandButton value="No" type="button" styleClass="ui-confirmdialog-no" icon="ui-icon-close"/>
-                </p:confirmDialog>
-
                 <h:form styleClass="contentForm" style="height: 90%">
+                    <p:confirmDialog global="true" showEffect="fade" hideEffect="fade">
+                        <p:commandButton value="Yes" type="button" styleClass="ui-confirmdialog-yes" icon="ui-icon-check"/>
+                        <p:commandButton value="No" type="button" styleClass="ui-confirmdialog-no" icon="ui-icon-close"/>
+                    </p:confirmDialog>
+
                     <p:dataTable id="deploymentAttempts" var="deploymentAttempt" value="#{deploymentAttemptsController.deploymentAttempts}"
                                  paginator="true" rows="10" resizableColumns="true" liveResize="true">
                         <f:facet name="header">

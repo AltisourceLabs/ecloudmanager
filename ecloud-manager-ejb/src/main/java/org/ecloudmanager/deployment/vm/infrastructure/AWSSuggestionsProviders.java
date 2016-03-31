@@ -25,6 +25,7 @@
 package org.ecloudmanager.deployment.vm.infrastructure;
 
 import org.ecloudmanager.deployment.core.Config;
+import org.ecloudmanager.deployment.core.ConstraintFieldSuggestion;
 import org.ecloudmanager.deployment.core.ConstraintFieldSuggestionsProvider;
 import org.ecloudmanager.deployment.core.DeploymentConstraint;
 import org.ecloudmanager.service.aws.AWSVmFieldsCompletionService;
@@ -32,12 +33,14 @@ import org.ecloudmanager.service.aws.AWSVmFieldsCompletionService;
 import javax.enterprise.inject.spi.CDI;
 import java.util.List;
 
+import static org.ecloudmanager.deployment.core.ConstraintFieldSuggestion.*;
+
 public class AWSSuggestionsProviders {
     public static class RegionSuggestionsProvider implements ConstraintFieldSuggestionsProvider {
         @Override
-        public List<String> getSuggestions(DeploymentConstraint deploymentConstraint) {
+        public List<ConstraintFieldSuggestion> getSuggestions(DeploymentConstraint deploymentConstraint) {
             AWSVmFieldsCompletionService completionService = CDI.current().select(AWSVmFieldsCompletionService.class).get();
-            return completionService.getRegions();
+            return suggestionsList(completionService.getRegions());
         }
     }
 
@@ -47,7 +50,7 @@ public class AWSSuggestionsProviders {
 
     public static class SubnetSuggestionsProvider implements ConstraintFieldSuggestionsProvider {
         @Override
-        public List<String> getSuggestions(DeploymentConstraint deploymentConstraint) {
+        public List<ConstraintFieldSuggestion> getSuggestions(DeploymentConstraint deploymentConstraint) {
             AWSVmFieldsCompletionService completionService = CDI.current().select(AWSVmFieldsCompletionService.class).get();
             String region = AWSInfrastructureDeployer.getAwsRegion((Config) deploymentConstraint);
             return completionService.getSubnets(region);
@@ -60,10 +63,10 @@ public class AWSSuggestionsProviders {
 
     public static class AmiSuggestionsProvider implements ConstraintFieldSuggestionsProvider {
         @Override
-        public List<String> getSuggestions(DeploymentConstraint deploymentConstraint) {
+        public List<ConstraintFieldSuggestion> getSuggestions(DeploymentConstraint deploymentConstraint) {
             AWSVmFieldsCompletionService completionService = CDI.current().select(AWSVmFieldsCompletionService.class).get();
             String region = AWSInfrastructureDeployer.getAwsRegion((Config) deploymentConstraint);
-            return completionService.getAmis(region);
+            return suggestionsList(completionService.getAmis(region));
         }
     }
 
@@ -73,9 +76,9 @@ public class AWSSuggestionsProviders {
 
     public static class InstanceTypeSuggestionsProvider implements ConstraintFieldSuggestionsProvider {
         @Override
-        public List<String> getSuggestions(DeploymentConstraint deploymentConstraint) {
+        public List<ConstraintFieldSuggestion> getSuggestions(DeploymentConstraint deploymentConstraint) {
             AWSVmFieldsCompletionService completionService = CDI.current().select(AWSVmFieldsCompletionService.class).get();
-            return completionService.getInstanceTypes();
+            return suggestionsList(completionService.getInstanceTypes());
         }
     }
 
@@ -85,10 +88,10 @@ public class AWSSuggestionsProviders {
 
     public static class KeypairSuggestionsProvider implements ConstraintFieldSuggestionsProvider {
         @Override
-        public List<String> getSuggestions(DeploymentConstraint deploymentConstraint) {
+        public List<ConstraintFieldSuggestion> getSuggestions(DeploymentConstraint deploymentConstraint) {
             AWSVmFieldsCompletionService completionService = CDI.current().select(AWSVmFieldsCompletionService.class).get();
             String region = AWSInfrastructureDeployer.getAwsRegion((Config) deploymentConstraint);
-            return completionService.getKeypairs(region);
+            return suggestionsList(completionService.getKeypairs(region));
         }
     }
 
@@ -98,9 +101,9 @@ public class AWSSuggestionsProviders {
 
     public static class HostedZoneSuggestionsProvider implements ConstraintFieldSuggestionsProvider {
         @Override
-        public List<String> getSuggestions(DeploymentConstraint deploymentConstraint) {
+        public List<ConstraintFieldSuggestion> getSuggestions(DeploymentConstraint deploymentConstraint) {
             AWSVmFieldsCompletionService completionService = CDI.current().select(AWSVmFieldsCompletionService.class).get();
-            return completionService.getHostedZones();
+            return suggestionsList(completionService.getHostedZones());
         }
     }
 
@@ -109,17 +112,19 @@ public class AWSSuggestionsProviders {
     }
 
     public static class TagSuggestionsProvider implements ConstraintFieldSuggestionsProvider {
-        private final String key;
+        private String key;
+
+        public TagSuggestionsProvider() {}
 
         public TagSuggestionsProvider(String key) {
             this.key = key;
         }
 
         @Override
-        public List<String> getSuggestions(DeploymentConstraint deploymentConstraint) {
+        public List<ConstraintFieldSuggestion> getSuggestions(DeploymentConstraint deploymentConstraint) {
             AWSVmFieldsCompletionService completionService = CDI.current().select(AWSVmFieldsCompletionService.class).get();
             String region = AWSInfrastructureDeployer.getAwsRegion((Config) deploymentConstraint);
-            return completionService.getTagValues(region, key);
+            return suggestionsList(completionService.getTagValues(region, key));
         }
     }
 
@@ -129,7 +134,7 @@ public class AWSSuggestionsProviders {
 
     public static class SecurityGroupSuggestionsProvider implements ConstraintFieldSuggestionsProvider {
         @Override
-        public List<String> getSuggestions(DeploymentConstraint deploymentConstraint) {
+        public List<ConstraintFieldSuggestion> getSuggestions(DeploymentConstraint deploymentConstraint) {
             AWSVmFieldsCompletionService completionService = CDI.current().select(AWSVmFieldsCompletionService.class).get();
             String region = AWSInfrastructureDeployer.getAwsRegion((Config) deploymentConstraint);
             return completionService.getSecurityGroups(region);

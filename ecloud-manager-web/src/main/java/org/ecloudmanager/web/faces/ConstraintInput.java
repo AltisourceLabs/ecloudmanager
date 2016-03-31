@@ -25,6 +25,7 @@
 package org.ecloudmanager.web.faces;
 
 import org.ecloudmanager.deployment.core.ConstraintField;
+import org.ecloudmanager.deployment.core.ConstraintFieldSuggestion;
 import org.ecloudmanager.deployment.core.ConstraintValue;
 import org.ecloudmanager.deployment.core.DeploymentConstraint;
 import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironmentDeployer;
@@ -165,9 +166,9 @@ public class ConstraintInput {
         }
     }
 
-    public List<String> getSuggestions(String input) {
+    public List<ConstraintFieldSuggestion> getSuggestions(String input) {
         return field.getSuggestionsProvider().getSuggestions(deploymentConstraint).stream()
-            .filter(s -> s.startsWith(input))
+            .filter(s -> s.getLabel().contains(input))
             .collect(Collectors.toList());
     }
 }

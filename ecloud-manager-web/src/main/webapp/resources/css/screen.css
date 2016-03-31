@@ -216,6 +216,12 @@ label {
     overflow: hidden;
 }
 
+.menubarForm {
+    padding: 0;
+    font: 100%/1 "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+    border: none;
+}
+
 .menubar {
   margin-right: 20px;
 }

@@ -9,6 +9,7 @@ import com.amazonaws.services.route53.model.HostedZone;
 import com.amazonaws.services.route53.model.ListHostedZonesResult;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.Logger;
+import org.ecloudmanager.deployment.core.ConstraintFieldSuggestion;
 
 import javax.inject.Inject;
 import java.util.Collections;
@@ -28,13 +29,15 @@ public class AWSVmFieldsCompletionService {
                 .collect(Collectors.toList());
     }
 
-    public List<String> getSubnets(String region) {
+    public List<ConstraintFieldSuggestion> getSubnets(String region) {
         if (region == null) {
             return Collections.emptyList();
         }
         AmazonEC2 amazonEC2 = awsClientService.getAmazonEC2(RegionUtils.getRegion(region));
         DescribeSubnetsResult describeSubnetsResult = amazonEC2.describeSubnets();
-        return describeSubnetsResult.getSubnets().stream().map(Subnet::getSubnetId).collect(Collectors.toList());
+        return describeSubnetsResult.getSubnets().stream()
+                .map(subnet -> new ConstraintFieldSuggestion(subnet.getSubnetId() + " (" + subnet.getCidrBlock() + ")", subnet.getSubnetId()))
+                .collect(Collectors.toList());
     }
 
     public List<String> getAmis(String region) {
@@ -44,7 +47,9 @@ public class AWSVmFieldsCompletionService {
         // TODO - too many results to display
         AmazonEC2 amazonEC2 = awsClientService.getAmazonEC2(RegionUtils.getRegion(region));
         DescribeImagesResult describeImagesResult = amazonEC2.describeImages();
-        return describeImagesResult.getImages().stream().map(Image::getImageId).collect(Collectors.toList());
+        return describeImagesResult.getImages().stream()
+                .map(Image::getImageId)
+                .collect(Collectors.toList());
     }
 
     public List<String> getKeypairs(String region) {
@@ -53,17 +58,23 @@ public class AWSVmFieldsCompletionService {
         }
         AmazonEC2 amazonEC2 = awsClientService.getAmazonEC2(RegionUtils.getRegion(region));
         DescribeKeyPairsResult describeKeyPairsResult = amazonEC2.describeKeyPairs();
-        return describeKeyPairsResult.getKeyPairs().stream().map(KeyPairInfo::getKeyName).collect(Collectors.toList());
+        return describeKeyPairsResult.getKeyPairs().stream()
+                .map(KeyPairInfo::getKeyName)
+                .collect(Collectors.toList());
     }
 
     public List<String> getInstanceTypes() {
-        return Stream.of(AWSInstanceType.values()).map(AWSInstanceType::getInstanceTypeName).collect(Collectors.toList());
+        return Stream.of(AWSInstanceType.values())
+                .map(AWSInstanceType::getInstanceTypeName)
+                .collect(Collectors.toList());
     }
 
     public List<String> getHostedZones() {
         AmazonRoute53 route53Client = awsClientService.getRoute53Client();
         ListHostedZonesResult listHostedZonesResult = route53Client.listHostedZones();
-        return listHostedZonesResult.getHostedZones().stream().map(HostedZone::getName).collect(Collectors.toList());
+        return listHostedZonesResult.getHostedZones().stream()
+                .map(HostedZone::getName)
+                .collect(Collectors.toList());
     }
 
     public List<String> getTagValues(String region, String key) {
@@ -72,15 +83,20 @@ public class AWSVmFieldsCompletionService {
         }
         AmazonEC2 amazonEC2 = awsClientService.getAmazonEC2(RegionUtils.getRegion(region));
         DescribeTagsResult describeTagsResult = amazonEC2.describeTags(new DescribeTagsRequest().withFilters(new Filter("key", Lists.newArrayList(key))));
-        return describeTagsResult.getTags().stream().map(TagDescription::getValue).distinct().collect(Collectors.toList());
+        return describeTagsResult.getTags().stream()
+                .map(TagDescription::getValue)
+                .distinct()
+                .collect(Collectors.toList());
     }
 
-    public List<String> getSecurityGroups(String region) {
+    public List<ConstraintFieldSuggestion> getSecurityGroups(String region) {
         if (region == null) {
             return Collections.emptyList();
         }
         AmazonEC2 amazonEC2 = awsClientService.getAmazonEC2(RegionUtils.getRegion(region));
         DescribeSecurityGroupsResult describeSecurityGroupsResult = amazonEC2.describeSecurityGroups();
-        return describeSecurityGroupsResult.getSecurityGroups().stream().map(SecurityGroup::getGroupId).collect(Collectors.toList());
+        return describeSecurityGroupsResult.getSecurityGroups().stream()
+                .map(sg -> new ConstraintFieldSuggestion(sg.getGroupId() + " (" + sg.getGroupName() + "  " + sg.getDescription() + ")", sg.getGroupId()))
+                .collect(Collectors.toList());
     }
 }

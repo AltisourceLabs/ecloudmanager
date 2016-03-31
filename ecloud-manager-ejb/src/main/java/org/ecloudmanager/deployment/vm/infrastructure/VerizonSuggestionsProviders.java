@@ -26,6 +26,7 @@ package org.ecloudmanager.deployment.vm.infrastructure;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ecloudmanager.deployment.core.Config;
+import org.ecloudmanager.deployment.core.ConstraintFieldSuggestion;
 import org.ecloudmanager.deployment.core.ConstraintFieldSuggestionsProvider;
 import org.ecloudmanager.deployment.core.DeploymentConstraint;
 import org.ecloudmanager.service.verizon.VmFieldsCompletionService;
@@ -34,13 +35,15 @@ import javax.enterprise.inject.spi.CDI;
 import java.util.Collections;
 import java.util.List;
 
+import static org.ecloudmanager.deployment.core.ConstraintFieldSuggestion.*;
+
 public class VerizonSuggestionsProviders {
     public static class EnvironmentSuggestionsProvider implements ConstraintFieldSuggestionsProvider {
         @Override
-        public List<String> getSuggestions(DeploymentConstraint deploymentConstraint) {
+        public List<ConstraintFieldSuggestion> getSuggestions(DeploymentConstraint deploymentConstraint) {
             VmFieldsCompletionService vmFieldsCompletionService = CDI.current().select(VmFieldsCompletionService
                 .class).get();
-            return vmFieldsCompletionService.getEnvironments();
+            return suggestionsList(vmFieldsCompletionService.getEnvironments());
         }
     }
 
@@ -50,11 +53,11 @@ public class VerizonSuggestionsProviders {
 
     public static class CatalogSuggestionsProvider implements ConstraintFieldSuggestionsProvider {
         @Override
-        public List<String> getSuggestions(DeploymentConstraint deploymentConstraint) {
+        public List<ConstraintFieldSuggestion> getSuggestions(DeploymentConstraint deploymentConstraint) {
             VmFieldsCompletionService vmFieldsCompletionService = CDI.current().select(VmFieldsCompletionService
                 .class).get();
             String environment = VerizonInfrastructureDeployer.getEnvironment((Config) deploymentConstraint);
-            return vmFieldsCompletionService.getCatalogs(environment);
+            return suggestionsList(vmFieldsCompletionService.getCatalogs(environment));
         }
     }
 
@@ -64,14 +67,14 @@ public class VerizonSuggestionsProviders {
 
     public static class NetworkSuggestionsProvider implements ConstraintFieldSuggestionsProvider {
         @Override
-        public List<String> getSuggestions(DeploymentConstraint deploymentConstraint) {
+        public List<ConstraintFieldSuggestion> getSuggestions(DeploymentConstraint deploymentConstraint) {
             VmFieldsCompletionService vmFieldsCompletionService = CDI.current().select(VmFieldsCompletionService
                 .class).get();
             String environment = VerizonInfrastructureDeployer.getEnvironment((Config) deploymentConstraint);
             if (StringUtils.isEmpty(environment)) {
                 return Collections.emptyList();
             }
-            return vmFieldsCompletionService.getNetworks(environment);
+            return suggestionsList(vmFieldsCompletionService.getNetworks(environment));
         }
     }
 
@@ -81,14 +84,14 @@ public class VerizonSuggestionsProviders {
 
     public static class RowSuggestionsProvider implements ConstraintFieldSuggestionsProvider {
         @Override
-        public List<String> getSuggestions(DeploymentConstraint deploymentConstraint) {
+        public List<ConstraintFieldSuggestion> getSuggestions(DeploymentConstraint deploymentConstraint) {
             VmFieldsCompletionService vmFieldsCompletionService = CDI.current().select(VmFieldsCompletionService
                 .class).get();
             String environment = VerizonInfrastructureDeployer.getEnvironment((Config) deploymentConstraint);
             if (StringUtils.isEmpty(environment)) {
                 return Collections.emptyList();
             }
-            return vmFieldsCompletionService.getRows(environment);
+            return suggestionsList(vmFieldsCompletionService.getRows(environment));
         }
     }
 
@@ -98,7 +101,7 @@ public class VerizonSuggestionsProviders {
 
     public static class GroupSuggestionsProvider implements ConstraintFieldSuggestionsProvider {
         @Override
-        public List<String> getSuggestions(DeploymentConstraint deploymentConstraint) {
+        public List<ConstraintFieldSuggestion> getSuggestions(DeploymentConstraint deploymentConstraint) {
             VmFieldsCompletionService vmFieldsCompletionService = CDI.current().select(VmFieldsCompletionService
                 .class).get();
             String environment = VerizonInfrastructureDeployer.getEnvironment((Config) deploymentConstraint);
@@ -109,7 +112,7 @@ public class VerizonSuggestionsProviders {
             if (StringUtils.isEmpty(row)) {
                 return Collections.emptyList();
             }
-            return vmFieldsCompletionService.getGroups(environment, row);
+            return suggestionsList(vmFieldsCompletionService.getGroups(environment, row));
         }
     }
 

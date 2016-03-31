@@ -47,19 +47,19 @@
           </div>
       </div>
       <div id="content">
-          <h:form id="menu_form">
-         <p:menubar styleClass="menubar" id="menubar">
-            <p:menuitem value="Application Templates" outcome="apptemplates"/>
-            <p:menuitem value="VM Templates" outcome="vmtemplates"/>
-            <p:menuitem value="Recipes" outcome="recipes"/>
-            <p:menuitem value="Application Deployments" outcome="appdeployments"/>
-             <p:submenu label="Settings" icon="fa fa-cog" style="float: right; margin-right: 10px;">
-                 <p:menuitem value="SSH Configurations" outcome="sshConfigurations"/>
-                 <p:menuitem value="Verizon Configuration" outcome="verizonConfiguration"/>
-                 <p:menuitem value="AWS Configuration" outcome="awsConfiguration"/>
-             </p:submenu>
-         </p:menubar>
-          </h:form>
+         <h:form id="menu_form" styleClass="menubarForm">
+             <p:menubar styleClass="menubar" id="menubar">
+                <p:menuitem value="Application Templates" outcome="apptemplates"/>
+                <p:menuitem value="VM Templates" outcome="vmtemplates"/>
+                <p:menuitem value="Recipes" outcome="recipes"/>
+                <p:menuitem value="Application Deployments" outcome="appdeployments"/>
+                 <p:submenu label="Settings" icon="fa fa-cog" style="float: right; margin-right: 10px;">
+                     <p:menuitem value="SSH Configurations" outcome="sshConfigurations"/>
+                     <p:menuitem value="Verizon Configuration" outcome="verizonConfiguration"/>
+                     <p:menuitem value="AWS Configuration" outcome="awsConfiguration"/>
+                 </p:submenu>
+             </p:menubar>
+         </h:form>
          <ui:insert name="content">
                     [Template content will be inserted here]
          </ui:insert>
