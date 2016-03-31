@@ -81,7 +81,7 @@ public class AWSVmService {
 
         String securityGroup = getAwsSecurityGroup(vmDeployment);
         if (securityGroup != null) {
-            runInstancesRequest = runInstancesRequest.withSecurityGroups(securityGroup);
+            runInstancesRequest = runInstancesRequest.withSecurityGroupIds(securityGroup);
         }
 
         RunInstancesResult runInstancesResult = amazonEC2.runInstances(runInstancesRequest);
