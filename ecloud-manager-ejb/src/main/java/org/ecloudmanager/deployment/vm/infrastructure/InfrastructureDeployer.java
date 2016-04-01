@@ -28,6 +28,7 @@ import org.ecloudmanager.deployment.core.ConstraintField;
 import org.ecloudmanager.deployment.core.Deployer;
 import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.vm.VMDeployment;
+import org.jetbrains.annotations.Nullable;
 
 public abstract class InfrastructureDeployer implements Deployer<VMDeployment> {
     private static final String VM_ID = "vmId";
@@ -51,6 +52,7 @@ public abstract class InfrastructureDeployer implements Deployer<VMDeployment> {
 
     }
 
+    @Nullable
     public static String getVmId(VMDeployment deployment) {
         return deployment.getConfigValue(VM_ID);
     }

@@ -206,6 +206,10 @@ public class AWSVmService {
 
     public void deleteVm(VMDeployment vmDeployment) {
         String instanceId = InfrastructureDeployer.getVmId(vmDeployment);
+        if (instanceId == null) {
+            log.info("VM instance ID is null, nothing to delete");
+            return;
+        }
         String regionStr = getAwsRegion(vmDeployment);
 
         AmazonEC2 amazonEC2 = awsClientService.getAmazonEC2(RegionUtils.getRegion(regionStr));
