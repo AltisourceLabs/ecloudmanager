@@ -43,6 +43,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 
@@ -148,7 +149,24 @@ public class AWSVmService {
             resourceRecordSet)));
         ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest = new ChangeResourceRecordSetsRequest()
             .withHostedZoneId(hostedZone.getId()).withChangeBatch(changeBatch);
-        route53.changeResourceRecordSets(changeResourceRecordSetsRequest);
+        guardedChangeResourceRecordSets(route53, changeResourceRecordSetsRequest);
+    }
+
+    private ChangeResourceRecordSetsResult guardedChangeResourceRecordSets(
+            AmazonRoute53 route53,
+            ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest
+    ) {
+        Callable<ChangeResourceRecordSetsResult> poll =
+                () -> {
+                    try {
+                        return route53.changeResourceRecordSets(changeResourceRecordSetsRequest);
+                    } catch (PriorRequestNotCompleteException e) {
+                        log.warn("Route 53 request not completed, retrying...", e);
+                        return null;
+                    }
+                };
+        Predicate<ChangeResourceRecordSetsResult> check = Objects::nonNull;
+        return synchronousPoller.poll(poll, check, 1, 600, "wait for route53 request to be submitted");
     }
 
     private void deleteDnsRecord(VMDeployment vmDeployment) {
@@ -185,8 +203,8 @@ public class AWSVmService {
             resourceRecordSet)));
         ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest = new ChangeResourceRecordSetsRequest()
             .withHostedZoneId(hostedZone.getId()).withChangeBatch(changeBatch);
-        ChangeResourceRecordSetsResult changeResourceRecordSetsResult = route53.changeResourceRecordSets
-            (changeResourceRecordSetsRequest);
+        ChangeResourceRecordSetsResult changeResourceRecordSetsResult =
+                guardedChangeResourceRecordSets(route53, changeResourceRecordSetsRequest);
         log.info("Submitted delete recordset request " + changeResourceRecordSetsResult.getChangeInfo().toString());
     }
 
