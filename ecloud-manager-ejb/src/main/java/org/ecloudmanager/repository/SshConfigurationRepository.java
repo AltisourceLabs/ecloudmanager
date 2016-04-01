@@ -27,9 +27,11 @@ package org.ecloudmanager.repository;
 import org.ecloudmanager.domain.template.SshConfiguration;
 import org.ecloudmanager.jeecore.repository.MongoDBRepositorySupport;
 import org.ecloudmanager.jeecore.repository.Repository;
+import org.jetbrains.annotations.Nullable;
 
 @Repository
 public class SshConfigurationRepository extends MongoDBRepositorySupport<SshConfiguration> {
+    @Nullable
     public SshConfiguration find(String environment) {
         return super.find("environment", environment);
     }

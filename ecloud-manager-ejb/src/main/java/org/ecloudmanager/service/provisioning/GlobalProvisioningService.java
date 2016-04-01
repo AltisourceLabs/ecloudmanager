@@ -195,6 +195,9 @@ public class GlobalProvisioningService {
         Stack<Session> sessionsChain = new Stack<>();
 
         SshConfiguration sshConfiguration = sshConfigurationRepository.find(sshConfigurationName);
+        if (sshConfiguration == null) {
+            throw new RuntimeException("SSH configuration not found: " + sshConfigurationName);
+        }
 
         Session jumpSession1 = null;
         if (!StringUtils.isEmpty(sshConfiguration.getJumpHost1())) {
