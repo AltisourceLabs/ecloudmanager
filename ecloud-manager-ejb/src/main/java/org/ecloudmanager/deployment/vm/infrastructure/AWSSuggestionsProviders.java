@@ -137,7 +137,8 @@ public class AWSSuggestionsProviders {
         public List<ConstraintFieldSuggestion> getSuggestions(DeploymentConstraint deploymentConstraint) {
             AWSVmFieldsCompletionService completionService = CDI.current().select(AWSVmFieldsCompletionService.class).get();
             String region = AWSInfrastructureDeployer.getAwsRegion((Config) deploymentConstraint);
-            return completionService.getSecurityGroups(region);
+            String subnetId = AWSInfrastructureDeployer.getAwsSubnet((Config) deploymentConstraint);
+            return completionService.getSecurityGroups(region, subnetId);
         }
     }
 

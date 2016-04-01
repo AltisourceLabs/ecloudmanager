@@ -36,8 +36,18 @@ public class AWSVmFieldsCompletionService {
         AmazonEC2 amazonEC2 = awsClientService.getAmazonEC2(RegionUtils.getRegion(region));
         DescribeSubnetsResult describeSubnetsResult = amazonEC2.describeSubnets();
         return describeSubnetsResult.getSubnets().stream()
-                .map(subnet -> new ConstraintFieldSuggestion(subnet.getSubnetId() + " (" + subnet.getCidrBlock() + ")", subnet.getSubnetId()))
+                .map(subnet -> new ConstraintFieldSuggestion(getSubnetLabel(subnet), subnet.getSubnetId()))
                 .collect(Collectors.toList());
+    }
+
+    private String getSubnetLabel(Subnet subnet) {
+        String subnetName = subnet.getTags().stream()
+                .filter(t -> t.getKey().equals("Name"))
+                .map(Tag::getValue)
+                .findAny()
+                .orElse("");
+
+        return subnet.getSubnetId() + " (" + subnet.getCidrBlock() + " | " + subnetName + ")";
     }
 
     public List<String> getAmis(String region) {
@@ -89,14 +99,18 @@ public class AWSVmFieldsCompletionService {
                 .collect(Collectors.toList());
     }
 
-    public List<ConstraintFieldSuggestion> getSecurityGroups(String region) {
-        if (region == null) {
+    public List<ConstraintFieldSuggestion> getSecurityGroups(String region, String subnetId) {
+        if (region == null || subnetId == null) {
             return Collections.emptyList();
         }
         AmazonEC2 amazonEC2 = awsClientService.getAmazonEC2(RegionUtils.getRegion(region));
-        DescribeSecurityGroupsResult describeSecurityGroupsResult = amazonEC2.describeSecurityGroups();
+        DescribeSubnetsResult describeSubnetsResult = amazonEC2.describeSubnets(new DescribeSubnetsRequest().withSubnetIds(subnetId));
+        String vpcId = describeSubnetsResult.getSubnets().get(0).getVpcId();
+
+        DescribeSecurityGroupsRequest securityGroupsRequest = new DescribeSecurityGroupsRequest().withFilters(new Filter("vpc-id").withValues(vpcId));
+        DescribeSecurityGroupsResult describeSecurityGroupsResult = amazonEC2.describeSecurityGroups(securityGroupsRequest);
         return describeSecurityGroupsResult.getSecurityGroups().stream()
-                .map(sg -> new ConstraintFieldSuggestion(sg.getGroupId() + " (" + sg.getGroupName() + "  " + sg.getDescription() + ")", sg.getGroupId()))
+                .map(sg -> new ConstraintFieldSuggestion(sg.getGroupId() + " (" + sg.getGroupName() + " | " + sg.getDescription() + ")", sg.getGroupId()))
                 .collect(Collectors.toList());
     }
 }

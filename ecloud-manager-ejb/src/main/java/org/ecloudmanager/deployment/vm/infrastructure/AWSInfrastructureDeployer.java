@@ -184,6 +184,10 @@ public class AWSInfrastructureDeployer extends InfrastructureDeployer {
         return getAWSConfig(deployment).getConfigValue(AWS_SUBNET);
     }
 
+    public static String getAwsSubnet(Config deploymentConstraint) {
+        return deploymentConstraint.getConfigValue(AWS_SUBNET);
+    }
+
     public static String getAwsAmi(VMDeployment deployment) {
         return getAWSConfig(deployment).getConfigValue(AWS_AMI);
     }
