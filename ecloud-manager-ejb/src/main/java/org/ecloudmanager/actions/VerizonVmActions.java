@@ -116,11 +116,13 @@ public class VerizonVmActions {
                     // Remove VM id and ip address and update DB
                     InfrastructureDeployer.removeVMId(realVmDeployment);
                     InfrastructureDeployer.removeIP(realVmDeployment);
+                    InfrastructureDeployer.removeSSHConfiguration(realVmDeployment);
                     applicationDeploymentService.update(applicationDeployment);
                 });
         }
         // Remove VM id and ip address in memory, to keep it in synch, just in case...
         InfrastructureDeployer.removeVMId(vmDeployment);
         InfrastructureDeployer.removeIP(vmDeployment);
+        InfrastructureDeployer.removeSSHConfiguration(vmDeployment);
     }
 }

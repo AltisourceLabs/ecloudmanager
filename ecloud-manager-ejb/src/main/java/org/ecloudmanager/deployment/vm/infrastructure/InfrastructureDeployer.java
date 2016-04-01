@@ -94,6 +94,9 @@ public abstract class InfrastructureDeployer implements Deployer<VMDeployment> {
         deployment.removeField(VM_IP_ADDRESS);
     }
 
+    public static void removeSSHConfiguration(VMDeployment deployment) {
+        deployment.removeField(SSH_CONFIGURATION);
+    }
 
     protected abstract DeploymentObject getInfrastructureConfig(VMDeployment deployment);
 }
