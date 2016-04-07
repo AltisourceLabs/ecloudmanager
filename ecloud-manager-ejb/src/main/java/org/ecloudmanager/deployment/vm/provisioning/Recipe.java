@@ -73,6 +73,10 @@ public class Recipe extends DomainObject implements App, Persistable<String> {
         endpoints.add(endpoint);
     }
 
+    public void addChefAttribute(ChefAttribute attribute) {
+        attributes.add(attribute);
+    }
+
     public void addEnvironmentOverrideAttribute(String id, String value) {
         attributes.add(new ChefAttribute(id, value));
     }

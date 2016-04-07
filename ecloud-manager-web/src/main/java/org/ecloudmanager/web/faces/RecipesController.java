@@ -25,9 +25,7 @@
 package org.ecloudmanager.web.faces;
 
 import com.rits.cloning.Cloner;
-import org.ecloudmanager.deployment.vm.provisioning.ChefAttribute;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
-import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.template.RecipeRepository;
 import org.ecloudmanager.service.template.RecipeService;
@@ -36,24 +34,31 @@ import org.primefaces.event.SelectEvent;
 import org.primefaces.event.UnselectEvent;
 
 import javax.annotation.PostConstruct;
+import javax.faces.bean.ManagedBean;
+import javax.faces.bean.ManagedProperty;
+import javax.faces.bean.SessionScoped;
 import javax.inject.Inject;
 import java.io.Serializable;
 import java.util.List;
 
-@Controller
+@SessionScoped
+@ManagedBean
 public class RecipesController extends FacesSupport implements Serializable {
-    private static final long serialVersionUID = -7592006943742318320L;
     public final static String NEW_RECIPE_ID = "(new)";
+    private static final long serialVersionUID = -7592006943742318320L;
     @Inject
     private transient RecipeRepository recipeRepository;
     @Inject
     private transient RecipeService recipeService;
     @Inject
     private transient Cloner cloner;
-    @Inject
+    @ManagedProperty(value = "#{recipeController}")
     private transient RecipeController recipeController;
-
     private List<Recipe> recipes;
+
+    public void setRecipeController(RecipeController recipeController) {
+        this.recipeController = recipeController;
+    }
 
     @PostConstruct
     private void init() {
@@ -70,7 +75,6 @@ public class RecipesController extends FacesSupport implements Serializable {
     }
 
     public void save() {
-        recipeController.setChanged(false);
         Recipe value = recipeController.getValue();
         if (value == null) {
             return;
@@ -92,7 +96,6 @@ public class RecipesController extends FacesSupport implements Serializable {
             recipes.set(idx, reloaded);
         }
         recipeController.setValue(null);
-        recipeController.setChanged(false);
     }
 
     public void onRowSelect(SelectEvent event) {
@@ -114,7 +117,6 @@ public class RecipesController extends FacesSupport implements Serializable {
 
     public Recipe getNewRecipe() {
         recipeController.setValue(new Recipe(NEW_RECIPE_ID));
-        recipeController.setChanged(true);
         return recipeController.getValue();
     }
 

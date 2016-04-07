@@ -31,7 +31,6 @@
       xmlns:f="http://java.sun.com/jsf/core"
       xmlns:h="http://java.sun.com/jsf/html"
       xmlns:p="http://primefaces.org/ui"
-      xmlns:components="http://java.sun.com/jsf/composite/components"
       xmlns:composite="http://java.sun.com/jsf/composite">
 
 <!-- INTERFACE -->
@@ -70,7 +69,7 @@
         <p:outputPanel id="endpoint_panel">
             <p:dataTable id="table_endpoints" var="endpoint"
                          value="#{cc.attrs.value.endpoints}"
-                         rowKey="#{endpoint.name}">
+                         rowKey="#{endpoint.name}" styleClass="endpointsTable">
                 <f:facet name="header">
                     Endpoints
                 </f:facet>
@@ -80,15 +79,19 @@
                 <p:column id="column_endpoint_descr" headerText="Description">
                     <h:outputText value="#{endpoint.description}"/>
                 </p:column>
+                <p:column id="column_endpoint_port" headerText="Port">
+                    <h:outputText value="#{endpoint.port}"/>
+                </p:column>
                 <p:column id="column_endpoint_buttons" style="width:64px;text-align: center">
                     <p:commandButton id="btn_endpoint_edit"
                                      action="#{recipeController.startEditEndpoint(endpoint)}"
                                      icon="ui-icon-search" title="View">
+                        <p:ajax event="dialogReturn" listener="#{recipeController.onEditEndpointReturn}"
+                                update="@(.endpointsTable)"/>
                     </p:commandButton>
                     <p:commandButton id="delete_endpoint" title="Delete"
-                                     icon="ui-icon-minusthick" update=":recipes"
-                                     action="#{recipeController.deleteSelectedEndpoint()}"
-                                     disabled="#{cc.attrs.value == null}">
+                                     icon="ui-icon-minusthick"
+                                     action="#{recipeController.deleteEndpoint(endpoint)}" update="@(.endpointsTable)">
                         <p:confirm header="Confirmation" message="Are you sure?"
                                    icon="ui-icon-alert"/>
                     </p:commandButton>
@@ -97,6 +100,9 @@
             <p:commandButton id="new_endpoint" icon="ui-icon-plusthick"
                              disabled="#{cc.attrs.value == null}"
                              action="#{recipeController.addNewEndpoint()}">
+                <p:ajax event="dialogReturn" listener="#{recipeController.onEditNewEndpointReturn}"
+                        update="@(.endpointsTable)"/>
+
             </p:commandButton>
 
         </p:outputPanel>
@@ -108,7 +114,7 @@
         <p:outputPanel id="attr_panel">
             <p:dataTable id="table_attributes" var="attribute"
                          value="#{cc.attrs.value.attributes}"
-                         rowKey="#{attribute.name}">
+                         rowKey="#{attribute.name}" styleClass="attributesTable">
                 <f:facet name="header">
                     Chef Attributes
                 </f:facet>
@@ -127,13 +133,16 @@
                 </p:column>
                 <p:column id="column_buttons" style="width:64px;text-align: center">
                     <p:commandButton id="btn_attr_edit"
-                                     action="#{recipeController.startEdit(attribute)}"
+                                     action="#{recipeController.startEditChefAttribute(attribute)}"
                                      icon="ui-icon-search" title="View">
+                        <p:ajax event="dialogReturn" listener="#{recipeController.onEditChefAttributeReturn}"
+                                update="@(.attributesTable)"/>
+
                     </p:commandButton>
                     <p:commandButton id="delete_attr" title="Delete"
-                                     icon="ui-icon-minusthick" update=":recipes"
-                                     action="#{recipeController.deleteSelectedAttribute()}"
-                                     disabled="#{cc.attrs.value == null}">
+                                     icon="ui-icon-minusthick"
+                                     action="#{recipeController.deleteChefAttribute(attribute)}"
+                                     update="@(.attributesTable)">
                         <p:confirm header="Confirmation" message="Are you sure?"
                                    icon="ui-icon-alert"/>
                     </p:commandButton>
@@ -141,88 +150,12 @@
             </p:dataTable>
             <p:commandButton id="new_attr" icon="ui-icon-plusthick"
                              disabled="#{cc.attrs.value == null}"
-                             action="#{recipeController.addNewChefAttribute()}"/>
-
+                             action="#{recipeController.addNewChefAttribute()}">
+                <p:ajax event="dialogReturn" listener="#{recipeController.onEditNewChefAttributeReturn}"
+                        update="@(.attributesTable)"/>
+            </p:commandButton>
         </p:outputPanel>
-
     </p:panelGrid>
-
-    <p:dialog header="Edit attribute" widgetVar="dlg_edit" closeOnEscape="true" height="600"
-              width="900" id="dlg_edit" >
-        <p:ajax event="close" listener="#{recipeController.handleClose}"/>
-        <h:form id="edit_chef_attr_form">
-
-            <p:outputPanel id="attrDetail" style="text-align:center;" rendered="#{not empty recipeController.selectedAttribute}">
-                <p:panelGrid id="panel_attr_details" columns="3" style="margin-bottom:10px"
-                             styleClass="ui-panelgrid-blank" cellpadding="5">
-
-                    <p:outputLabel id="label_op_name" for="op_key" value="Name:"/>
-                    <p:inputText id="op_key"
-                                 value="#{recipeController.selectedAttribute.name}">
-                    </p:inputText>
-                    <p:message id="message_op_key" for="op_key"/>
-                    <p:outputLabel id="label_op_value" for="op_value" value="Value:"/>
-                    <p:inputTextarea id="op_value"
-                                     value="#{recipeController.selectedAttribute.value}"
-                                     cols="100">
-
-                    </p:inputTextarea>
-                    <p:message id="message_op_value" for="op_value"/>
-
-                    <p:outputLabel id="label_env" for="input_env" value="Environment:"/>
-                    <p:selectOneButton id="input_env"
-                                       value="#{recipeController.editAttributeEnv}">
-                        <f:selectItem itemLabel="Override" itemValue="Override"/>
-                        <f:selectItem itemLabel="Default" itemValue="Default"/>
-                        <f:selectItem itemLabel="None" itemValue="No"/>
-                    </p:selectOneButton>
-                    <p:message id="message_env" for="input_env"/>
-
-                    <p:outputLabel id="label_node" for="input_node" value="Node:"/>
-                    <p:selectBooleanCheckbox id="input_node"
-                                             value="#{recipeController.selectedAttribute.nodeAttribute}">
-                        <p:ajax disabled="#{recipeController.changed}" event="keyup"
-                                update=":recipes:recipe:recipe_buttons"
-                                listener="#{recipeController.changedEvent}"
-                        />
-                    </p:selectBooleanCheckbox>
-                    <p:message id="message_node" for="input_node"/>
-                </p:panelGrid>
-                <p:panelGrid id="attr_buttons" columns="2" style="margin-bottom:10px"
-                             styleClass="ui-panelgrid-blank" cellpadding="5">
-                    <p:commandButton id="attr_button_save" value="save"
-                                     update=":recipes"
-                                     action="#{recipesController.save}"/>
-                    <p:commandButton id="attr_button_cancel" value="cancel" immediate="true"
-                                     update=":recipes"
-                                     actionListener="#{recipesController.cancel}"/>
-                </p:panelGrid>
-            </p:outputPanel>
-        </h:form>
-    </p:dialog>
-
-
-    <p:dialog header="Edit endpoint" widgetVar="dlg_edit_endpoint" closeOnEscape="true" height="600"
-              width="900" id="dlg_edit_endpoint" >
-        <p:ajax event="close" listener="#{recipeController.handleClose}"/>
-        <h:form id="edit_endpoint_form">
-
-            <p:outputPanel id="endpointDetail" style="text-align:center;" rendered="#{not empty endpointController.value}">
-                <components:endpoint value="#{endpointController.value}" id="endpoint"/>
-                <p:panelGrid id="endpoint_buttons" columns="2" style="margin-bottom:10px"
-                             styleClass="ui-panelgrid-blank" cellpadding="5">
-                    <p:commandButton id="endpoint_button_save" value="save"
-                                     update=":recipes"
-                                     action="#{recipesController.save}"/>
-                    <p:commandButton id="endpoint_button_cancel" value="cancel" immediate="true"
-                                     update=":recipes"
-                                     actionListener="#{recipesController.cancel}"/>
-                </p:panelGrid>
-
-            </p:outputPanel>
-        </h:form>
-    </p:dialog>
-
 </composite:implementation>
 </html>
 

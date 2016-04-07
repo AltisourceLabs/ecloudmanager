@@ -1,5 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
 <!--
   ~ MIT License
   ~
@@ -24,28 +22,35 @@
   ~ SOFTWARE.
   -->
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-
+<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:p="http://primefaces.org/ui"
-      xmlns:composite="http://java.sun.com/jsf/composite">
+      xmlns:h="http://java.sun.com/jsf/html"
+      xmlns:components="http://java.sun.com/jsf/composite/components"
+      xmlns:p="http://primefaces.org/ui">
 
-<composite:interface>
-    <composite:attribute name="value" required="true"
-                         type="org.ecloudmanager.deployment.core.EndpointTemplate"/>
-</composite:interface>
+<h:head>
+    <title>Edit endpoint</title>
+    <style type="text/css">
+        .ui-widget {
+            font-size: 90%;
+        }
+    </style>
+</h:head>
 
-<composite:implementation>
-    <p:panelGrid id="panelgrid_edit" columns="2" style="margin-bottom:10px" styleClass="ui-panelgrid-blank"
-                 cellpadding="5">
+<h:body>
+    <h:form>
+        <p:outputPanel id="endpointDetail" style="text-align:center;" rendered="#{not empty endpointController.value}">
+            <components:endpoint value="#{endpointController.value}" id="endpoint"/>
+        </p:outputPanel>
+        <p:panelGrid id="endpoint_buttons" columns="2" style="margin-bottom:10px"
+                     styleClass="ui-panelgrid-blank" cellpadding="5">
+            <p:commandButton id="endpoint_button_save" value="save"
+                             actionListener="#{endpointController.saveEditedEndpoint}"/>
+            <p:commandButton id="endpoint_button_cancel" value="cancel" immediate="true"
+                             actionListener="#{endpointController.cancelEditing}"/>
+            <!--update="recipes:recipe:recipe:panelgrid_endpoints"-->
+        </p:panelGrid>
+    </h:form>
+</h:body>
 
-        <p>Name: <p:inputText id="input_name" value="#{cc.attrs.value.name}"/></p>
-
-        <p>Description: <p:inputTextarea id="input_description" value="#{cc.attrs.value.description}"/></p>
-
-        <p>Port: <p:inputText id="input_port" value="#{cc.attrs.value.port}"/></p>
-    </p:panelGrid>
-</composite:implementation>
 </html>
-

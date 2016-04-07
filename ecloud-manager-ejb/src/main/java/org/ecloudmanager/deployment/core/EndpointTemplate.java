@@ -24,17 +24,17 @@
 
 package org.ecloudmanager.deployment.core;
 
-import java.util.List;
-
 public class EndpointTemplate {
     private String name;
     private String description;
-    private List<EndpointAttributeTemplate> attributes;
+    private Integer port;
+    private boolean constant;
 
     public EndpointTemplate() {
     }
 
     public EndpointTemplate(String name) {
+        this();
         this.name = name;
     }
 
@@ -55,11 +55,19 @@ public class EndpointTemplate {
     }
 
 
-    public List<EndpointAttributeTemplate> getAttributes() {
-        return attributes;
+    public Integer getPort() {
+        return port;
     }
 
-    public void setAttributes(List<EndpointAttributeTemplate> attributes) {
-        this.attributes = attributes;
+    public void setPort(Integer port) {
+        this.port = port;
+    }
+
+    public boolean isConstant() {
+        return constant;
+    }
+
+    public void setConstant(boolean constant) {
+        this.constant = constant;
     }
 }

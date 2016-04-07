@@ -24,7 +24,7 @@
 
 package org.ecloudmanager.web.faces;
 
-import org.ecloudmanager.deployment.core.EndpointTemplate;
+import org.ecloudmanager.deployment.vm.provisioning.ChefAttribute;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.primefaces.context.RequestContext;
 import org.primefaces.event.CloseEvent;
@@ -35,26 +35,53 @@ import java.io.Serializable;
 
 @SessionScoped
 @ManagedBean
-public class EndpointController extends FacesSupport implements Serializable {
-    private EndpointTemplate value;
+public class ChefAttributeController extends FacesSupport implements Serializable {
+    private static final String ENV_DEFAULT = "Default";
+    private static final String ENV_OVERRIDE = "Override";
+    private static final String ENV_NO = "No";
 
-    public EndpointTemplate getValue() {
+    private ChefAttribute value;
+
+    public ChefAttribute getValue() {
         return value;
     }
 
-    public void setValue(EndpointTemplate value) {
+    public void setValue(ChefAttribute value) {
         this.value = value;
     }
 
     public void handleClose(CloseEvent event) {
-
     }
 
-    public void saveEditedEndpoint() {
+    public void save() {
         RequestContext.getCurrentInstance().closeDialog(value);
     }
 
-    public void cancelEditing() {
+    public void cancel() {
         RequestContext.getCurrentInstance().closeDialog(null);
+    }
+
+    public String getEditAttributeEnv() {
+        if (value.isEnvironmentAttribute()) {
+            if (value.isEnvironmentDefaultAttribute()) {
+                return ENV_DEFAULT;
+            } else {
+                return ENV_OVERRIDE;
+            }
+        } else {
+            return ENV_NO;
+        }
+    }
+
+    public void setEditAttributeEnv(String editAttributeEnv) {
+        if (ENV_NO.equals(editAttributeEnv)) {
+            value.setEnvironmentAttribute(false);
+        } else if (ENV_DEFAULT.equals(editAttributeEnv)) {
+            value.setEnvironmentAttribute(true);
+            value.setEnvironmentDefaultAttribute(true);
+        } else {
+            value.setEnvironmentAttribute(true);
+            value.setEnvironmentDefaultAttribute(false);
+        }
     }
 }

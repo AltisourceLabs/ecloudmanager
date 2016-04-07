@@ -45,8 +45,7 @@
                             <p:outputPanel id="list">
                                 <p:toolbar id="toolbar">
                                     <f:facet name="left">
-                                        <p:commandButton id="new" icon="ui-icon-plusthick" update=":recipes"
-                                                         disabled="#{recipeController.changed}">
+                                        <p:commandButton id="new" icon="ui-icon-plusthick" update=":recipes">
                                             <p:collector value="#{recipesController.newRecipe}"
                                                          addTo="#{recipesController.recipes}" unique="true"/>
                                         </p:commandButton>
@@ -61,8 +60,7 @@
                                                          removeFrom="#{recipesController.recipes}" unique="true"/>
                                         </p:commandButton>
                                         <p:commandButton id="copy" title="Copy" icon="ui-icon-copy" update=":recipes"
-                                                         disabled="#{recipeController.value == null}"
-                                        >
+                                                         disabled="#{recipeController.value == null}">
                                             <p:collector value="#{recipeController.createCopy()}"
                                                          addTo="#{recipesController.recipes}" unique="true"/>
                                         </p:commandButton>
@@ -70,7 +68,7 @@
 
 
                                 </p:toolbar>
-                                <p:dataTable disabledSelection="#{recipeController.changed}" id="table" var="recipe"
+                                <p:dataTable id="table" var="recipe"
                                              value="#{recipesController.recipes}" selectionMode="single"
                                              selection="#{recipeController.value}" rowKey="#{recipe.id}">
                                     <p:ajax event="rowSelect" listener="#{recipesController.onRowSelect}"
@@ -89,10 +87,6 @@
                         <p:layoutUnit id="center" position="center">
                             <p:outputPanel id="details" rendered="#{recipeController.value != null}">
                                 <h:form id="recipe">
-                                    <p:ajax disabled="#{recipeController.changed}" event="keyup"
-                                            update=":recipes:recipe:recipe_buttons"
-                                            listener="#{recipeController.changedEvent}"
-                                    />
                                     <components:recipe value="#{recipeController.value}" id="recipe"/>
                                     <p:panelGrid id="recipe_buttons" columns="2" style="margin-bottom:10px"
                                                  styleClass="ui-panelgrid-blank" cellpadding="5">

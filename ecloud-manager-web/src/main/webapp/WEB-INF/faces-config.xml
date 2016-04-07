@@ -23,10 +23,10 @@
   ~ SOFTWARE.
   -->
 <!-- Marker file indicating JSF 2.2 should be enabled in the application -->
-<faces-config version="2.2"
-    xmlns="http://xmlns.jcp.org/xml/ns/javaee"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="
+<faces-config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              version="2.2"
+              xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+              xsi:schemaLocation="
         http://xmlns.jcp.org/xml/ns/javaee
         http://xmlns.jcp.org/xml/ns/javaee/web-facesconfig_2_2.xsd">
     <application>
@@ -38,6 +38,11 @@
         <component-class>org.ecloudmanager.components.cytoscape.Cytoscape</component-class>
     </component>
 
+    <application>
+        <action-listener>org.primefaces.application.DialogActionListener</action-listener>
+        <navigation-handler>org.primefaces.application.DialogNavigationHandler</navigation-handler>
+        <view-handler>org.primefaces.application.DialogViewHandler</view-handler>
+    </application>
     <render-kit>
         <renderer>
             <component-family>org.ecloudmanager.components</component-family>
