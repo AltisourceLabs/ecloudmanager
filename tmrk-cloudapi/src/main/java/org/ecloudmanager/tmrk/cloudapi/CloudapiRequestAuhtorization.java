@@ -39,6 +39,7 @@ import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Properties;
+import java.util.function.Supplier;
 
 /**
  * 
@@ -47,13 +48,10 @@ import java.util.Properties;
  */
 final class CloudapiRequestAuhtorization implements HttpRequestInterceptor, CloudapiConstants {
 
-    private final String API_ACCESS_KEY;
+    private final Supplier<Properties> configuration;
 
-    private final String API_PRIVATE_KEY;
-
-    CloudapiRequestAuhtorization(final Properties configuration) {
-        API_ACCESS_KEY = configuration.getProperty(TMRK_API_ACCESS_KEY_PROP);
-        API_PRIVATE_KEY = configuration.getProperty(TMRK_API_PRIVATE_KEY_PROP);
+    CloudapiRequestAuhtorization(final Supplier<Properties> configuration) {
+        this.configuration = configuration;
     }
 
     @Override
@@ -63,17 +61,18 @@ final class CloudapiRequestAuhtorization implements HttpRequestInterceptor, Clou
     }
 
     private String encodeAuthorizationKeys(HttpRequest request) {
-        String authorization = "CloudApi" + " AccessKey=" + '"'
-                + API_ACCESS_KEY + '"' + " SignatureType=" + '"'
-                + SIGNATURE_TYPE + '"' + " Signature=" + '"'
-                + signature((HttpUriRequest)request) + '"';
-        return authorization;
-//        return String.format("CloudApi AccessKey=\"%s\" SignatureType=\"%s\" Signature=\"%s\"",
-//                                API_ACCESS_KEY, SIGNATURE_TYPE, signature((HttpUriRequest)request));
+        Properties properties = configuration.get();
+        String apiAccessKey = properties.getProperty(TMRK_API_ACCESS_KEY_PROP);
+        String apiPrivateKey = properties.getProperty(TMRK_API_PRIVATE_KEY_PROP);
 
+        String authorization = "CloudApi" + " AccessKey=" + '"'
+                + apiAccessKey + '"' + " SignatureType=" + '"'
+                + SIGNATURE_TYPE + '"' + " Signature=" + '"'
+                + signature((HttpUriRequest)request, apiPrivateKey) + '"';
+        return authorization;
     }
 
-    private String signature(HttpUriRequest request) {
+    private String signature(HttpUriRequest request, String apiPrivateKey) {
         StringBuilder sb = new StringBuilder();
         String verb = request.getMethod().toUpperCase();
         String date = request.getFirstHeader(HttpHeaderNames.DATE).getValue();
@@ -98,7 +97,7 @@ final class CloudapiRequestAuhtorization implements HttpRequestInterceptor, Clou
         String sigstr = sb.toString();
         try {
             Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
-            SecretKeySpec secret_key = new SecretKeySpec(getBytes(API_PRIVATE_KEY), "HmacSHA256");
+            SecretKeySpec secret_key = new SecretKeySpec(getBytes(apiPrivateKey), "HmacSHA256");
             sha256_HMAC.init(secret_key);
 
             return Base64.encodeBytes(sha256_HMAC.doFinal(getBytes(sigstr)));

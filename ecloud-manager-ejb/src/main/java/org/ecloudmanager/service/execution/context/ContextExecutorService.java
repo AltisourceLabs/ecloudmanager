@@ -1,7 +1,7 @@
 /*
- * MIT License
+ * The MIT License (MIT)
  *
- * Copyright (c) 2016  Altisource
+ * Copyright (c) 2016 Altisource Labs
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,42 +22,60 @@
  * SOFTWARE.
  */
 
-package org.ecloudmanager.service.template;
+package org.ecloudmanager.service.execution.context;
 
-import org.apache.logging.log4j.Logger;
-import org.ecloudmanager.domain.aws.AWSConfiguration;
-import org.ecloudmanager.jeecore.service.ServiceSupport;
-import org.ecloudmanager.repository.AWSConfigurationRepository;
+import org.jetbrains.annotations.NotNull;
 import org.picketlink.Identity;
 
 import javax.ejb.Stateless;
 import javax.inject.Inject;
+import javax.inject.Named;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.AbstractExecutorService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
+@Named
 @Stateless
-public class AWSConfigurationService extends ServiceSupport {
+public class ContextExecutorService extends AbstractExecutorService implements ExecutorService {
     @Inject
-    private Logger log;
+    GlobalExecutionContext globalExecutionContext;
+
     @Inject
-    private AWSConfigurationRepository AWSConfigurationRepository;
+    ContextExecutor executor;
+
     @Inject
     Identity identity;
 
-    public void saveOrUpdate(AWSConfiguration configuration) {
-        log.info("Saving AWS Configuration " + configuration.getName());
-        configuration.setOwner(identity.getAccount().getId());
-        super.saveOrUpdate(configuration);
-        fireEvent(configuration);
+    @Override
+    public void execute(Runnable command) {
+        globalExecutionContext.put(command, identity);
+        executor.execute(command);
     }
 
-    public void remove(AWSConfiguration configuration) {
-        log.info("Deleting AWS Configuration " + configuration.getName());
-        delete(configuration);
-        fireEvent(configuration);
+    @Override
+    public void shutdown() {
+
     }
 
-    public AWSConfiguration getCurrentConfiguration() {
-        List<AWSConfiguration> AWSConfigurations = AWSConfigurationRepository.getAllForUser(identity.getAccount().getId());
-        return AWSConfigurations.size() > 0 ? AWSConfigurations.get(0) : new AWSConfiguration();
+    @Override
+    public @NotNull List<Runnable> shutdownNow() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public boolean isShutdown() {
+        return false;
+    }
+
+    @Override
+    public boolean isTerminated() {
+        return false;
+    }
+
+    @Override
+    public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+        return false;
     }
 }

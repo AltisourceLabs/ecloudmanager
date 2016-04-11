@@ -29,6 +29,7 @@ import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.SshConfigurationRepository;
 import org.ecloudmanager.service.template.SshConfigurationService;
+import org.picketlink.Identity;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -38,6 +39,9 @@ import java.util.List;
 @Controller
 public class SshConfigurationController extends FacesSupport implements Serializable {
     private static final long serialVersionUID = 5537710186791195525L;
+
+    @Inject
+    private transient Identity identity;
 
     @Inject
     private transient SshConfigurationRepository sshConfigurationRepository;
@@ -78,7 +82,7 @@ public class SshConfigurationController extends FacesSupport implements Serializ
     }
 
     private void refresh() {
-        sshConfigurations = sshConfigurationRepository.getAll();
+        sshConfigurations = sshConfigurationRepository.getAllForUser(identity.getAccount().getId());
     }
 
     public EntityEditorController<SshConfiguration> getEditorController() {

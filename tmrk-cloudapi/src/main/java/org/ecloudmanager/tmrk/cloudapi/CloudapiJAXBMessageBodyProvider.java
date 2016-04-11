@@ -49,7 +49,7 @@ import java.util.Properties;
 final class CloudapiJAXBMessageBodyProvider implements MessageBodyReader<Object>, MessageBodyWriter<Object>,
     CloudapiConstants {
 
-    CloudapiJAXBMessageBodyProvider(final Properties configuration) {
+    CloudapiJAXBMessageBodyProvider() {
     }
 
     @Override

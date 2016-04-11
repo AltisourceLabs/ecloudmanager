@@ -1,7 +1,7 @@
 /*
- * MIT License
+ * The MIT License (MIT)
  *
- * Copyright (c) 2016  Altisource
+ * Copyright (c) 2016 Altisource Labs
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,19 +22,30 @@
  * SOFTWARE.
  */
 
-package org.ecloudmanager.tmrk.cloudapi;
+package org.ecloudmanager.service.execution.context;
 
-public final class CloudapiTestUtils {
+import org.picketlink.Identity;
 
-    static String API_ACCESS_KEY = "xxxxxxxxxxxxxxxxxxxxxx";
-    static String API_PRIVATE_KEY =
-        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy";
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.spi.Bean;
+import javax.enterprise.inject.spi.BeanManager;
+import javax.inject.Inject;
+import java.util.concurrent.ConcurrentHashMap;
 
-    private CloudapiTestUtils() {
+@ApplicationScoped
+public class GlobalExecutionContext {
+    private ConcurrentHashMap<Runnable, Identity> identityMap = new ConcurrentHashMap<>();
+
+    @Inject
+    BeanManager beanManager;
+
+    public void put(Runnable runnable, Identity identity) {
+        Bean<Identity> bean = (Bean<Identity>) beanManager.resolve(beanManager.getBeans(Identity.class));
+        Identity identityInst = beanManager.getContext(bean.getScope()).get(bean, beanManager.createCreationalContext(bean));
+        identityMap.put(runnable, identityInst);
     }
 
-    public static CloudapiEndpointFactory getFactory() {
-        return new CloudapiEndpointFactory();
+    public Identity remove(Runnable runnable) {
+         return identityMap.remove(runnable);
     }
-
 }

@@ -28,20 +28,26 @@ import org.apache.logging.log4j.Logger;
 import org.ecloudmanager.domain.verizon.VerizonConfiguration;
 import org.ecloudmanager.jeecore.service.ServiceSupport;
 import org.ecloudmanager.repository.VerizonConfigurationRepository;
+import org.picketlink.Identity;
 
 import javax.ejb.Stateless;
+import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
+import java.io.Serializable;
 import java.util.List;
 
 @Stateless
 public class VerizonConfigurationService extends ServiceSupport {
     @Inject
-    private Logger log;
+    private transient Logger log;
     @Inject
-    private VerizonConfigurationRepository verizonConfigurationRepository;
+    private transient VerizonConfigurationRepository verizonConfigurationRepository;
+    @Inject
+    Identity identity;
 
     public void saveOrUpdate(VerizonConfiguration configuration) {
         log.info("Saving Verizon Configuration " + configuration.getName());
+        configuration.setOwner(identity.getAccount().getId());
         super.saveOrUpdate(configuration);
         fireEvent(configuration);
     }
@@ -53,7 +59,7 @@ public class VerizonConfigurationService extends ServiceSupport {
     }
 
     public VerizonConfiguration getCurrentConfiguration() {
-        List<VerizonConfiguration> verizonConfigurations = verizonConfigurationRepository.getAll();
+        List<VerizonConfiguration> verizonConfigurations = verizonConfigurationRepository.getAllForUser(identity.getAccount().getId());
         return verizonConfigurations.size() > 0 ? verizonConfigurations.get(0) : new VerizonConfiguration();
     }
 }

@@ -29,6 +29,7 @@ import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.service.template.VerizonConfigurationService;
 import org.ecloudmanager.service.verizon.infrastructure.CloudServicesRegistry;
+import org.picketlink.Identity;
 
 import javax.annotation.PostConstruct;
 import javax.faces.application.FacesMessage;
@@ -38,6 +39,9 @@ import java.io.Serializable;
 @Controller
 public class VerizonConfigurationController extends FacesSupport implements Serializable {
     private static final long serialVersionUID = -6152300841870550863L;
+
+    @Inject
+    private transient Identity identity;
 
     @Inject
     private transient VerizonConfigurationService verizonConfigurationService;
@@ -58,14 +62,12 @@ public class VerizonConfigurationController extends FacesSupport implements Seri
     public void clear() {
         verizonConfigurationService.remove(verizonConfiguration);
         verizonConfiguration = verizonConfigurationService.getCurrentConfiguration();
-        cloudServicesRegistry.refreshEndpointFactory();
 
         addMessage(new FacesMessage("Clear", "Verizon configuration cleared"));
     }
 
     public void save() {
         verizonConfigurationService.saveOrUpdate(verizonConfiguration);
-        cloudServicesRegistry.refreshEndpointFactory();
 
         addMessage(new FacesMessage("Save", "Verizon configuration saved"));
     }

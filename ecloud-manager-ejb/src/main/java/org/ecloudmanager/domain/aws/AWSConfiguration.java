@@ -26,6 +26,7 @@ package org.ecloudmanager.domain.aws;
 
 import com.amazonaws.auth.AWSCredentials;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
+import org.ecloudmanager.domain.OwnedMongoObject;
 import org.ecloudmanager.domain.RunlistHolder;
 import org.ecloudmanager.jeecore.domain.MongoObject;
 import org.jetbrains.annotations.NotNull;
@@ -37,7 +38,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 @Entity(noClassnameStored = true)
-public class AWSConfiguration extends MongoObject implements Serializable, AWSCredentials, RunlistHolder {
+public class AWSConfiguration extends OwnedMongoObject implements Serializable, AWSCredentials, RunlistHolder {
 
     private static final long serialVersionUID = 4201146027473993139L;
     private String name;

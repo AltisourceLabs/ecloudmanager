@@ -25,6 +25,7 @@
 package org.ecloudmanager.domain.verizon;
 
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
+import org.ecloudmanager.domain.OwnedMongoObject;
 import org.ecloudmanager.domain.RunlistHolder;
 import org.ecloudmanager.jeecore.domain.MongoObject;
 import org.jetbrains.annotations.NotNull;
@@ -36,7 +37,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 @Entity(noClassnameStored = true)
-public class VerizonConfiguration extends MongoObject implements Serializable, RunlistHolder {
+public class VerizonConfiguration extends OwnedMongoObject implements Serializable, RunlistHolder {
     private static final long serialVersionUID = 3184414210578133949L;
 
     private String name;

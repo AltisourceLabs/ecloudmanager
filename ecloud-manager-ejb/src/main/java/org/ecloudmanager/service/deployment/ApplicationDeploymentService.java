@@ -47,6 +47,8 @@ import javax.inject.Inject;
 
 @Stateless
 public class ApplicationDeploymentService extends ServiceSupport {
+    @Inject
+    ActionExecutor actionExecutor;
 
     @Inject
     private Logger log;
@@ -93,14 +95,13 @@ public class ApplicationDeploymentService extends ServiceSupport {
         log.info("Starting deployment action (" + actionType + ") for " + deployment.getName());
         log.info("Submitting action:" + action.toString());
 
-        ActionExecutor executor = new ActionExecutor();
         try {
-            executor.execute(action, () -> {
+            actionExecutor.execute(action, () -> {
                 // Need to reload deployment from the DB because the changes made by actions are stored there
                 // but not reflected in the object instance referenced by the 'deployment' var
                 Deployable reloadedDeployment = datastore.get(deployment);
                 deploymentAttemptRepository.save(new DeploymentAttempt(reloadedDeployment, action, actionType));
-                executor.shutdown();
+                actionExecutor.shutdown();
             });
         } catch (InterruptedException e) {
             log.log(Level.ERROR, "Deployment interrupted: ", e);

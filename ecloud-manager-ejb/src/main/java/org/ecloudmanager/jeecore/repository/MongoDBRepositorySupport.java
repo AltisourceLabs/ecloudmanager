@@ -59,6 +59,10 @@ public class MongoDBRepositorySupport<T> {
         return datastore.find(getEntityType()).asList();
     }
 
+    public List<T> getAllForUser(String user) {
+        return datastore.find(getEntityType(), "owner", user).asList();
+    }
+
     public T find(String property, Object value) {
         return datastore.find(getEntityType(), property, value).get();
     }

@@ -1,7 +1,7 @@
 /*
- * MIT License
+ * The MIT License (MIT)
  *
- * Copyright (c) 2016  Altisource
+ * Copyright (c) 2016 Altisource Labs
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,19 +22,26 @@
  * SOFTWARE.
  */
 
-package org.ecloudmanager.tmrk.cloudapi;
+package org.ecloudmanager.security;
 
-public final class CloudapiTestUtils {
+import org.ecloudmanager.jeecore.web.faces.Controller;
+import org.ecloudmanager.jeecore.web.faces.FacesSupport;
+import org.omnifaces.cdi.Param;
 
-    static String API_ACCESS_KEY = "xxxxxxxxxxxxxxxxxxxxxx";
-    static String API_PRIVATE_KEY =
-        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy";
+import javax.faces.application.FacesMessage;
+import javax.inject.Inject;
+import java.io.Serializable;
 
-    private CloudapiTestUtils() {
+@Controller
+public class LoginController extends FacesSupport implements Serializable {
+    @SuppressWarnings("CdiInjectionPointsInspection")
+    @Inject
+    @Param
+    private String error;
+
+    public void onload() {
+        if ("true".equals(error)) {
+            addMessage(new FacesMessage(FacesMessage.SEVERITY_ERROR, "", "Authentication failed."));
+        }
     }
-
-    public static CloudapiEndpointFactory getFactory() {
-        return new CloudapiEndpointFactory();
-    }
-
 }

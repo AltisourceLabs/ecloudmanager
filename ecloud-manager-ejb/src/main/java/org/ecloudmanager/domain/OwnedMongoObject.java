@@ -1,7 +1,7 @@
 /*
- * MIT License
+ * The MIT License (MIT)
  *
- * Copyright (c) 2016  Altisource
+ * Copyright (c) 2016 Altisource Labs
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,19 +22,18 @@
  * SOFTWARE.
  */
 
-package org.ecloudmanager.tmrk.cloudapi;
+package org.ecloudmanager.domain;
 
-public final class CloudapiTestUtils {
+import org.ecloudmanager.jeecore.domain.MongoObject;
 
-    static String API_ACCESS_KEY = "xxxxxxxxxxxxxxxxxxxxxx";
-    static String API_PRIVATE_KEY =
-        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy";
+public abstract class OwnedMongoObject extends MongoObject {
+    private String owner;
 
-    private CloudapiTestUtils() {
+    public String getOwner() {
+        return owner;
     }
 
-    public static CloudapiEndpointFactory getFactory() {
-        return new CloudapiEndpointFactory();
+    public void setOwner(String owner) {
+        this.owner = owner;
     }
-
 }

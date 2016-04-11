@@ -24,21 +24,27 @@
 
 package org.ecloudmanager.service.execution;
 
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
+import javax.ejb.Stateless;
+import javax.inject.Inject;
+import javax.inject.Named;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
+@Stateless
 public class ActionExecutor {
-    private Logger log = LogManager.getLogger(ActionExecutor.class);
+    @Inject
+    Logger log;
 
+    @Inject
+    @Named("contextExecutorService")
     ExecutorService executorService;
 
-    public ActionExecutor() {
-        executorService = Executors.newFixedThreadPool(10);
-    }
+//    @Resource
+//    ManagedExecutorService executorService;
+//    @Resource
+//    ContextService cs;
 
     public void execute(Action action, @Nullable Runnable onComplete) throws InterruptedException {
         executorService.submit(() -> {
@@ -77,8 +83,15 @@ public class ActionExecutor {
         }
     }
 
-
     public void shutdown() {
         executorService.shutdown();
+    }
+
+    public void setLog(Logger log) {
+        this.log = log;
+    }
+
+    public void setExecutorService(ExecutorService executorService) {
+        this.executorService = executorService;
     }
 }

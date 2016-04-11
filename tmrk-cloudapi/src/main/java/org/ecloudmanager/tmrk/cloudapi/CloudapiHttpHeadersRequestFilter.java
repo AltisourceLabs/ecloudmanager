@@ -36,6 +36,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Properties;
+import java.util.function.Supplier;
 
 /**
  * HTTP request filter to add HTTP headers required by Terremark API.
@@ -43,21 +44,22 @@ import java.util.Properties;
  * @author irosu
  */
 final class CloudapiHttpHeadersRequestFilter implements ClientRequestFilter, CloudapiConstants {
+    private final Supplier<Properties> configuration;
     private Logger log = LogManager.getLogger(CloudapiHttpHeadersRequestFilter.class);
 
-    private final String API_VERSION;
-
-    CloudapiHttpHeadersRequestFilter(final Properties configuration) {
-        API_VERSION = configuration.getProperty(TMRK_API_VERSION_PROP, TMRK_API_VERSION);
+    CloudapiHttpHeadersRequestFilter(final Supplier<Properties> configuration) {
+        this.configuration = configuration;
     }
 
     @Override
     public void filter(ClientRequestContext requestContext) throws IOException {
+        String apiVersion = configuration.get().getProperty(TMRK_API_VERSION_PROP, TMRK_API_VERSION);
+
         log.debug(requestContext.getUri().toASCIIString());
         MultivaluedMap<String, Object> headers = requestContext.getHeaders();
         headers.add(HttpHeaderNames.DATE, new Date());
         headers.putSingle(HttpHeaderNames.ACCEPT, MediaType.APPLICATION_XML);
-        headers.add(X_TMRK_VERSION, API_VERSION);
+        headers.add(X_TMRK_VERSION, apiVersion);
 
         String method = requestContext.getMethod();
         if (HttpMethod.PUT.equalsIgnoreCase(method)

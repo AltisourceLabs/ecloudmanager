@@ -216,6 +216,22 @@ label {
     overflow: hidden;
 }
 
+.loginForm {
+    width: auto;
+    margin-right: 20px;
+    overflow: hidden;
+    font: 100%/1 "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+}
+
+.loginForm table td {
+    text-align: left;
+}
+
+.loginForm label {
+    float: none;
+    margin-left: 0;
+}
+
 .menubarForm {
     padding: 0;
     font: 100%/1 "Lucida Sans Unicode", "Lucida Grande", sans-serif;

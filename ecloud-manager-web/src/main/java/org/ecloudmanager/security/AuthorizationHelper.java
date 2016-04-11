@@ -1,7 +1,7 @@
 /*
- * MIT License
+ * The MIT License (MIT)
  *
- * Copyright (c) 2016  Altisource
+ * Copyright (c) 2016 Altisource Labs
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,40 +22,43 @@
  * SOFTWARE.
  */
 
-package org.ecloudmanager.service.template;
+package org.ecloudmanager.security;
 
-import org.apache.logging.log4j.Logger;
-import org.ecloudmanager.domain.template.SshConfiguration;
-import org.ecloudmanager.jeecore.service.ServiceSupport;
 import org.picketlink.Identity;
+import org.picketlink.idm.IdentityManager;
+import org.picketlink.idm.RelationshipManager;
+import org.picketlink.idm.model.basic.Group;
+import org.picketlink.idm.model.basic.Role;
 
 import javax.ejb.Stateless;
 import javax.inject.Inject;
+import javax.inject.Named;
 
+import static org.picketlink.idm.model.basic.BasicModel.*;
+
+@Named
 @Stateless
-public class SshConfigurationService extends ServiceSupport {
+public class AuthorizationHelper {
     @Inject
-    Identity identity;
-
+    private Identity identity;
     @Inject
-    private Logger log;
+    private IdentityManager identityManager;
+    @Inject
+    private RelationshipManager relationshipManager;
 
-    public void save(SshConfiguration configuration) {
-        log.info("Saving SshConfiguration " + configuration.getEnvironment());
-        configuration.setOwner(identity.getAccount().getId());
-        super.save(configuration);
-        fireEvent(configuration);
+    public boolean hasAppRole(String roleName) {
+        Role role = getRole(identityManager, roleName);
+        return hasRole(relationshipManager, identity.getAccount(), role);
     }
 
-    public void update(SshConfiguration configuration) {
-        log.info("Updating SshConfiguration " + configuration.getEnvironment());
-        super.update(configuration);
-        fireEvent(configuration);
+    public boolean isGroupMember(String groupName) {
+        Group group = getGroup(identityManager, groupName);
+        return isMember(relationshipManager, identity.getAccount(), group);
     }
 
-    public void remove(SshConfiguration configuration) {
-        log.info("Deleting SshConfiguration " + configuration.getEnvironment());
-        delete(configuration);
-        fireEvent(configuration);
+    public boolean hasRoleAndGroupMember(String roleName, String groupName) {
+        Group group = getGroup(identityManager, groupName);
+        Role role = getRole(identityManager, roleName);
+        return hasGroupRole(relationshipManager, identity.getAccount(), role, group);
     }
 }

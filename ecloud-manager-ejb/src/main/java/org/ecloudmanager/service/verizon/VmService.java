@@ -36,6 +36,7 @@ import org.ecloudmanager.jeecore.service.ServiceSupport;
 import org.ecloudmanager.repository.VirtualMachineRepository;
 import org.ecloudmanager.service.deployment.CreateVm;
 import org.ecloudmanager.service.execution.ActionException;
+import org.ecloudmanager.service.execution.SynchronousPoller;
 import org.ecloudmanager.service.verizon.infrastructure.CloudCachedEntityService;
 import org.ecloudmanager.tmrk.cloudapi.model.*;
 import org.ecloudmanager.tmrk.cloudapi.service.device.VirtualMachineService;
@@ -50,6 +51,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.function.Predicate;
 
 @Stateless
 public class VmService extends ServiceSupport {
@@ -75,6 +77,11 @@ public class VmService extends ServiceSupport {
 
     @Inject
     private CloudCachedEntityService cacheService;
+
+    @Inject
+    SynchronousPoller synchronousPoller;
+
+    private static final long VZ_TASK_TIMEOUT_SEC = 1000;
 
     private ObjectFactory objectFactory = new ObjectFactory();
 
@@ -256,32 +263,31 @@ public class VmService extends ServiceSupport {
     }
 
     private VirtualMachineType waitUntilMachineIsNotReady(String vmId, int timeout) {
-        VirtualMachineType result = null;
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        try {
-            List<VirtualMachineStatus> badStatuses = Arrays.asList(
+        List<VirtualMachineStatus> badStatuses = Arrays.asList(
                 VirtualMachineStatus.COPY_IN_PROGRESS,
                 VirtualMachineStatus.TASK_IN_PROGRESS,
                 VirtualMachineStatus.NOT_DEPLOYED,
                 VirtualMachineStatus.ORPHANED
+        );
+
+        Callable<VirtualMachineType> poll = () -> virtualMachineService.getVirtualMachineById(vmId);
+        Predicate<VirtualMachineType> check = (virtualMachineType) -> {
+            VirtualMachineStatus status = virtualMachineType.getStatus().getValue();
+            return !badStatuses.contains(status);
+        };
+
+        VirtualMachineType result = null;
+
+        try {
+            result = synchronousPoller.poll(
+                    poll, check,
+                    1, VZ_TASK_TIMEOUT_SEC,
+                    "waiting for virtual machine " + vmId + " to become ready"
             );
-            List<Future<VirtualMachineType>> futures = executor.invokeAll(Arrays.asList(
-                (Callable<VirtualMachineType>) () -> {
-                while (true) {
-                    VirtualMachineType virtualMachineType = virtualMachineService.getVirtualMachineById(vmId);
-                    VirtualMachineStatus status = virtualMachineType.getStatus().getValue();
-                    if (!badStatuses.contains(status)) {
-                        return virtualMachineType;
-                    }
-                }
-            }), timeout, TimeUnit.SECONDS);
-            result = futures.get(0).get();
-        } catch (InterruptedException e) {
-            log.log(Level.ERROR, "Timeout while waiting for node become ready", e);
-        } catch (ExecutionException e) {
-            log.log(Level.ERROR, "Virtual machine " + vmId + " not ready", e);
+        } catch (ActionException e) {
+            log.error("Virtual machine " + vmId + " is not ready", e);
         }
-        executor.shutdown();
+
         return result;
     }
 
@@ -347,7 +353,7 @@ public class VmService extends ServiceSupport {
 
         TaskType task = virtualMachineService.actionShutdownMachine(vmId);
         waitUntilTaskNotFinished(task);
-        waitUntilMachineIsPoweredOff(vmId, 1000);
+        waitUntilMachineIsPoweredOff(vmId);
     }
 
     public void deleteVm(String vmId) {
@@ -363,29 +369,31 @@ public class VmService extends ServiceSupport {
     }
 
     private void waitUntilTaskNotFinished(TaskType task) {
-        TaskStatus status = task.getStatus().getValue();
+        String taskHref = task.getHref();
 
-        while (TaskStatus.QUEUED.equals(status) || TaskStatus.RUNNING.equals(status)) {
-            task = taskService.getTaskById(TmrkUtils.getIdFromHref(task.getHref()));
-            status = task.getStatus().getValue();
-        }
+        Callable<TaskStatus> poll = () -> {
+            TaskType obtainedTask = taskService.getTaskById(TmrkUtils.getIdFromHref(taskHref));
+            return obtainedTask.getStatus().getValue();
+        };
+        Predicate<TaskStatus> check =
+                (status) -> !(TaskStatus.QUEUED.equals(status) || TaskStatus.RUNNING.equals(status));
+        synchronousPoller.poll(
+                poll, check,
+                1, VZ_TASK_TIMEOUT_SEC,
+                "waiting for task " + task.getName() + " to complete."
+        );
     }
 
-    private void waitUntilMachineIsPoweredOff(String vmId, int timeout) {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        try {
-            executor.invokeAll(Arrays.asList((Callable<Boolean>) () -> {
-                while (true) {
-                    VirtualMachineType virtualMachineType = virtualMachineService.getVirtualMachineById(vmId);
-                    if (!virtualMachineType.getPoweredOn().getValue()) {
-                        return true;
-                    }
-                }
-            }), timeout, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            log.log(Level.ERROR, "Timeout while waiting for node to become powered off", e);
-        }
-        executor.shutdown();
+    private void waitUntilMachineIsPoweredOff(String vmId) {
+        Callable<Boolean> poll = () -> {
+            VirtualMachineType virtualMachineType = virtualMachineService.getVirtualMachineById(vmId);
+            return !virtualMachineType.getPoweredOn().getValue();
+        };
+        synchronousPoller.poll(
+                poll, x -> x,
+                1, VZ_TASK_TIMEOUT_SEC,
+                "waiting for node " + vmId + " to become powered off"
+        );
     }
 
 }

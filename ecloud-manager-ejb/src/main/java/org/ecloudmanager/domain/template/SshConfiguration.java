@@ -24,13 +24,13 @@
 
 package org.ecloudmanager.domain.template;
 
-import org.ecloudmanager.jeecore.domain.MongoObject;
+import org.ecloudmanager.domain.OwnedMongoObject;
 import org.mongodb.morphia.annotations.Entity;
 
 import java.io.Serializable;
 
 @Entity(noClassnameStored = true)
-public class SshConfiguration extends MongoObject implements Serializable {
+public class SshConfiguration extends OwnedMongoObject implements Serializable {
     private static final long serialVersionUID = 1293171298086413994L;
 
     private String environment;

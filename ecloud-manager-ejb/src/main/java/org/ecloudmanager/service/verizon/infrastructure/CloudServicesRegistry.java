@@ -39,12 +39,16 @@ import org.ecloudmanager.tmrk.cloudapi.service.network.TrustedNetworkGroupServic
 import org.ecloudmanager.tmrk.cloudapi.service.organization.CatalogService;
 import org.ecloudmanager.tmrk.cloudapi.service.organization.DeviceTagsService;
 import org.ecloudmanager.tmrk.cloudapi.service.organization.OrganizationService;
+import org.picketlink.Identity;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.ejb.Stateless;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.SessionScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
+import java.io.Serializable;
 
 
 /**
@@ -52,8 +56,8 @@ import javax.inject.Inject;
  *
  * @author irosu
  */
-@ApplicationScoped
-public class CloudServicesRegistry {
+@Stateless
+public class CloudServicesRegistry implements Serializable {
     @Inject
     private VerizonConfigurationService verizonConfigurationService;
 
@@ -61,13 +65,16 @@ public class CloudServicesRegistry {
 
     @PostConstruct
     void init() {
-        VerizonConfiguration verizonConfiguration = verizonConfigurationService.getCurrentConfiguration();
-        if (verizonConfiguration.getAccessKey() != null && verizonConfiguration.getPrivateKey() != null) {
-            factory = new CloudapiEndpointFactory(verizonConfiguration.getAccessKey(), verizonConfiguration
-                .getPrivateKey());
-        } else {
-            factory = new CloudapiEndpointFactory();
-        }
+
+        factory = new CloudapiEndpointFactory(() -> {
+            VerizonConfiguration verizonConfiguration = verizonConfigurationService.getCurrentConfiguration();
+            if (verizonConfiguration.getAccessKey() != null && verizonConfiguration.getPrivateKey() != null) {
+                return CloudapiEndpointFactory.createConfiguration(verizonConfiguration.getAccessKey(), verizonConfiguration.getPrivateKey());
+            } else {
+                return System.getProperties();
+            }
+
+        });
         factory.open();
     }
 
@@ -76,11 +83,6 @@ public class CloudServicesRegistry {
         if (factory != null && factory.isOpen()) {
             factory.close();
         }
-    }
-
-    public void refreshEndpointFactory() {
-        VerizonConfiguration verizonConfiguration = verizonConfigurationService.getCurrentConfiguration();
-        factory.updateCredentials(verizonConfiguration.getAccessKey(), verizonConfiguration.getPrivateKey());
     }
 
     @Produces

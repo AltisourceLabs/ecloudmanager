@@ -22,14 +22,77 @@
   ~ SOFTWARE.
   -->
 
-<jboss-deployment-structure>
+<jboss-deployment-structure xmlns="urn:jboss:deployment-structure:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.jboss.org/schema/jbossas http://www.jboss.org/schema/jbossas/jboss-deployment-structure-1_2.xsd">
     <deployment>
-        <!--<exclusions>-->
-            <!--<module name="org.apache.log4j" />-->
-        <!--</exclusions>-->
-        <!--<exclude-subsystems>-->
-            <!--&lt;!&ndash;<subsystem name="resteasy" />&ndash;&gt;-->
-            <!--<subsystem name="logging" />-->
-        <!--</exclude-subsystems>-->
+        <exclusions>
+            <!-- You must configure the PicketLink dependency to your deployment. The dependency above is
+            a reference to a static module from WildFly modules directory. -->
+            <module name="org.picketlink.core.api"/>
+            <module name="org.picketlink.idm.api"/>
+            <module name="org.picketlink.core"/>
+            <module name="org.picketlink.idm"/>
+            <module name="org.picketlink.common"/>
+            <module name="org.picketlink.idm.schema"/>
+        </exclusions>
     </deployment>
+    <sub-deployment name="ecloud-manager-web.war">
+        <exclusions>
+            <!-- You must configure the PicketLink dependency to your deployment. The dependency above is
+            a reference to a static module from WildFly modules directory. -->
+            <module name="org.picketlink.core.api"/>
+            <module name="org.picketlink.idm.api"/>
+            <module name="org.picketlink.core"/>
+            <module name="org.picketlink.idm"/>
+            <module name="org.picketlink.common"/>
+            <module name="org.picketlink.idm.schema"/>
+        </exclusions>
+    </sub-deployment>
+    <sub-deployment name="ecloud-manager-ejb.jar">
+        <exclusions>
+            <!-- You must configure the PicketLink dependency to your deployment. The dependency above is
+            a reference to a static module from WildFly modules directory. -->
+            <module name="org.picketlink.core.api"/>
+            <module name="org.picketlink.idm.api"/>
+            <module name="org.picketlink.core"/>
+            <module name="org.picketlink.idm"/>
+            <module name="org.picketlink.common"/>
+            <module name="org.picketlink.idm.schema"/>
+        </exclusions>
+    </sub-deployment>
+    <!--<deployment>-->
+        <!--<dependencies>-->
+            <!--&lt;!&ndash; You must configure the PicketLink dependency to your deployment. The dependency above is-->
+            <!--a reference to a static module from WildFly modules directory. &ndash;&gt;-->
+            <!--<module name="org.picketlink.core.api" meta-inf="import" annotations="true"/>-->
+            <!--<module name="org.picketlink.idm.api" meta-inf="import" annotations="true"/>-->
+            <!--<module name="org.picketlink.core" meta-inf="import" annotations="true"/>-->
+            <!--<module name="org.picketlink.idm" meta-inf="import" annotations="true"/>-->
+            <!--<module name="org.picketlink.common" meta-inf="import" annotations="true"/>-->
+            <!--<module name="org.picketlink.idm.schema" meta-inf="import" annotations="true"/>-->
+        <!--</dependencies>-->
+    <!--</deployment>-->
+    <!--<sub-deployment name="ecloud-manager-web.war">-->
+        <!--<dependencies>-->
+            <!--&lt;!&ndash; You must configure the PicketLink dependency to your deployment. The dependency above is-->
+            <!--a reference to a static module from WildFly modules directory. &ndash;&gt;-->
+            <!--<module name="org.picketlink.core.api" meta-inf="import" annotations="true"/>-->
+            <!--<module name="org.picketlink.idm.api" meta-inf="import" annotations="true"/>-->
+            <!--<module name="org.picketlink.core" meta-inf="import" annotations="true"/>-->
+            <!--<module name="org.picketlink.idm" meta-inf="import" annotations="true"/>-->
+            <!--<module name="org.picketlink.common" meta-inf="import" annotations="true"/>-->
+            <!--<module name="org.picketlink.idm.schema" meta-inf="import" annotations="true"/>-->
+        <!--</dependencies>-->
+    <!--</sub-deployment>-->
+    <!--<sub-deployment name="ecloud-manager-ejb.jar">-->
+        <!--<dependencies>-->
+            <!--&lt;!&ndash; You must configure the PicketLink dependency to your deployment. The dependency above is-->
+            <!--a reference to a static module from WildFly modules directory. &ndash;&gt;-->
+            <!--<module name="org.picketlink.core.api" meta-inf="import" annotations="true"/>-->
+            <!--<module name="org.picketlink.idm.api" meta-inf="import" annotations="true"/>-->
+            <!--<module name="org.picketlink.core" meta-inf="import" annotations="true"/>-->
+            <!--<module name="org.picketlink.idm" meta-inf="import" annotations="true"/>-->
+            <!--<module name="org.picketlink.common" meta-inf="import" annotations="true"/>-->
+            <!--<module name="org.picketlink.idm.schema" meta-inf="import" annotations="true"/>-->
+        <!--</dependencies>-->
+    <!--</sub-deployment>-->
 </jboss-deployment-structure>

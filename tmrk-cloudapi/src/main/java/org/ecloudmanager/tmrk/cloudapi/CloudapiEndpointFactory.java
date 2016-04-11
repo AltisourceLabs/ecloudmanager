@@ -43,8 +43,8 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.util.Map;
 import java.util.Properties;
+import java.util.function.Supplier;
 
 
 /**
@@ -52,54 +52,24 @@ import java.util.Properties;
  */
 public class CloudapiEndpointFactory implements Closeable, CloudapiConstants {
 
-    private Properties configuration;
+    private Supplier<Properties> configuration;
 
     private ResteasyWebTarget baseTarget;
 
 
     public CloudapiEndpointFactory() {
-        this(System.getProperties());
+        this(System::getProperties);
     }
 
-    public CloudapiEndpointFactory(String accessKey, String privateKey) {
-        this(createConfiguration(accessKey, privateKey));
-    }
-
-    public CloudapiEndpointFactory(final Map<String, String> properties) {
-        this(createConfiguration(properties));
-    }
-
-    public CloudapiEndpointFactory(Properties configuration) {
+    public CloudapiEndpointFactory(Supplier<Properties> configuration) {
         this.configuration = configuration;
     }
 
-    private static Properties createConfiguration(String accessKey, String privateKey) {
+    public static Properties createConfiguration(String accessKey, String privateKey) {
         Properties configuration = new Properties();
         configuration.put(TMRK_API_ACCESS_KEY_PROP, accessKey);
         configuration.put(TMRK_API_PRIVATE_KEY_PROP, privateKey);
         return configuration;
-    }
-
-    private static Properties createConfiguration(final Map<String, String> properties) {
-        Properties configuration = new Properties();
-        configuration.putAll(properties);
-        return configuration;
-    }
-
-    public void updateCredentials(String accessKey, String privateKey) {
-        if (accessKey == null || privateKey == null) {
-            configuration = System.getProperties();
-        } else {
-            configuration = createConfiguration(accessKey, privateKey);
-        }
-
-        ResteasyClient client = baseTarget.getResteasyClient();
-        ApacheHttpClient4Engine httpEngine = (ApacheHttpClient4Engine) client.httpEngine();
-        HttpClient httpClient = httpEngine.getHttpClient();
-        DefaultHttpClient defaultHttpClient = (DefaultHttpClient) httpClient;
-
-        defaultHttpClient.removeRequestInterceptorByClass(CloudapiRequestAuhtorization.class);
-        defaultHttpClient.addRequestInterceptor(new CloudapiRequestAuhtorization(configuration));
     }
 
     public void open() {
@@ -109,7 +79,7 @@ public class CloudapiEndpointFactory implements Closeable, CloudapiConstants {
         DefaultHttpClient.class.cast(httpClient).addRequestInterceptor(new CloudapiRequestAuhtorization(configuration));
 
         client.register(new CloudapiHttpHeadersRequestFilter(configuration));
-        client.register(new CloudapiJAXBMessageBodyProvider(configuration));
+        client.register(new CloudapiJAXBMessageBodyProvider());
         baseTarget = client.target(TMRK_API_URL);
     }
 

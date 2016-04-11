@@ -24,9 +24,15 @@
 
 package org.ecloudmanager.service.execution;
 
+import org.apache.logging.log4j.LogManager;
+
+import java.util.concurrent.Executors;
+
 public class Main {
     public static void main(String[] args) throws InterruptedException {
         ActionExecutor executor = new ActionExecutor();
+        executor.setExecutorService(Executors.newFixedThreadPool(10));
+        executor.setLog(LogManager.getLogger(ActionExecutor.class));
 
 //        SingleAction a1 = Action.single("first", 5));
 //        SingleAction a2 = Action.single("second", 3), a1);
