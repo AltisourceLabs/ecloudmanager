@@ -41,6 +41,7 @@ import org.ecloudmanager.jeecore.service.ServiceSupport;
 import org.ecloudmanager.repository.deployment.DeploymentAttemptRepository;
 import org.ecloudmanager.service.execution.Action;
 import org.ecloudmanager.service.execution.ActionExecutor;
+import org.picketlink.Identity;
 
 import javax.ejb.Stateless;
 import javax.inject.Inject;
@@ -49,6 +50,8 @@ import javax.inject.Inject;
 public class ApplicationDeploymentService extends ServiceSupport {
     @Inject
     ActionExecutor actionExecutor;
+    @Inject
+    Identity identity;
 
     @Inject
     private Logger log;
@@ -100,7 +103,11 @@ public class ApplicationDeploymentService extends ServiceSupport {
                 // Need to reload deployment from the DB because the changes made by actions are stored there
                 // but not reflected in the object instance referenced by the 'deployment' var
                 Deployable reloadedDeployment = datastore.get(deployment);
-                deploymentAttemptRepository.save(new DeploymentAttempt(reloadedDeployment, action, actionType));
+
+                DeploymentAttempt deploymentAttempt = new DeploymentAttempt(reloadedDeployment, action, actionType);
+                deploymentAttempt.setOwner(identity.getAccount().getId());
+                deploymentAttemptRepository.save(deploymentAttempt);
+
                 actionExecutor.shutdown();
             });
         } catch (InterruptedException e) {

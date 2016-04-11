@@ -25,13 +25,14 @@
 package org.ecloudmanager.deployment.history;
 
 import org.ecloudmanager.deployment.core.Deployable;
+import org.ecloudmanager.domain.OwnedMongoObject;
 import org.ecloudmanager.jeecore.domain.MongoObject;
 import org.ecloudmanager.service.execution.Action;
 import org.mongodb.morphia.annotations.Embedded;
 
 import java.util.Date;
 
-public class DeploymentAttempt extends MongoObject {
+public class DeploymentAttempt extends OwnedMongoObject {
     private static final long serialVersionUID = -3745386506846125067L;
 
     public enum Type {CREATE, UPDATE, DELETE}

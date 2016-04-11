@@ -24,12 +24,17 @@
 
 package org.ecloudmanager.web.faces;
 
+import org.apache.commons.lang3.StringUtils;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
 import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.deployment.DeploymentAttemptRepository;
 import org.omnifaces.cdi.Param;
+import org.picketlink.common.util.StringUtil;
+import org.picketlink.idm.IdentityManager;
+import org.picketlink.idm.model.basic.BasicModel;
+import org.picketlink.idm.model.basic.User;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -42,6 +47,8 @@ public class DeploymentAttemptsController extends FacesSupport implements Serial
 
     @Inject
     private transient DeploymentAttemptRepository deploymentAttemptRepository;
+    @Inject
+    private transient IdentityManager identityManager;
 
     @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
@@ -70,6 +77,15 @@ public class DeploymentAttemptsController extends FacesSupport implements Serial
     public void delete(DeploymentAttempt entity) {
         deploymentAttemptRepository.delete(entity);
         refresh();
+    }
+
+    public String getUsernameFromAttempt(DeploymentAttempt deploymentAttempt) {
+        String username = "unknown user";
+        if (!StringUtils.isEmpty(deploymentAttempt.getOwner())) {
+            User user = identityManager.lookupById(User.class, deploymentAttempt.getOwner());
+            username = user.getLoginName();
+        }
+        return username;
     }
 }
 

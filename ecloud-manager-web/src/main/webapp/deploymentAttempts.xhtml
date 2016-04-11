@@ -51,6 +51,9 @@
                         <p:column width="20%" headerText="Time">
                             <h:outputText value="#{deploymentAttempt.timestamp}"/>
                         </p:column>
+                        <p:column width="20%" headerText="User">
+                            <h:outputText value="#{deploymentAttemptsController.getUsernameFromAttempt(deploymentAttempt)}"/>
+                        </p:column>
 
                         <p:column width="60">
                             <p:button outcome="deploymentAction" icon="ui-icon-search">

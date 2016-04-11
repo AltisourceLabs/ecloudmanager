@@ -163,6 +163,7 @@ public class VmService extends ServiceSupport {
 
             vm.setName(name);
             TaskType task = virtualMachineService.editVirtualMachine(vmId, vm);
+            task.setName("edit virtual machine");
             waitUntilTaskNotFinished(task);
         }
 
@@ -247,6 +248,7 @@ public class VmService extends ServiceSupport {
 
         TaskType task = virtualMachineService.editVirtualMachineHardwareConfiguration(vmId, objectFactory
             .createHardwareConfiguration(hardwareConfiguration));
+        task.setName("edit virtual machine hardware configuration");
         waitUntilTaskNotFinished(task);
 
         if (needStartup) {
@@ -259,6 +261,7 @@ public class VmService extends ServiceSupport {
         waitUntilMachineIsNotReady(vmId, 1000);
 
         TaskType task = virtualMachineService.actionPowerOnMachine(vmId);
+        task.setName("power on virtual machine");
         waitUntilTaskNotFinished(task);
     }
 
@@ -352,6 +355,7 @@ public class VmService extends ServiceSupport {
         }
 
         TaskType task = virtualMachineService.actionShutdownMachine(vmId);
+        task.setName("shutdown virtual machine");
         waitUntilTaskNotFinished(task);
         waitUntilMachineIsPoweredOff(vmId);
     }
@@ -365,6 +369,7 @@ public class VmService extends ServiceSupport {
             return;
         }
         TaskType task = virtualMachineService.removeVirtualMachine(vmId);
+        task.setName("remove virtual machine");
         waitUntilTaskNotFinished(task);
     }
 
@@ -380,7 +385,7 @@ public class VmService extends ServiceSupport {
         synchronousPoller.poll(
                 poll, check,
                 1, VZ_TASK_TIMEOUT_SEC,
-                "waiting for task " + task.getName() + " to complete."
+                "waiting for task '" + task.getName() + "' to complete."
         );
     }
 
