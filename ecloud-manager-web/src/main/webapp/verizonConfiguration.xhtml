@@ -37,9 +37,9 @@
                     </h2>
                     <h:panelGrid columns="2" cellpadding="5">
                         <h:outputText value="Verizon Access Key:"/>
-                        <h:inputSecret value="#{verizonConfigurationController.verizonConfiguration.accessKey}" autocomplete="off" redisplay="true"/>
+                        <p:inputText value="#{verizonConfigurationController.verizonConfiguration.accessKey}" autocomplete="off" redisplay="true"/>
                         <h:outputText value="Verizon Private Key:"/>
-                        <h:inputSecret value="#{verizonConfigurationController.verizonConfiguration.privateKey}" autocomplete="off" redisplay="true"/>
+                        <p:password value="#{verizonConfigurationController.verizonConfiguration.privateKey}" autocomplete="new-password" redisplay="true"/>
                     </h:panelGrid>
                     <p:spacer/>
                     <p:outputPanel styleClass="runlistPanel">

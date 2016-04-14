@@ -29,7 +29,10 @@ import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.domain.OwnedMongoObject;
 import org.ecloudmanager.domain.RunlistHolder;
 import org.ecloudmanager.jeecore.domain.MongoObject;
+import org.ecloudmanager.security.Encrypted;
+import org.ecloudmanager.security.EncryptedStringConverter;
 import org.jetbrains.annotations.NotNull;
+import org.mongodb.morphia.annotations.Converters;
 import org.mongodb.morphia.annotations.Entity;
 import org.mongodb.morphia.annotations.Reference;
 
@@ -38,11 +41,13 @@ import java.util.LinkedList;
 import java.util.List;
 
 @Entity(noClassnameStored = true)
+@Converters(EncryptedStringConverter.class)
 public class AWSConfiguration extends OwnedMongoObject implements Serializable, AWSCredentials, RunlistHolder {
 
     private static final long serialVersionUID = 4201146027473993139L;
     private String name;
     private String awsAccessKeyId;
+    @Encrypted
     private String awsSecretKey;
     @Reference(idOnly = true, ignoreMissing = true)
     private List<Recipe> runlist = new LinkedList<>();

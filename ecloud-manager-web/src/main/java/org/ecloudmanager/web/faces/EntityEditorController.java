@@ -45,6 +45,7 @@ public abstract class EntityEditorController<T> implements Serializable {
 
 
     private Constructor<? extends T> ctor;
+    private Class<? extends T> impl;
 
     protected EntityEditorController(Class<? extends T> impl) {
         setClassImpl(impl);
@@ -52,6 +53,7 @@ public abstract class EntityEditorController<T> implements Serializable {
 
     protected void setClassImpl(Class<? extends T> impl) {
         try {
+            this.impl = impl;
             this.ctor = impl.getConstructor();
             init();
         } catch (NoSuchMethodException e) {
@@ -115,5 +117,9 @@ public abstract class EntityEditorController<T> implements Serializable {
 
     public void handleClose(CloseEvent event) {
         cancel();
+    }
+
+    public Class<? extends T> getImpl() {
+        return impl;
     }
 }

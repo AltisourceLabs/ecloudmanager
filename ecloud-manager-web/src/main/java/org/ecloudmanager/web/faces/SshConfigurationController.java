@@ -50,7 +50,7 @@ public class SshConfigurationController extends FacesSupport implements Serializ
 
     private List<SshConfiguration> sshConfigurations;
 
-    public class SshConfigurationEntityEditorController extends EntityEditorController<SshConfiguration> {
+    public class SshConfigurationEntityEditorController extends EncryptedEntityEditorController<SshConfiguration> {
         protected SshConfigurationEntityEditorController() {
             super(SshConfiguration.class);
         }

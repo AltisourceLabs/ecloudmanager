@@ -37,9 +37,9 @@
                 </h2>
                 <h:panelGrid columns="2" cellpadding="5">
                     <h:outputText value="AWS Access Key ID:"/>
-                    <h:inputSecret value="#{awsConfigurationController.awsConfiguration.AWSAccessKeyId}" autocomplete="off" redisplay="true"/>
+                    <p:inputText value="#{awsConfigurationController.awsConfiguration.AWSAccessKeyId}" autocomplete="off" redisplay="true"/>
                     <h:outputText value="AWS Secret Key:"/>
-                    <h:inputSecret value="#{awsConfigurationController.awsConfiguration.AWSSecretKey}" autocomplete="off" redisplay="true"/>
+                    <p:password value="#{awsConfigurationController.awsConfiguration.AWSSecretKey}" autocomplete="new-password" redisplay="true"/>
                 </h:panelGrid>
 
                 <p:spacer/>

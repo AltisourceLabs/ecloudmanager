@@ -25,11 +25,22 @@
 package org.ecloudmanager.domain.template;
 
 import org.ecloudmanager.domain.OwnedMongoObject;
+import org.ecloudmanager.security.Encrypted;
+import org.ecloudmanager.security.EncryptedStringConverter;
+import org.ecloudmanager.security.UserWithEncryptor;
+import org.jasypt.util.text.TextEncryptor;
+import org.mongodb.morphia.annotations.Converters;
 import org.mongodb.morphia.annotations.Entity;
+import org.mongodb.morphia.annotations.PrePersist;
+import org.mongodb.morphia.annotations.PreSave;
+import org.picketlink.Identity;
+import org.picketlink.idm.model.Account;
 
+import javax.enterprise.inject.spi.CDI;
 import java.io.Serializable;
 
 @Entity(noClassnameStored = true)
+@Converters(EncryptedStringConverter.class)
 public class SshConfiguration extends OwnedMongoObject implements Serializable {
     private static final long serialVersionUID = 1293171298086413994L;
 
@@ -39,11 +50,17 @@ public class SshConfiguration extends OwnedMongoObject implements Serializable {
     private String jumpHost2;
     private String jumpHost2Username;
     private String username;
+    @Encrypted
     private String privateKey;
+    @Encrypted
     private String privateKeyPassphrase;
+    @Encrypted
     private String jumpHost1PrivateKey;
+    @Encrypted
     private String jumpHost1PrivateKeyPassphrase;
+    @Encrypted
     private String jumpHost2PrivateKey;
+    @Encrypted
     private String jumpHost2PrivateKeyPassphrase;
 
     public SshConfiguration() {

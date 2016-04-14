@@ -40,13 +40,13 @@ import java.io.Serializable;
 public class VerizonConfigurationController extends FacesSupport implements Serializable {
     private static final long serialVersionUID = -6152300841870550863L;
 
-    @Inject
-    private transient Identity identity;
+//    @Inject
+//    private transient Identity identity;
 
     @Inject
     private transient VerizonConfigurationService verizonConfigurationService;
-    @Inject
-    private transient CloudServicesRegistry cloudServicesRegistry;
+//    @Inject
+//    private transient CloudServicesRegistry cloudServicesRegistry;
 
     private VerizonConfiguration verizonConfiguration;
 

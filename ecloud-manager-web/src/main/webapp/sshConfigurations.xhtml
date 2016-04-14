@@ -89,29 +89,29 @@
                         </h:panelGroup>
                         <h:panelGrid columns="2" cellpadding="5">
                             <h:outputText value="Environment:"/>
-                            <h:inputText value="#{sshConfigurationController.editorController.selected.environment}"/>
+                            <p:inputText value="#{sshConfigurationController.editorController.selected.environment}"/>
                             <h:outputText value="Username:"/>
-                            <h:inputText value="#{sshConfigurationController.editorController.selected.username}"/>
+                            <p:inputText value="#{sshConfigurationController.editorController.selected.username}"/>
                             <h:outputText value="Private key:"/>
-                            <h:inputTextarea value="#{sshConfigurationController.editorController.selected.privateKey}"/>
+                            <p:inputTextarea value="#{sshConfigurationController.editorController.selected.privateKey}"/>
                             <h:outputText value="Private key passphrase:"/>
-                            <h:inputSecret value="#{sshConfigurationController.editorController.selected.privateKeyPassphrase}" redisplay="true"/>
+                            <p:password value="#{sshConfigurationController.editorController.selected.privateKeyPassphrase}" autocomplete="new-password" redisplay="true"/>
                             <h:outputText value="Jump Host 1 Address:"/>
-                            <h:inputText value="#{sshConfigurationController.editorController.selected.jumpHost1}"/>
+                            <p:inputText value="#{sshConfigurationController.editorController.selected.jumpHost1}"/>
                             <h:outputText value="Jump Host 1 Username:"/>
-                            <h:inputText value="#{sshConfigurationController.editorController.selected.jumpHost1Username}"/>
+                            <p:inputText value="#{sshConfigurationController.editorController.selected.jumpHost1Username}"/>
                             <h:outputText value="Jump Host 1 Private key:"/>
-                            <h:inputTextarea value="#{sshConfigurationController.editorController.selected.jumpHost1PrivateKey}"/>
+                            <p:inputTextarea value="#{sshConfigurationController.editorController.selected.jumpHost1PrivateKey}"/>
                             <h:outputText value="Jump Host 1 Private key passphrase:"/>
-                            <h:inputSecret value="#{sshConfigurationController.editorController.selected.jumpHost1PrivateKeyPassphrase}" redisplay="true"/>
+                            <p:password value="#{sshConfigurationController.editorController.selected.jumpHost1PrivateKeyPassphrase}" autocomplete="new-password" redisplay="true"/>
                             <h:outputText value="Jump Host 2 Address:"/>
-                            <h:inputText value="#{sshConfigurationController.editorController.selected.jumpHost2}"/>
+                            <p:inputText value="#{sshConfigurationController.editorController.selected.jumpHost2}"/>
                             <h:outputText value="Jump Host 2 Username:"/>
-                            <h:inputText value="#{sshConfigurationController.editorController.selected.jumpHost2Username}"/>
+                            <p:inputText value="#{sshConfigurationController.editorController.selected.jumpHost2Username}"/>
                             <h:outputText value="Jump Host 2 Private key:"/>
-                            <h:inputTextarea value="#{sshConfigurationController.editorController.selected.jumpHost2PrivateKey}"/>
+                            <p:inputTextarea value="#{sshConfigurationController.editorController.selected.jumpHost2PrivateKey}"/>
                             <h:outputText value="Jump Host 2 Private key passphrase:"/>
-                            <h:inputSecret value="#{sshConfigurationController.editorController.selected.jumpHost2PrivateKeyPassphrase}" redisplay="true"/>
+                            <p:password value="#{sshConfigurationController.editorController.selected.jumpHost2PrivateKeyPassphrase}" autocomplete="new-password" redisplay="true"/>
                         </h:panelGrid>
                         <h:panelGroup rendered="#{sshConfigurationController.editorController.edit}">
                             <p><p:commandButton value="save" update="out" action="#{sshConfigurationController.editorController.save}"/>
