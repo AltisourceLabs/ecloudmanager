@@ -24,15 +24,18 @@
 
 package org.ecloudmanager.deployment.core;
 
+public class Endpoint extends DeploymentObject {
+    public Endpoint() {
+    }
 
-import org.jetbrains.annotations.NotNull;
+    public Endpoint(String name, String description) {
+        setName(name);
+        setDescription(description);
+    }
 
-import java.util.List;
-
-public interface App {
-    @NotNull
-    List<EndpointTemplate> getEndpoints();
-
-    @NotNull
-    List<String> getRequiredEndpoints();
+    @Override
+    public String toString() {
+        return getName() +
+                ((getDescription() == null || getDescription().isEmpty()) ? "" : " (" + getDescription() + ")");
+    }
 }

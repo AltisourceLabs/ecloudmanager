@@ -89,6 +89,10 @@ public class VirtualMachineTemplate extends MongoObject implements Serializable,
         return name;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
     @Nullable
     @Override
     public String getDescription() {
@@ -97,10 +101,6 @@ public class VirtualMachineTemplate extends MongoObject implements Serializable,
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public int getStorage() {
@@ -146,6 +146,7 @@ public class VirtualMachineTemplate extends MongoObject implements Serializable,
         return Arrays.asList("storage", "from", "runlist", "children");
     }
 
+    @NotNull
     @Override
     public List<EndpointTemplate> getEndpoints() {
         Set<EndpointTemplate> result = new LinkedHashSet<>();
@@ -155,6 +156,7 @@ public class VirtualMachineTemplate extends MongoObject implements Serializable,
         return new ArrayList<>(result);
     }
 
+    @NotNull
     @Override
     public List<String> getRequiredEndpoints() {
         return getRunlist().stream().

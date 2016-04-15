@@ -34,6 +34,8 @@ import org.primefaces.event.FileUploadEvent;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Controller
 public class ApplicationEntityEditorController extends EntityEditorController<ApplicationTemplate> {
@@ -44,7 +46,7 @@ public class ApplicationEntityEditorController extends EntityEditorController<Ap
 
     private ApplicationTemplateService applicationTemplateService = Beans.getInstance(ApplicationTemplateService
         .class, true);
-
+    private boolean importing = false;
 
     public ApplicationEntityEditorController() {
         super(ApplicationTemplate.class);
@@ -64,8 +66,6 @@ public class ApplicationEntityEditorController extends EntityEditorController<Ap
     public void startImport() {
         importing = true;
     }
-
-    private boolean importing = false;
 
     @Override
     public void delete(ApplicationTemplate entity) {
@@ -96,6 +96,21 @@ public class ApplicationEntityEditorController extends EntityEditorController<Ap
         applicationTemplateController.getTemplateEntityEditorController().hideDialogs(false);
         RequestContext ctx = RequestContext.getCurrentInstance();
         ctx.execute("PF('dlg_edit').hide()");
+    }
+
+    public List<String> getRequired() {
+        List<String> result = new ArrayList<>();
+        ApplicationTemplate template = (ApplicationTemplate) getSelected();
+
+        template.getChildren().forEach(t -> t.getRequiredEndpoints().forEach(e -> result.add(t.getName() + ":" + e)));
+        return result;
+    }
+
+    public List<String> getAvailable() {
+        List<String> result = new ArrayList<>();
+        ApplicationTemplate template = getSelected();
+        template.getChildren().forEach(t -> t.getEndpoints().forEach(e -> result.add(t.getName() + ":" + e.getName())));
+        return result;
     }
 
 }

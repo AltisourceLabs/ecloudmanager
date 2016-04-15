@@ -25,18 +25,19 @@
 package org.ecloudmanager.deployment.app;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.google.common.collect.ImmutableList;
+import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.EndpointTemplate;
 import org.ecloudmanager.deployment.core.Template;
 import org.ecloudmanager.jeecore.domain.MongoObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.mongodb.morphia.annotations.Entity;
+import org.mongodb.morphia.annotations.PostLoad;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Entity(noClassnameStored = true)
@@ -50,19 +51,30 @@ public class ApplicationTemplate extends MongoObject implements Template<Applica
     private List<Link> links = new ArrayList<>();
     private List<Template> children = new ArrayList<>();
 
-    public List<Template> getChildren() {
-        return children;
-    }
-
     public ApplicationTemplate() {
     }
-
     public ApplicationTemplate(String name) {
         this.name = name;
     }
 
+    public List<Link> getLinks() {
+        return links;
+    }
+
+    public void setLinks(List<Link> links) {
+        this.links = links;
+    }
+
+    public List<Template> getChildren() {
+        return ImmutableList.copyOf(children);
+    }
+
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     @Nullable
@@ -76,12 +88,47 @@ public class ApplicationTemplate extends MongoObject implements Template<Applica
         this.description = description;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public void addChild(Template template) {
         children.add(template);
+        List<String> endpoints = template.getRequiredEndpointsIncludingTemplateName();
+        endpoints.forEach(this::addLink);
+    }
+
+    private Link addLink(String consumer) {
+        Optional<Link> existing = links.stream().filter(l -> (l.getConsumer().equals(consumer))).findAny();
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+        Link newLink = new Link();
+        newLink.setConsumer(consumer);
+        links.add(newLink);
+        return newLink;
+    }
+
+    private void deleteLink(String consumer) {
+        links.stream().filter(l -> (l.getConsumer().equals(consumer))).forEach(l -> links.remove(l));
+    }
+
+    public Template setChild(int index, Template child) {
+        Template old = children.set(index, child);
+        List<String> newEndpoints = child.getRequiredEndpointsIncludingTemplateName();
+        List<String> oldEndpoints = old.getRequiredEndpointsIncludingTemplateName();
+        List<String> toDelete = new ArrayList<>(oldEndpoints);
+        toDelete.removeAll(newEndpoints);
+        List<String> toAdd = new ArrayList<>(newEndpoints);
+        toAdd.removeAll(oldEndpoints);
+        toDelete.forEach(this::deleteLink);
+        toAdd.forEach(this::addLink);
+        return old;
+    }
+
+    public boolean removeChild(Template child) {
+        if (children.remove(child)) {
+            List<String> oldEndpoints = child.getRequiredEndpointsIncludingTemplateName();
+            oldEndpoints.forEach(this::deleteLink);
+            return true;
+        }
+        return false;
     }
 
     @NotNull
@@ -90,7 +137,14 @@ public class ApplicationTemplate extends MongoObject implements Template<Applica
         ApplicationDeployment ad = new ApplicationDeployment();
         ad.setName(getName() + "-" + new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date()));
         ad.setDescription(getName() + " description");
-        children.forEach(s -> ad.addChild(s.toDeployment()));
+        children.forEach(s -> {
+            Deployable deployable = s.toDeployment();
+            s.getEndpoints().forEach(e -> {
+                deployable.addChild(e.toDeployment());
+            });
+            ad.addChild(deployable);
+        });
+        ad.getLinks().addAll(links);
         return ad;
     }
 
@@ -101,15 +155,23 @@ public class ApplicationTemplate extends MongoObject implements Template<Applica
             .collect(Collectors.toList());
     }
 
+    @NotNull
     @Override
     public List<EndpointTemplate> getEndpoints() {
-        return null;
+        return Collections.emptyList();
     }
 
+    @NotNull
     @Override
     public List<String> getRequiredEndpoints() {
-        return null;
+        return Collections.emptyList();
     }
 
-
+    @PostLoad
+    private void postLoad() {
+        children.forEach(t -> {
+            List<String> endpoints = t.getRequiredEndpointsIncludingTemplateName();
+            endpoints.forEach(this::addLink);
+        });
+    }
 }

@@ -33,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ProducedServiceTemplate implements Serializable, Template<ProducedServiceDeployment> {
@@ -63,6 +64,11 @@ public class ProducedServiceTemplate implements Serializable, Template<ProducedS
         return name;
     }
 
+    @Override
+    public void setName(String name) {
+        this.name = name;
+    }
+
     @Nullable
     @Override
     public String getDescription() {
@@ -74,19 +80,16 @@ public class ProducedServiceTemplate implements Serializable, Template<ProducedS
         this.description = description;
     }
 
+    @NotNull
     @Override
     public List<EndpointTemplate> getEndpoints() {
-        return null;
+        return Collections.emptyList();
     }
 
+    @NotNull
     @Override
     public List<String> getRequiredEndpoints() {
-        return null;
-    }
-
-    @Override
-    public void setName(String name) {
-        this.name = name;
+        return Collections.emptyList();
     }
 
     public boolean isPublicHostname() {

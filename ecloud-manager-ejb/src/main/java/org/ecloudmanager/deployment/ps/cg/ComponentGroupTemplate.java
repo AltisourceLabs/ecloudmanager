@@ -32,6 +32,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.mongodb.morphia.annotations.Reference;
 
+import java.util.Collections;
 import java.util.List;
 
 public class ComponentGroupTemplate implements Template<ComponentGroupDeployment> {
@@ -50,6 +51,10 @@ public class ComponentGroupTemplate implements Template<ComponentGroupDeployment
         return name;
     }
 
+    @Override
+    public void setName(String name) {
+        this.name = name;
+    }
 
     @Nullable
     @Override
@@ -60,11 +65,6 @@ public class ComponentGroupTemplate implements Template<ComponentGroupDeployment
     @Override
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    @Override
-    public void setName(String name) {
-        this.name = name;
     }
 
     public HAProxyBackendConfig getHaProxyBackendConfig() {
@@ -103,13 +103,15 @@ public class ComponentGroupTemplate implements Template<ComponentGroupDeployment
         return cg;
     }
 
+    @NotNull
     @Override
     public List<EndpointTemplate> getEndpoints() {
-        return null;
+        return Collections.emptyList();
     }
 
+    @NotNull
     @Override
     public List<String> getRequiredEndpoints() {
-        return null;
+        return Collections.emptyList();
     }
 }

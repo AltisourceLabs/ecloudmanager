@@ -39,9 +39,6 @@ import java.util.Map;
 @Controller
 public class TemplateEntityController extends EntityEditorController<Template> {
     private static final long serialVersionUID = -4260684280722977470L;
-
-    private ApplicationTemplateController applicationTemplateController = Beans.getInstance
-        (ApplicationTemplateController.class, false);
     private static Map<Class, String> dialogs = new HashMap<>();
 
     static {
@@ -49,6 +46,9 @@ public class TemplateEntityController extends EntityEditorController<Template> {
         dialogs.put(ExternalServiceTemplate.class, "dlg_edit_ext_service");
         dialogs.put(VMTemplateReference.class, "dlg_edit_vm_ref");
     }
+
+    private ApplicationTemplateController applicationTemplateController = Beans.getInstance
+            (ApplicationTemplateController.class, false);
 
     protected TemplateEntityController() {
         super(ProducedServiceTemplate.class);

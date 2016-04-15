@@ -37,6 +37,8 @@ public class VMTemplateReference implements Template<VMDeployment>, App {
 
     private String name;
     private String description;
+    @Reference(ignoreMissing = true)
+    private VirtualMachineTemplate virtualMachineTemplate;
 
     public VMTemplateReference() {
     }
@@ -54,9 +56,6 @@ public class VMTemplateReference implements Template<VMDeployment>, App {
             description = virtualMachineTemplate.getDescription();
         }
     }
-
-    @Reference(ignoreMissing = true)
-    private VirtualMachineTemplate virtualMachineTemplate;
 
     @NotNull
     @Override
@@ -85,11 +84,13 @@ public class VMTemplateReference implements Template<VMDeployment>, App {
         this.description = description;
     }
 
+    @NotNull
     @Override
     public List<EndpointTemplate> getEndpoints() {
         return virtualMachineTemplate.getEndpoints();
     }
 
+    @NotNull
     @Override
     public List<String> getRequiredEndpoints() {
         return virtualMachineTemplate.getRequiredEndpoints();

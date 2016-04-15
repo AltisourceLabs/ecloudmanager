@@ -27,6 +27,9 @@ package org.ecloudmanager.deployment.core;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public interface Template<T extends Deployable> extends App {
     @NotNull T toDeployment();
 
@@ -37,5 +40,11 @@ public interface Template<T extends Deployable> extends App {
     @Nullable String getDescription();
 
     void setDescription(String description);
+
+    default List<String> getRequiredEndpointsIncludingTemplateName() {
+        List<String> result = new ArrayList<>();
+        getRequiredEndpoints().forEach(e -> result.add(getName() + ":" + e));
+        return result;
+    }
 
 }

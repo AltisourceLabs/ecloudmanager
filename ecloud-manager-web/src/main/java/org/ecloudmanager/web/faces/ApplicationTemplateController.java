@@ -51,6 +51,40 @@ import java.util.List;
 public class ApplicationTemplateController extends FacesSupport implements Serializable {
 
     private static final long serialVersionUID = 418539347548538918L;
+    private Part file;
+    private List<VirtualMachineTemplate> virtualMachineTemplates;
+    @Inject
+    private transient VirtualMachineTemplateRepository virtualMachineTemplateRepository;
+    @Inject
+    private transient ApplicationTemplateRepository applicationRepository;
+    @Inject
+    private transient ApplicationTemplateService applicationTemplateService;
+    @Inject
+    private ApplicationEntityEditorController applicationEntityEditorController;
+    @Inject
+    private TemplateEntityController templateEntityEditorController;
+    private List<ApplicationTemplate> applicationTemplates;
+    private FirewallRule.Protocol[] firewallRuleProtocols = FirewallRule.Protocol.values();
+    private EntityEditorController<ComponentGroupTemplate> componentGroupTemplateEntityEditorController = new
+            ListEntityEditorController<ComponentGroupTemplate>(ComponentGroupTemplate.class) {
+                @Override
+                protected List<ComponentGroupTemplate> getList() {
+                    if (templateEntityEditorController.getSelected() instanceof ProducedServiceTemplate) {
+                        return ((ProducedServiceTemplate) templateEntityEditorController.getSelected()).getComponentGroups();
+                    }
+                    return Collections.emptyList();
+                }
+            };
+    private EntityEditorController<FirewallRule> firewallRuleEntityEditorController = new
+            ListEntityEditorController<FirewallRule>(FirewallRule.class) {
+                @Override
+                protected List<FirewallRule> getList() {
+                    if (templateEntityEditorController.getSelected() instanceof ProducedServiceTemplate) {
+                        return ((ProducedServiceTemplate) templateEntityEditorController.getSelected()).getFirewallRules();
+                    }
+                    return Collections.emptyList();
+                }
+            };
 
     public Part getFile() {
         return file;
@@ -60,28 +94,9 @@ public class ApplicationTemplateController extends FacesSupport implements Seria
         this.file = file;
     }
 
-    private Part file;
-    private List<VirtualMachineTemplate> virtualMachineTemplates;
-    @Inject
-    private transient VirtualMachineTemplateRepository virtualMachineTemplateRepository;
-    @Inject
-    private transient ApplicationTemplateRepository applicationRepository;
-    @Inject
-    private transient ApplicationTemplateService applicationTemplateService;
-
-    @Inject
-    private ApplicationEntityEditorController applicationEntityEditorController;
-
     public TemplateEntityController getTemplateEntityEditorController() {
         return templateEntityEditorController;
     }
-
-    @Inject
-    private TemplateEntityController templateEntityEditorController;
-
-    private List<ApplicationTemplate> applicationTemplates;
-
-    private FirewallRule.Protocol[] firewallRuleProtocols = FirewallRule.Protocol.values();
 
     public List<VirtualMachineTemplate> getVirtualMachineTemplates() {
         return virtualMachineTemplates;
@@ -97,33 +112,20 @@ public class ApplicationTemplateController extends FacesSupport implements Seria
         virtualMachineTemplates = virtualMachineTemplateRepository.getAll();
     }
 
-
     public List<ApplicationTemplate> getAppTemplates() {
         return applicationTemplates;
     }
-
-
-    private EntityEditorController<ComponentGroupTemplate> componentGroupTemplateEntityEditorController = new
-        ListEntityEditorController<ComponentGroupTemplate>(ComponentGroupTemplate.class) {
-        @Override
-        protected List<ComponentGroupTemplate> getList() {
-            if (templateEntityEditorController.getSelected() instanceof ProducedServiceTemplate) {
-                return ((ProducedServiceTemplate) templateEntityEditorController.getSelected()).getComponentGroups();
-            }
-            return Collections.emptyList();
-        }
-    };
 
     public EntityEditorController<ComponentGroupTemplate> getComponentGroupTemplateEntityEditorController() {
         return componentGroupTemplateEntityEditorController;
     }
 
     public void deleteChild(Template t) {
-        applicationEntityEditorController.getSelected().getChildren().remove(t);
+        applicationEntityEditorController.getSelected().removeChild(t);
     }
 
     public void addChild() {
-        applicationEntityEditorController.getSelected().getChildren().add(templateEntityEditorController.getSelected());
+        applicationEntityEditorController.getSelected().addChild(templateEntityEditorController.getSelected());
         templateEntityEditorController.hideDialogs(true);
 
         templateEntityEditorController.init();
@@ -132,24 +134,11 @@ public class ApplicationTemplateController extends FacesSupport implements Seria
     public void saveChild() {
         int i = applicationEntityEditorController.getSelected().getChildren().indexOf(templateEntityEditorController
             .getOld());
-        applicationEntityEditorController.getSelected().getChildren().set(i, templateEntityEditorController
+        applicationEntityEditorController.getSelected().setChild(i, templateEntityEditorController
             .getSelected());
         templateEntityEditorController.hideDialogs(true);
         templateEntityEditorController.init();
     }
-
-
-    private EntityEditorController<FirewallRule> firewallRuleEntityEditorController = new
-        ListEntityEditorController<FirewallRule>(FirewallRule.class) {
-        @Override
-        protected List<FirewallRule> getList() {
-            if (templateEntityEditorController.getSelected() instanceof ProducedServiceTemplate) {
-                return ((ProducedServiceTemplate) templateEntityEditorController.getSelected()).getFirewallRules();
-            }
-            return Collections.emptyList();
-        }
-    };
-
 
     public ApplicationEntityEditorController getApplicationEntityEditorController() {
         return applicationEntityEditorController;

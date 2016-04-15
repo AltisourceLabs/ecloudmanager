@@ -28,6 +28,7 @@ import org.ecloudmanager.deployment.core.EndpointTemplate;
 import org.ecloudmanager.deployment.core.Template;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
 import java.util.List;
 
 public class ExternalServiceTemplate implements Template<ExternalServiceDeployment> {
@@ -55,14 +56,16 @@ public class ExternalServiceTemplate implements Template<ExternalServiceDeployme
         this.description = address;
     }
 
+    @NotNull
     @Override
     public List<EndpointTemplate> getEndpoints() {
-        return null;
+        return Collections.emptyList();
     }
 
+    @NotNull
     @Override
     public List<String> getRequiredEndpoints() {
-        return null;
+        return Collections.emptyList();
     }
 
     public String getName() {

@@ -70,4 +70,34 @@ public class EndpointTemplate {
     public void setConstant(boolean constant) {
         this.constant = constant;
     }
+
+    @Override
+    public String toString() {
+        return port == null ? name : name + ":" + port;
+    }
+
+    public Endpoint toDeployment() {
+        Endpoint endpoint = new Endpoint();
+        endpoint.setName(getName());
+        endpoint.setDescription(getDescription());
+        ConstraintField portField = new ConstraintField();
+        portField.setName("port");
+        portField.setRequired(true);
+        endpoint.addField(portField);
+        if (!isConstant()) {
+            if (getPort() != null) {
+                portField.setDefaultValue(getPort().toString());
+            }
+        } else {
+            portField.setReadOnly(true);
+            endpoint.setValue(portField.getName(), ConstraintValue.value(getPort().toString()));
+        }
+
+        ConstraintField hostField = new ConstraintField();
+        hostField.setName("host");
+
+//        hostField.setRequired(true);
+        endpoint.addField(hostField);
+        return endpoint;
+    }
 }

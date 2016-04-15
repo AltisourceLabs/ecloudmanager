@@ -104,7 +104,7 @@
                                               update="edit" auto="true" />
                         </h:panelGroup>
                         <p>Name: <p:inputText value="#{applicationTemplateController.applicationEntityEditorController.selected.name}"/></p>
-                        <p>Provides:</p>
+                        <p>Entries:</p>
                         <p:dataTable id="provides" var="srv"
                                      value="#{applicationTemplateController.applicationEntityEditorController.selected.children}"
                                      resizableColumns="true" liveResize="true">
@@ -112,9 +112,13 @@
                             <p:column width="30%" headerText="Name" sortBy="#{srv.name}">
                                 <h:outputText value="#{srv}"/>
                             </p:column>
-                            <p:column headerText="Description">
-                                <h:outputText value="#{srv.description}"/>
+                            <p:column headerText="Endpoints">
+                                <h:outputText value="#{srv.endpoints}"/>
                             </p:column>
+                            <p:column headerText="Required">
+                                <h:outputText value="#{srv.requiredEndpoints}"/>
+                            </p:column>
+
                             <p:column width="60">
                                 <p:commandButton title="Edit" icon="ui-icon-pencil"
                                                  action="#{applicationTemplateController.templateEntityEditorController.startEdit(srv)}"
@@ -138,7 +142,24 @@
                                         action="#{applicationTemplateController.templateEntityEditorController.newVmRef}">
                             </p:menuitem>
                         </p:menuButton>
+                        <p>Connections:</p>
+                        <p:dataTable id="links" var="link"
+                                     value="#{applicationTemplateController.applicationEntityEditorController.selected.links}"
+                                     resizableColumns="true" liveResize="true">
 
+                            <p:column width="30%" headerText="Destination" sortBy="#{link.consumer}">
+                                <h:outputText value="#{link.consumer}"/>
+                            </p:column>
+                            <p:column headerText="Source">
+                                <p:selectOneMenu value="#{link.supplier}">
+                                    <f:selectItem itemLabel="None" itemValue=""/>
+                                    <f:selectItems
+                                            value="#{applicationTemplateController.applicationEntityEditorController.available}"
+                                            var="endpoint"
+                                            itemLabel="#{endpoint}" itemValue="#{endpoint}"/>
+                                </p:selectOneMenu>
+                            </p:column>
+                        </p:dataTable>
                         <h:panelGroup rendered="#{applicationTemplateController.applicationEntityEditorController.edit}">
                             <p><p:commandButton value="save" update="out" action="#{applicationTemplateController.applicationEntityEditorController.save}"/>
                                 <p:commandButton value="cancel" update="out" action="#{applicationTemplateController.applicationEntityEditorController.cancel}"/>

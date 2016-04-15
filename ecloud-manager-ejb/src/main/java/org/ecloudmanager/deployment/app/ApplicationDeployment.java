@@ -29,10 +29,14 @@ import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.Deployer;
 import org.mongodb.morphia.annotations.Entity;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @JsonIgnoreProperties({"id", "version", "new"})
 @Entity("deployments")
 public class ApplicationDeployment extends Deployable {
     private static final long serialVersionUID = -8557535271917698832L;
+    private List<Link> links = new ArrayList<>();
 
     ApplicationDeployment() {
     }
@@ -41,5 +45,14 @@ public class ApplicationDeployment extends Deployable {
     public Deployer<ApplicationDeployment> getDeployer() {
         return new ApplicationDeployer();
     }
+
+    public List<Link> getLinks() {
+        return links;
+    }
+
+    public void setLinks(List<Link> links) {
+        this.links = links;
+    }
+
 
 }

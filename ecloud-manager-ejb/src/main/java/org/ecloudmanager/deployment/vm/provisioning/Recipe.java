@@ -28,6 +28,7 @@ import org.ecloudmanager.deployment.core.App;
 import org.ecloudmanager.deployment.core.EndpointTemplate;
 import org.ecloudmanager.jeecore.domain.DomainObject;
 import org.ecloudmanager.jeecore.domain.Persistable;
+import org.jetbrains.annotations.NotNull;
 import org.mongodb.morphia.annotations.Id;
 import org.mongodb.morphia.annotations.PostLoad;
 import org.mongodb.morphia.annotations.PostPersist;
@@ -94,6 +95,7 @@ public class Recipe extends DomainObject implements App, Persistable<String> {
         return oldId == null;
     }
 
+    @NotNull
     public List<EndpointTemplate> getEndpoints() {
         return endpoints;
     }
@@ -108,6 +110,7 @@ public class Recipe extends DomainObject implements App, Persistable<String> {
         return pos == -1 ? id : id.substring(0, pos);
     }
 
+    @NotNull
     @Override
     public List<String> getRequiredEndpoints() {
         List<String> constraints = getConstraintNames();

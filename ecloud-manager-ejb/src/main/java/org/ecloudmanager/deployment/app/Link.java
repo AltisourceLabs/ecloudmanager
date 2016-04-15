@@ -26,42 +26,24 @@ package org.ecloudmanager.deployment.app;
 
 public class Link {
 
-    private String consumerName;
-    private String consumerEndpoint;
-    private String supplierName;
-    private String supplierEndpoint;
+    private String consumer;
+    private String supplier;
     private boolean required;
 
-    public String getConsumerName() {
-        return consumerName;
+    public String getConsumer() {
+        return consumer;
     }
 
-    public void setConsumerName(String consumerName) {
-        this.consumerName = consumerName;
+    public void setConsumer(String consumer) {
+        this.consumer = consumer;
     }
 
-    public String getConsumerEndpoint() {
-        return consumerEndpoint;
+    public String getSupplier() {
+        return supplier;
     }
 
-    public void setConsumerEndpoint(String consumerEndpoint) {
-        this.consumerEndpoint = consumerEndpoint;
-    }
-
-    public String getSupplierName() {
-        return supplierName;
-    }
-
-    public void setSupplierName(String supplierName) {
-        this.supplierName = supplierName;
-    }
-
-    public String getSupplierEndpoint() {
-        return supplierEndpoint;
-    }
-
-    public void setSupplierEndpoint(String supplierEndpoint) {
-        this.supplierEndpoint = supplierEndpoint;
+    public void setSupplier(String supplier) {
+        this.supplier = supplier;
     }
 
     public boolean isRequired() {

@@ -35,18 +35,8 @@ public class ConstraintField {
     private boolean allowReference = true;
     private ConstraintFieldSuggestionsProvider suggestionsProvider;
 
-    public static Builder builder() {
-        return new Builder();
+    public ConstraintField() {
     }
-
-    public enum Type {
-        STRING,
-        NUMBER
-    }
-
-    private ConstraintField() {
-    }
-
     private ConstraintField(String name, String description, String defaultValue, Type type, boolean required,
                             boolean readOnly, boolean allowReference, ConstraintFieldSuggestionsProvider
                                 suggestionsProvider) {
@@ -60,8 +50,16 @@ public class ConstraintField {
         this.suggestionsProvider = suggestionsProvider;
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getDescription() {
@@ -72,8 +70,16 @@ public class ConstraintField {
         return defaultValue;
     }
 
+    public void setDefaultValue(String defaultValue) {
+        this.defaultValue = defaultValue;
+    }
+
     public boolean isRequired() {
         return required;
+    }
+
+    public void setRequired(boolean required) {
+        this.required = required;
     }
 
     public Type getType() {
@@ -82,6 +88,10 @@ public class ConstraintField {
 
     public boolean isReadOnly() {
         return readOnly;
+    }
+
+    public void setReadOnly(boolean readOnly) {
+        this.readOnly = readOnly;
     }
 
     public boolean isAllowReference() {
@@ -95,7 +105,9 @@ public class ConstraintField {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(description);
+        if (description != null) {
+            sb.append(description);
+        }
         if (name != null && !name.isEmpty()) {
             sb.append(" [").append(name).append("] ");
         }
@@ -103,6 +115,24 @@ public class ConstraintField {
             sb.append("*");
         }
         return sb.toString();
+    }
+
+    public ConstraintField copy() {
+        ConstraintField copy = new ConstraintField();
+        copy.name = this.name;
+        copy.description = this.description;
+        copy.defaultValue = this.defaultValue;
+        copy.type = this.type;
+        copy.required = this.required;
+        copy.readOnly = this.readOnly;
+        copy.allowReference = this.allowReference;
+        copy.suggestionsProvider = this.suggestionsProvider;
+        return copy;
+    }
+
+    public enum Type {
+        STRING,
+        NUMBER
     }
 
     public static class Builder {
@@ -163,18 +193,5 @@ public class ConstraintField {
             return new ConstraintField(name, description, defaultValue, type, required, readOnly, allowReference,
                 suggestionsProvider);
         }
-    }
-
-    public ConstraintField copy() {
-        ConstraintField copy = new ConstraintField();
-        copy.name = this.name;
-        copy.description = this.description;
-        copy.defaultValue = this.defaultValue;
-        copy.type = this.type;
-        copy.required = this.required;
-        copy.readOnly = this.readOnly;
-        copy.allowReference = this.allowReference;
-        copy.suggestionsProvider = this.suggestionsProvider;
-        return copy;
     }
 }

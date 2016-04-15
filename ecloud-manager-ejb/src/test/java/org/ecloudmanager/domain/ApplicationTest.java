@@ -83,7 +83,8 @@ public class ApplicationTest {
             "org.ecloudmanager:tmrk-cloudapi",
             "uk.com.robust-it:cloning",
             "com.jcraft:jsch",
-
+                "org.picketlink:picketlink",
+                "org.picketlink:picketlink-idm-simple-schema",
 
             "org.apache.logging.log4j:log4j-api",
             "org.apache.logging.log4j:log4j-core",
@@ -99,7 +100,7 @@ public class ApplicationTest {
 
         return ShrinkWrap.create(WebArchive.class, "test.war").addPackages(true,
             "org.ecloudmanager")
-            .addAsWebInfResource("test-ds.xml")
+                .addAsWebInfResource("persistence.xml")
             .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml").addAsLibraries(pomLibs);
     }
 

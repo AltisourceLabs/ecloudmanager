@@ -50,6 +50,10 @@ public class AWSVmActions {
     public Action getCreateVmAction(VMDeployment vmDeployment) {
         return Action.single("Create and start VM", () ->
         {
+            String securityGroupId = vmService.createSecurityGroup(vmDeployment);
+
+            AWSInfrastructureDeployer.addSecurityGroupId(vmDeployment, securityGroupId);
+
             Instance instance = vmService.createVm(vmDeployment);
             clearVmConstraints(vmDeployment);
 
@@ -64,7 +68,7 @@ public class AWSVmActions {
             if (instance.getPrivateIpAddress() != null) {
                 InfrastructureDeployer.addIP(vmDeployment, instance.getPrivateIpAddress());
             }
-
+            vmService.createFirewallRules(vmDeployment);
             applicationDeploymentService.update((ApplicationDeployment) vmDeployment.getTop());
         }, vmDeployment);
     }
@@ -85,6 +89,8 @@ public class AWSVmActions {
             () -> {
                 vmService.deleteVm(vmDeployment);
                 clearVmConstraints(vmDeployment);
+                vmService.deleteSecurityGroup(vmDeployment);
+                AWSInfrastructureDeployer.removeSecurityGroupId(vmDeployment);
             }, vmDeployment);
     }
 

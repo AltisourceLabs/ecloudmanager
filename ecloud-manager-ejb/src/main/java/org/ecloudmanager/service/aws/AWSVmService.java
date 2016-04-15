@@ -34,8 +34,13 @@ import com.amazonaws.services.route53.model.*;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Logger;
+import org.ecloudmanager.deployment.app.ApplicationDeployment;
+import org.ecloudmanager.deployment.app.Link;
+import org.ecloudmanager.deployment.core.Deployable;
+import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.vm.VMDeployer;
 import org.ecloudmanager.deployment.vm.VMDeployment;
+import org.ecloudmanager.deployment.vm.infrastructure.AWSInfrastructureDeployer;
 import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployer;
 import org.ecloudmanager.service.execution.ActionException;
 import org.ecloudmanager.service.execution.SynchronousPoller;
@@ -43,7 +48,9 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 
@@ -51,11 +58,67 @@ import static org.ecloudmanager.deployment.vm.infrastructure.AWSInfrastructureDe
 
 public class AWSVmService {
     @Inject
+    SynchronousPoller synchronousPoller;
+    @Inject
     private Logger log;
     @Inject
     private AWSClientService awsClientService;
-    @Inject
-    SynchronousPoller synchronousPoller;
+
+    public String createSecurityGroup(VMDeployment vmDeployment) {
+        String name = vmDeployment.getConfigValue(VMDeployer.VM_NAME);
+        log.info("Creating AWS security group " + name);
+
+        String regionStr = getAwsRegion(vmDeployment);
+
+        AmazonEC2 amazonEC2 = awsClientService.getAmazonEC2(RegionUtils.getRegion(regionStr));
+        DescribeSubnetsResult describeSubnetsResult = amazonEC2.describeSubnets(new DescribeSubnetsRequest().withSubnetIds(getAwsSubnet(vmDeployment)));
+        String vpcId = describeSubnetsResult.getSubnets().get(0).getVpcId();
+        CreateSecurityGroupRequest createSecurityGroupRequest = new CreateSecurityGroupRequest(name, "Created by ecloud manager").withVpcId(vpcId);
+        CreateSecurityGroupResult createSecurityGroupResult = amazonEC2.createSecurityGroup(createSecurityGroupRequest);
+        String securityGroupId = createSecurityGroupResult.getGroupId();
+        log.info("Security group created: " + securityGroupId + " name: " + name);
+
+        AuthorizeSecurityGroupIngressRequest sshRule = new AuthorizeSecurityGroupIngressRequest().withGroupId(securityGroupId).withFromPort(22).withToPort(22).withIpProtocol("TCP").withCidrIp("0.0.0.0/0");
+        amazonEC2.authorizeSecurityGroupIngress(sshRule);
+        return securityGroupId;
+    }
+
+    public void createFirewallRules(VMDeployment deployment) {
+        ApplicationDeployment ad = (ApplicationDeployment) deployment.getTop();
+        List<Link> links = ad.getLinks();
+        deployment.getVirtualMachineTemplate().getRequiredEndpointsIncludingTemplateName().forEach(r -> {
+            Optional<Link> o = links.stream().filter(l -> l.getConsumer().equals(r)).findFirst();
+            if (o.isPresent()) {
+                String endpoint = o.get().getSupplier();
+                String[] splitted = endpoint.split(":");
+                String name = splitted[0];
+                Deployable d = (Deployable) ad.getChildByName(name);
+                String endpointName = splitted[splitted.length - 1];
+                Endpoint e = (Endpoint) d.getChildByName(endpointName);
+                int port = Integer.parseInt(d.getChildByName(endpointName).getConfigValue("port"));
+                if (d instanceof VMDeployment) {
+                    VMDeployment supplier = (VMDeployment) d;
+                    String supplierSecurityGroupId = AWSInfrastructureDeployer.getAwsSecurityGroupId(supplier);
+                    String securityGroupId = AWSInfrastructureDeployer.getAwsSecurityGroupId(deployment);
+
+                    AuthorizeSecurityGroupIngressRequest inRule = new AuthorizeSecurityGroupIngressRequest()
+                            .withGroupId(supplierSecurityGroupId)
+                            .withFromPort(port).withToPort(port)
+                            .withIpProtocol("TCP")
+                            .withCidrIp(InfrastructureDeployer.getIP(deployment) + "/32");
+                    getAmazonEC2(supplier).authorizeSecurityGroupIngress(inRule);
+//                    AuthorizeSecurityGroupEgressRequest outRule = new AuthorizeSecurityGroupEgressRequest()
+//                            .withGroupId(securityGroupId)
+//                            .withFromPort(port).withToPort(port)
+//                            .withIpProtocol("TCP")
+//                            .withCidrIp(InfrastructureDeployer.getIP(supplier) + "/32");
+//                    getAmazonEC2(deployment).authorizeSecurityGroupEgress(outRule);
+                } else {
+                    log.warn("Unsupported endpoint:" + d);
+                }
+            }
+        });
+    }
 
     public Instance createVm(VMDeployment vmDeployment) {
         String name = vmDeployment.getConfigValue(VMDeployer.VM_NAME);
@@ -66,7 +129,6 @@ public class AWSVmService {
         AmazonEC2 amazonEC2 = awsClientService.getAmazonEC2(RegionUtils.getRegion(regionStr));
 
         int storage = vmDeployment.getVirtualMachineTemplate().getStorage();
-
         // Set 'delete on termination' and size
         BlockDeviceMapping mapping = new BlockDeviceMapping().withDeviceName("/dev/sda1").withEbs(new EbsBlockDevice
             ().withDeleteOnTermination(true).withVolumeSize(storage));
@@ -80,10 +142,11 @@ public class AWSVmService {
             .withKeyName(getAwsKeypair(vmDeployment))
             .withBlockDeviceMappings(mapping);
 
-        String securityGroup = getAwsSecurityGroup(vmDeployment);
+        String securityGroup = getAwsSecurityGroupId(vmDeployment);
         if (securityGroup != null) {
             runInstancesRequest = runInstancesRequest.withSecurityGroupIds(securityGroup);
         }
+        runInstancesRequest = runInstancesRequest.withSecurityGroupIds(securityGroup);
 
         RunInstancesResult runInstancesResult = amazonEC2.runInstances(runInstancesRequest);
         Instance inst = runInstancesResult.getReservation().getInstances().get(0);
@@ -245,6 +308,27 @@ public class AWSVmService {
         deleteDnsRecord(vmDeployment);
     }
 
+    public void deleteSecurityGroup(VMDeployment vmDeployment) {
+        String id = AWSInfrastructureDeployer.getAwsSecurityGroupId(vmDeployment);
+        if (id == null) {
+            log.info("Security Group ID is null, nothing to delete");
+            return;
+        }
+
+//        boolean notFound = getAmazonEC2(vmDeployment).describeSecurityGroups(new DescribeSecurityGroupsRequest().withGroupIds(Arrays.asList(id))).getSecurityGroups().isEmpty();
+//        if (notFound) {
+//            log.info("Security Group with ID " + id + " not found");
+//            return;
+//        }
+        DeleteSecurityGroupRequest request = new DeleteSecurityGroupRequest().withGroupId(id);
+        try {
+            getAmazonEC2(vmDeployment).deleteSecurityGroup(request);
+            log.info("Security Group with ID " + id + " deleted");
+        } catch (Exception e) {
+            log.info("Delete Security Group with ID " + id + " failed", e);
+        }
+    }
+
     public void updateVm(VMDeployment before, VMDeployment after, String instanceId) {
         String oldName = before.getConfigValue(VMDeployer.VM_NAME);
         String newName = after.getConfigValue(VMDeployer.VM_NAME);
@@ -356,5 +440,9 @@ public class AWSVmService {
             deleteDnsRecord(before);
             createDnsRecord(instance, after);
         }
+    }
+
+    private AmazonEC2 getAmazonEC2(VMDeployment deployment) {
+        return awsClientService.getAmazonEC2(RegionUtils.getRegion(getAwsRegion(deployment)));
     }
 }

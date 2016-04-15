@@ -25,10 +25,7 @@
 package org.ecloudmanager.deployment.vm.infrastructure;
 
 import org.ecloudmanager.actions.AWSVmActions;
-import org.ecloudmanager.deployment.core.Config;
-import org.ecloudmanager.deployment.core.ConstraintField;
-import org.ecloudmanager.deployment.core.DeploymentConstraint;
-import org.ecloudmanager.deployment.core.DeploymentObject;
+import org.ecloudmanager.deployment.core.*;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
 import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
@@ -38,12 +35,11 @@ import org.ecloudmanager.service.execution.Action;
 import javax.enterprise.inject.spi.CDI;
 
 public class AWSInfrastructureDeployer extends InfrastructureDeployer {
-    private static final String AWS_CONFIG_NAME = "aws";
-
     public static final String AWS_REGION = "awsRegion";
     public static final String AWS_SUBNET = "awsSubnet";
     public static final String AWS_TAGS = "awsTags";
     public static final String AWS_SECURITY_GROUP = "awsSecurityGroup";
+    private static final String AWS_CONFIG_NAME = "aws";
     private static final String AWS_AMI = "awsAmi";
     private static final String AWS_INSTANCE_TYPE = "awsInstanceType";
     private static final String AWS_KEYPAIR = "awsKeypairName";
@@ -52,6 +48,69 @@ public class AWSInfrastructureDeployer extends InfrastructureDeployer {
     private static final String AWS_HOSTED_ZONE = "awsHostedZone";
 
     private AWSVmActions awsVmActions = CDI.current().select(AWSVmActions.class).get();
+
+    private static DeploymentObject getAWSConfig(VMDeployment deployment) {
+        return deployment.createIfMissingAndGetConfig(AWS_CONFIG_NAME);
+    }
+
+    public static String getAwsRegion(Config config) {
+        return config.getConfigValue(AWS_REGION);
+    }
+
+    public static String getAwsRegion(VMDeployment deployment) {
+        return getAWSConfig(deployment).getConfigValue(AWS_REGION);
+    }
+
+    public static String getAwsSubnet(VMDeployment deployment) {
+        return getAWSConfig(deployment).getConfigValue(AWS_SUBNET);
+    }
+
+    public static String getAwsSubnet(Config deploymentConstraint) {
+        return deploymentConstraint.getConfigValue(AWS_SUBNET);
+    }
+
+    public static String getAwsAmi(VMDeployment deployment) {
+        return getAWSConfig(deployment).getConfigValue(AWS_AMI);
+    }
+
+    public static String getAwsInstanceType(VMDeployment deployment) {
+        return getAWSConfig(deployment).getConfigValue(AWS_INSTANCE_TYPE);
+    }
+
+    public static String getAwsKeypair(VMDeployment deployment) {
+        return getAWSConfig(deployment).getConfigValue(AWS_KEYPAIR);
+    }
+
+    public static String getAwsSecurityGroupId(VMDeployment deployment) {
+        return getAWSConfig(deployment).getConfigValue(AWS_SECURITY_GROUP);
+    }
+
+    public static String getGroupAwsTag(VMDeployment deployment) {
+        return getAWSConfig(deployment).getConfigValue(GROUP_AWS_TAG);
+    }
+
+    public static String getCostCenterAwsTag(VMDeployment deployment) {
+        return getAWSConfig(deployment).getConfigValue(COST_CENTER_AWS_TAG);
+    }
+
+    public static String getAwsHostedZone(VMDeployment deployment) {
+        return getAWSConfig(deployment).getConfigValue(AWS_HOSTED_ZONE);
+    }
+
+    public static void addSecurityGroupId(VMDeployment deployment, String id) {
+        getAWSConfig(deployment).addField(
+                ConstraintField.builder()
+                        .name(AWS_SECURITY_GROUP)
+                        .description("AWS Security Group ID")
+                        .readOnly(true)
+                        .build()
+        );
+        getAWSConfig(deployment).setValue(AWS_SECURITY_GROUP, ConstraintValue.value(id));
+    }
+
+    public static void removeSecurityGroupId(VMDeployment deployment) {
+        getAWSConfig(deployment).removeField(AWS_SECURITY_GROUP);
+    }
 
     @Override
     public void specifyConstraints(VMDeployment vmDeployment) {
@@ -115,13 +174,13 @@ public class AWSInfrastructureDeployer extends InfrastructureDeployer {
                         .suggestionsProvider(AWSSuggestionsProviders.createTagSuggestionsProvider("Cost Center"))
                         .build()
         );
-        constraint.addField(
-                ConstraintField.builder()
-                        .name(AWS_SECURITY_GROUP)
-                        .description("AWS Security Group Name")
-                        .suggestionsProvider(AWSSuggestionsProviders.createSecurityGroupSuggestionsProvider())
-                        .build()
-        );
+//        constraint.addField(
+//                ConstraintField.builder()
+//                        .name(AWS_SECURITY_GROUP)
+//                        .description("AWS Security Group Name")
+//                        .suggestionsProvider(AWSSuggestionsProviders.createSecurityGroupSuggestionsProvider())
+//                        .build()
+//        );
         constraint.addOptionalField(AWS_TAGS, "AWS Tags");
     }
 
@@ -138,10 +197,6 @@ public class AWSInfrastructureDeployer extends InfrastructureDeployer {
     @Override
     public Action getUpdateAction(DeploymentAttempt lastAttempt, VMDeployment before, VMDeployment after) {
         return awsVmActions.getUpdateVmAction(before, after);
-    }
-
-    private static DeploymentObject getAWSConfig(VMDeployment deployment) {
-        return deployment.createIfMissingAndGetConfig(AWS_CONFIG_NAME);
     }
 
     @Override
@@ -170,49 +225,5 @@ public class AWSInfrastructureDeployer extends InfrastructureDeployer {
                !getAwsSubnet(after).equals(getAwsSubnet(before)) ||
                !getAwsAmi(after).equals(getAwsAmi(before)) ||
                !getAwsKeypair(after).equals(getAwsKeypair(before));
-    }
-
-    public static String getAwsRegion(Config config) {
-        return config.getConfigValue(AWS_REGION);
-    }
-
-    public static String getAwsRegion(VMDeployment deployment) {
-        return getAWSConfig(deployment).getConfigValue(AWS_REGION);
-    }
-
-    public static String getAwsSubnet(VMDeployment deployment) {
-        return getAWSConfig(deployment).getConfigValue(AWS_SUBNET);
-    }
-
-    public static String getAwsSubnet(Config deploymentConstraint) {
-        return deploymentConstraint.getConfigValue(AWS_SUBNET);
-    }
-
-    public static String getAwsAmi(VMDeployment deployment) {
-        return getAWSConfig(deployment).getConfigValue(AWS_AMI);
-    }
-
-    public static String getAwsInstanceType(VMDeployment deployment) {
-        return getAWSConfig(deployment).getConfigValue(AWS_INSTANCE_TYPE);
-    }
-
-    public static String getAwsKeypair(VMDeployment deployment) {
-        return getAWSConfig(deployment).getConfigValue(AWS_KEYPAIR);
-    }
-
-    public static String getAwsSecurityGroup(VMDeployment deployment) {
-        return getAWSConfig(deployment).getConfigValue(AWS_SECURITY_GROUP);
-    }
-
-    public static String getGroupAwsTag(VMDeployment deployment) {
-        return getAWSConfig(deployment).getConfigValue(GROUP_AWS_TAG);
-    }
-
-    public static String getCostCenterAwsTag(VMDeployment deployment) {
-        return getAWSConfig(deployment).getConfigValue(COST_CENTER_AWS_TAG);
-    }
-
-    public static String getAwsHostedZone(VMDeployment deployment) {
-        return getAWSConfig(deployment).getConfigValue(AWS_HOSTED_ZONE);
     }
 }

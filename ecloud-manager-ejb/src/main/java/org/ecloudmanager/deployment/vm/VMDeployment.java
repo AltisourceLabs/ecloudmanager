@@ -25,17 +25,17 @@
 package org.ecloudmanager.deployment.vm;
 
 import org.bson.types.ObjectId;
+import org.ecloudmanager.deployment.app.ApplicationDeployment;
+import org.ecloudmanager.deployment.app.Link;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.vm.infrastructure.Infrastructure;
 import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployer;
 import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironment;
 import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironmentDeployer;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
-import org.jetbrains.annotations.NotNull;
 import org.mongodb.morphia.annotations.Transient;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class VMDeployment extends Deployable {
@@ -43,17 +43,12 @@ public class VMDeployment extends Deployable {
 
     private VirtualMachineTemplate virtualMachineTemplate;
     private Infrastructure infrastructure;
+    @Transient
+    private VMDeployer deployer;
 
     VMDeployment() {
         setId(new ObjectId());
     }
-
-    void setVirtualMachineTemplate(VirtualMachineTemplate virtualMachineTemplate) {
-        this.virtualMachineTemplate = virtualMachineTemplate;
-    }
-
-    @Transient
-    private VMDeployer deployer;
 
     @Override
     public VMDeployer getDeployer() {
@@ -76,8 +71,23 @@ public class VMDeployment extends Deployable {
         return virtualMachineTemplate;
     }
 
+    void setVirtualMachineTemplate(VirtualMachineTemplate virtualMachineTemplate) {
+        this.virtualMachineTemplate = virtualMachineTemplate;
+    }
+
     public Stream<Deployable> getRequired() {
-        return Stream.concat(super.getRequired(), Stream.of(getChefEnvironment()));
+        ApplicationDeployment ad = (ApplicationDeployment) getTop();
+        List<Link> links = ad.getLinks();
+        List<Deployable> required = new ArrayList<>();
+        virtualMachineTemplate.getRequiredEndpointsIncludingTemplateName().forEach(r -> {
+            Optional<Link> o = links.stream().filter(l -> l.getConsumer().equals(r)).findFirst();
+            if (o.isPresent()) {
+                String endpoint = o.get().getSupplier();
+                String name = endpoint.split(":")[0];
+                required.add((Deployable) ad.getChildByName(name));
+            }
+        });
+        return Stream.concat(required.stream(), Stream.concat(super.getRequired(), Stream.of(getChefEnvironment())));
     }
 
     public ChefEnvironment getChefEnvironment() {
@@ -89,4 +99,10 @@ public class VMDeployment extends Deployable {
         runlist.addAll(getVirtualMachineTemplate().getRunlist());
         return runlist;
     }
+
+    @Override
+    protected Collection<String> getExcludeFieldNames() {
+        return Arrays.asList("deployer", "parent", "children", "fields", "values");
+    }
+
 }
