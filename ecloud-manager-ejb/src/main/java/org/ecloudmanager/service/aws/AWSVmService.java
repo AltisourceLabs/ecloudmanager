@@ -34,9 +34,7 @@ import com.amazonaws.services.route53.model.*;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Logger;
-import org.ecloudmanager.deployment.app.ApplicationDeployment;
-import org.ecloudmanager.deployment.app.Link;
-import org.ecloudmanager.deployment.core.Deployable;
+import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.vm.VMDeployer;
 import org.ecloudmanager.deployment.vm.VMDeployment;
@@ -50,7 +48,6 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 
@@ -84,38 +81,29 @@ public class AWSVmService {
     }
 
     public void createFirewallRules(VMDeployment deployment) {
-        ApplicationDeployment ad = (ApplicationDeployment) deployment.getTop();
-        List<Link> links = ad.getLinks();
-        deployment.getVirtualMachineTemplate().getRequiredEndpointsIncludingTemplateName().forEach(r -> {
-            Optional<Link> o = links.stream().filter(l -> l.getConsumer().equals(r)).findFirst();
-            if (o.isPresent()) {
-                String endpoint = o.get().getSupplier();
-                String[] splitted = endpoint.split(":");
-                String name = splitted[0];
-                Deployable d = (Deployable) ad.getChildByName(name);
-                String endpointName = splitted[splitted.length - 1];
-                Endpoint e = (Endpoint) d.getChildByName(endpointName);
-                int port = Integer.parseInt(d.getChildByName(endpointName).getConfigValue("port"));
-                if (d instanceof VMDeployment) {
-                    VMDeployment supplier = (VMDeployment) d;
-                    String supplierSecurityGroupId = AWSInfrastructureDeployer.getAwsSecurityGroupId(supplier);
-                    String securityGroupId = AWSInfrastructureDeployer.getAwsSecurityGroupId(deployment);
+        List<Endpoint> required = deployment.getRequiredEndpoints();
+        required.forEach(e -> {
+            int port = Integer.parseInt(e.getConfigValue("port"));
+            DeploymentObject d = e.getParent();
+            if (d instanceof VMDeployment) {
+                VMDeployment supplier = (VMDeployment) d;
+                String supplierSecurityGroupId = AWSInfrastructureDeployer.getAwsSecurityGroupId(supplier);
+                String securityGroupId = AWSInfrastructureDeployer.getAwsSecurityGroupId(deployment);
 
-                    AuthorizeSecurityGroupIngressRequest inRule = new AuthorizeSecurityGroupIngressRequest()
-                            .withGroupId(supplierSecurityGroupId)
-                            .withFromPort(port).withToPort(port)
-                            .withIpProtocol("TCP")
-                            .withCidrIp(InfrastructureDeployer.getIP(deployment) + "/32");
-                    getAmazonEC2(supplier).authorizeSecurityGroupIngress(inRule);
+                AuthorizeSecurityGroupIngressRequest inRule = new AuthorizeSecurityGroupIngressRequest()
+                        .withGroupId(supplierSecurityGroupId)
+                        .withFromPort(port).withToPort(port)
+                        .withIpProtocol("TCP")
+                        .withCidrIp(InfrastructureDeployer.getIP(deployment) + "/32");
+                getAmazonEC2(supplier).authorizeSecurityGroupIngress(inRule);
 //                    AuthorizeSecurityGroupEgressRequest outRule = new AuthorizeSecurityGroupEgressRequest()
 //                            .withGroupId(securityGroupId)
 //                            .withFromPort(port).withToPort(port)
 //                            .withIpProtocol("TCP")
 //                            .withCidrIp(InfrastructureDeployer.getIP(supplier) + "/32");
 //                    getAmazonEC2(deployment).authorizeSecurityGroupEgress(outRule);
-                } else {
-                    log.warn("Unsupported endpoint:" + d);
-                }
+            } else {
+                log.warn("Unsupported endpoint:" + d);
             }
         });
     }

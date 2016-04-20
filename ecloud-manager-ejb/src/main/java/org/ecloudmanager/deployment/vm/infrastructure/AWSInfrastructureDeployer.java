@@ -226,4 +226,5 @@ public class AWSInfrastructureDeployer extends InfrastructureDeployer {
                !getAwsAmi(after).equals(getAwsAmi(before)) ||
                !getAwsKeypair(after).equals(getAwsKeypair(before));
     }
+
 }

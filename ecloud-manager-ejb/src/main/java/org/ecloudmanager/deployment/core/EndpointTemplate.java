@@ -25,6 +25,8 @@
 package org.ecloudmanager.deployment.core;
 
 public class EndpointTemplate {
+    private static String PORT = "port";
+    private static String HOST = "host";
     private String name;
     private String description;
     private Integer port;
@@ -80,23 +82,23 @@ public class EndpointTemplate {
         Endpoint endpoint = new Endpoint();
         endpoint.setName(getName());
         endpoint.setDescription(getDescription());
-        ConstraintField portField = new ConstraintField();
-        portField.setName("port");
-        portField.setRequired(true);
-        endpoint.addField(portField);
+        ConstraintField.Builder builder = ConstraintField.builder();
+        builder.name(PORT).required(true);
         if (!isConstant()) {
             if (getPort() != null) {
-                portField.setDefaultValue(getPort().toString());
+                builder.defaultValue(getPort().toString());
             }
         } else {
-            portField.setReadOnly(true);
-            endpoint.setValue(portField.getName(), ConstraintValue.value(getPort().toString()));
+            builder.readOnly(true);
+            endpoint.setValue(PORT, ConstraintValue.value(getPort().toString()));
         }
+        endpoint.addField(builder.build());
 
-        ConstraintField hostField = new ConstraintField();
-        hostField.setName("host");
+        ConstraintField hostField = ConstraintField.builder()
+                .name(HOST)
+//                .required(true)
+                .build();
 
-//        hostField.setRequired(true);
         endpoint.addField(hostField);
         return endpoint;
     }

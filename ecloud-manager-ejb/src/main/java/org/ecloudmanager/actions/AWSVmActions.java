@@ -40,6 +40,7 @@ import javax.inject.Inject;
 
 @Service
 public class AWSVmActions {
+    static String CREATE_VM = "Create VM";
     @Inject
     private ApplicationDeploymentService applicationDeploymentService;
     @Inject
@@ -48,29 +49,30 @@ public class AWSVmActions {
     private ApplicationDeploymentRepository applicationDeploymentRepository;
 
     public Action getCreateVmAction(VMDeployment vmDeployment) {
-        return Action.single("Create and start VM", () ->
-        {
-            String securityGroupId = vmService.createSecurityGroup(vmDeployment);
 
-            AWSInfrastructureDeployer.addSecurityGroupId(vmDeployment, securityGroupId);
+        return Action.actionSequence("Create and start VM",
+                Action.single("Create Security Group", () -> {
+                    String securityGroupId = vmService.createSecurityGroup(vmDeployment);
+                    AWSInfrastructureDeployer.addSecurityGroupId(vmDeployment, securityGroupId);
+                }, vmDeployment),
+                Action.single(CREATE_VM, () -> {
+                    Instance instance = vmService.createVm(vmDeployment);
+                    clearVmConstraints(vmDeployment);
 
-            Instance instance = vmService.createVm(vmDeployment);
-            clearVmConstraints(vmDeployment);
+                    // Save VM id for future use
+                    InfrastructureDeployer.addVMId(vmDeployment, instance.getInstanceId());
 
-            // Save VM id for future use
-            InfrastructureDeployer.addVMId(vmDeployment, instance.getInstanceId());
+                    // Set ssh configuration name to the selected environment name
+                    InfrastructureDeployer.addSshConfiguration(vmDeployment, AWSInfrastructureDeployer.getAwsKeypair
+                            (vmDeployment));
 
-            // Set ssh configuration name to the selected environment name
-            InfrastructureDeployer.addSshConfiguration(vmDeployment, AWSInfrastructureDeployer.getAwsKeypair
-                (vmDeployment));
+                    // Set IP address
+                    if (instance.getPrivateIpAddress() != null) {
+                        InfrastructureDeployer.addIP(vmDeployment, instance.getPrivateIpAddress());
+                    }
+                }, vmDeployment),
+                new AWSCreateFirewallRulesAction(vmDeployment, vmService, applicationDeploymentService));
 
-            // Set IP address
-            if (instance.getPrivateIpAddress() != null) {
-                InfrastructureDeployer.addIP(vmDeployment, instance.getPrivateIpAddress());
-            }
-            vmService.createFirewallRules(vmDeployment);
-            applicationDeploymentService.update((ApplicationDeployment) vmDeployment.getTop());
-        }, vmDeployment);
     }
 
 //    public Action getDetectVmIpAddressAction(VMDeployment vmDeployment) {
@@ -86,12 +88,12 @@ public class AWSVmActions {
 
     public Action getDeleteVmAction(VMDeployment vmDeployment) {
         return Action.single("Delete VM",
-            () -> {
-                vmService.deleteVm(vmDeployment);
-                clearVmConstraints(vmDeployment);
-                vmService.deleteSecurityGroup(vmDeployment);
-                AWSInfrastructureDeployer.removeSecurityGroupId(vmDeployment);
-            }, vmDeployment);
+                () -> {
+                    vmService.deleteVm(vmDeployment);
+                    clearVmConstraints(vmDeployment);
+                    vmService.deleteSecurityGroup(vmDeployment);
+                    AWSInfrastructureDeployer.removeSecurityGroupId(vmDeployment);
+                }, vmDeployment);
     }
 
     public Action getUpdateVmAction(VMDeployment before, VMDeployment after) {
@@ -109,19 +111,20 @@ public class AWSVmActions {
         ApplicationDeployment applicationDeployment = applicationDeploymentRepository.get(id);
         if (applicationDeployment != null) {
             applicationDeployment.stream(VMDeployment.class)
-                .filter(vd -> vd.getId() != null && vd.getId().equals(vmDeployment.getId()))
-                .findAny()
-                .ifPresent(realVmDeployment -> {
-                    // Remove VM id and ip address and update DB
-                    InfrastructureDeployer.removeVMId(realVmDeployment);
-                    InfrastructureDeployer.removeIP(realVmDeployment);
-                    InfrastructureDeployer.removeSSHConfiguration(realVmDeployment);
-                    applicationDeploymentService.update(applicationDeployment);
-                });
+                    .filter(vd -> vd.getId() != null && vd.getId().equals(vmDeployment.getId()))
+                    .findAny()
+                    .ifPresent(realVmDeployment -> {
+                        // Remove VM id and ip address and update DB
+                        InfrastructureDeployer.removeVMId(realVmDeployment);
+                        InfrastructureDeployer.removeIP(realVmDeployment);
+                        InfrastructureDeployer.removeSSHConfiguration(realVmDeployment);
+                        applicationDeploymentService.update(applicationDeployment);
+                    });
         }
         // Remove VM id and ip address in memory, to keep it in synch, just in case...
         InfrastructureDeployer.removeVMId(vmDeployment);
         InfrastructureDeployer.removeIP(vmDeployment);
         InfrastructureDeployer.removeSSHConfiguration(vmDeployment);
     }
+
 }

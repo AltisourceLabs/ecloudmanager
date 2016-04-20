@@ -37,15 +37,11 @@ public class ProvisioningActions {
     private GlobalProvisioningService globalProvisioningService;
 
     public Action getProvisionVmAction(VMDeployment vmDeployment) {
-        return Action.single("VM Provision",
-            () -> globalProvisioningService.provisionVm(vmDeployment, true),
-            vmDeployment);
+        return new ProvisionVmAction(vmDeployment, globalProvisioningService, false);
     }
 
     public Action getProvisionVmUpdateAction(VMDeployment vmDeployment) {
-        return Action.single("VM provision update",
-            () -> globalProvisioningService.provisionVm(vmDeployment, false),
-            vmDeployment);
+        return new ProvisionVmAction(vmDeployment, globalProvisioningService, true);
     }
 
     public boolean needUpdateProvisioning(VMDeployment before, VMDeployment after) {

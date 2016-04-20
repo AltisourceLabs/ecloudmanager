@@ -51,12 +51,12 @@ public class ActionGroup extends Action {
     }
 
     @Override
-    public synchronized SingleAction getAvailableAction() {
-        if (!isReady() && getStatus() != Status.RUNNING) {
+    public synchronized SingleAction getAvailableAction(Action fullAction) {
+        if (!isReady(fullAction) && getStatus() != Status.RUNNING) {
             return null;
         }
         for (Action a : actions) {
-            SingleAction result = a.getAvailableAction();
+            SingleAction result = a.getAvailableAction(fullAction);
             if (result != null) {
                 return result;
             }

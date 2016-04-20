@@ -31,6 +31,18 @@ import java.util.*;
 import java.util.stream.Stream;
 
 public abstract class AbstractDeployer<T extends Deployable> implements Deployer<T> {
+    private static void initDependencies(Map<Deployable, Action> actionMap, boolean reverse) {
+        actionMap.forEach((d, a) -> {
+            d.getRequired().filter(actionMap::containsKey).forEach(r -> {
+                if (reverse) {
+                    actionMap.get(r).addDependencies(a);
+                } else {
+                    a.addDependencies(actionMap.get(r));
+                }
+            });
+        });
+    }
+
     public abstract Action getBeforeChildrenCreatedAction(T deployable);
 
     public abstract Action getAfterChildrenCreatedAction(T deployable);
@@ -46,7 +58,7 @@ public abstract class AbstractDeployer<T extends Deployable> implements Deployer
     public final Action getCreateAction(T deployable) {
         Map<Deployable, Action> createActions = new HashMap<>();
         deployable.children(Deployable.class).forEach(s -> createActions.put(s, s.getDeployer().getCreateAction(s)));
-        initDependencies(createActions, false);
+//        initDependencies(createActions, false);
 
         String childrenActionName = "Create " + deployable.getName() + " children";
         String mainActionName = "Create " + deployable.getName();
@@ -63,7 +75,7 @@ public abstract class AbstractDeployer<T extends Deployable> implements Deployer
     public final Action getDeleteAction(T deployable) {
         Map<Deployable, Action> deleteActions = new HashMap<>();
         deployable.children(Deployable.class).forEach(s -> deleteActions.put(s, s.getDeployer().getDeleteAction(s)));
-        initDependencies(deleteActions, true);
+        // initDependencies(deleteActions, true);
 
         String childrenActionName = "Delete " + deployable.getName() + " children";
         String mainActionName = "Delete " + deployable.getName();
@@ -98,15 +110,15 @@ public abstract class AbstractDeployer<T extends Deployable> implements Deployer
             toUpdate.forEach(s -> updateActions.put(s, s.getDeployer().getUpdateAction(lastAttempt, (Deployable)
                 before.getChildByName(s
                     .getName()), s)));
-            initDependencies(updateActions, false);
+//            initDependencies(updateActions, false);
 
             Map<Deployable, Action> createActions = new HashMap<>();
             toCreate.forEach(s -> createActions.put(s, s.getDeployer().getCreateAction(s)));
-            initDependencies(createActions, false);
+//            initDependencies(createActions, false);
 
             Map<Deployable, Action> deleteActions = new HashMap<>();
             toDelete.forEach(s -> deleteActions.put(s, s.getDeployer().getDeleteAction(s)));
-            initDependencies(deleteActions, true);
+//            initDependencies(deleteActions, true);
 
             actions.addAll(updateActions.values());
             actions.addAll(createActions.values());
@@ -158,18 +170,6 @@ public abstract class AbstractDeployer<T extends Deployable> implements Deployer
         } else { // Nothing to do
             return null;
         }
-    }
-
-    private static void initDependencies(Map<Deployable, Action> actionMap, boolean reverse) {
-        actionMap.forEach((d, a) -> {
-            d.getRequired().filter(actionMap::containsKey).forEach(r -> {
-                if (reverse) {
-                    actionMap.get(r).addDependencies(a);
-                } else {
-                    a.addDependencies(actionMap.get(r));
-                }
-            });
-        });
     }
 
 }

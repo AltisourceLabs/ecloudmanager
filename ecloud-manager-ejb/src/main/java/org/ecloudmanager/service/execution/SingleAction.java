@@ -34,6 +34,7 @@ import org.mongodb.morphia.annotations.Serialized;
 import org.mongodb.morphia.annotations.Transient;
 
 public class SingleAction extends Action implements Runnable {
+
     @Transient
     private Runnable runnable;
     @Transient
@@ -49,7 +50,7 @@ public class SingleAction extends Action implements Runnable {
     @Transient
     private Logger log = LogManager.getLogger(SingleAction.class);
 
-    private SingleAction() {
+    protected SingleAction() {
     }
 
     public SingleAction(Runnable task, String description) {
@@ -66,15 +67,18 @@ public class SingleAction extends Action implements Runnable {
         this.pathToDeployable = topDeployable.relativePathTo(deployable);
     }
 
-
     public SingleAction(Runnable task, Runnable rollback, String description) {
         this(task, description);
         this.rollback = rollback;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
     @Override
-    public SingleAction getAvailableAction() {
-        if (isReady()) {
+    public SingleAction getAvailableAction(Action fullAction) {
+        if (isReady(fullAction)) {
             return this;
         }
         return null;
@@ -155,4 +159,9 @@ public class SingleAction extends Action implements Runnable {
 //        }
         return result;
     }
+
+    public void setRunnable(Runnable runnable) {
+        this.runnable = runnable;
+    }
+
 }

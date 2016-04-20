@@ -91,4 +91,5 @@ public class VMDeployer implements Deployer<VMDeployment> {
             chefProvisioningDeployer.getUpdateAction(lastAttempt, before, after)
         );
     }
+
 }

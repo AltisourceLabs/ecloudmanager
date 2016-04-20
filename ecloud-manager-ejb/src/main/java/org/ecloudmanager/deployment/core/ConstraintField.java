@@ -58,10 +58,6 @@ public class ConstraintField {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public String getDescription() {
         return description;
     }
@@ -70,16 +66,8 @@ public class ConstraintField {
         return defaultValue;
     }
 
-    public void setDefaultValue(String defaultValue) {
-        this.defaultValue = defaultValue;
-    }
-
     public boolean isRequired() {
         return required;
-    }
-
-    public void setRequired(boolean required) {
-        this.required = required;
     }
 
     public Type getType() {
@@ -88,10 +76,6 @@ public class ConstraintField {
 
     public boolean isReadOnly() {
         return readOnly;
-    }
-
-    public void setReadOnly(boolean readOnly) {
-        this.readOnly = readOnly;
     }
 
     public boolean isAllowReference() {

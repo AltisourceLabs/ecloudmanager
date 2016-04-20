@@ -28,6 +28,7 @@ import org.bson.types.ObjectId;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.app.Link;
 import org.ecloudmanager.deployment.core.Deployable;
+import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.vm.infrastructure.Infrastructure;
 import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployer;
 import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironment;
@@ -105,4 +106,22 @@ public class VMDeployment extends Deployable {
         return Arrays.asList("deployer", "parent", "children", "fields", "values");
     }
 
+    public List<Endpoint> getRequiredEndpoints() {
+        List<Endpoint> result = new ArrayList<>();
+        ApplicationDeployment ad = (ApplicationDeployment) getTop();
+        List<Link> links = ad.getLinks();
+        getVirtualMachineTemplate().getRequiredEndpointsIncludingTemplateName().forEach(r -> {
+            Optional<Link> o = links.stream().filter(l -> l.getConsumer().equals(r)).findFirst();
+            if (o.isPresent()) {
+                String endpoint = o.get().getSupplier();
+                String[] splitted = endpoint.split(":");
+                String name = splitted[0];
+                Deployable d = (Deployable) ad.getChildByName(name);
+                String endpointName = splitted[splitted.length - 1];
+                Endpoint e = (Endpoint) d.getChildByName(endpointName);
+                result.add(e);
+            }
+        });
+        return result;
+    }
 }

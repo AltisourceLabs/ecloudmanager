@@ -31,7 +31,6 @@ import javax.ejb.Stateless;
 import javax.inject.Inject;
 import javax.inject.Named;
 import java.util.concurrent.ExecutorService;
-
 @Stateless
 public class ActionExecutor {
     @Inject
@@ -49,7 +48,7 @@ public class ActionExecutor {
     public void execute(Action action, @Nullable Runnable onComplete) throws InterruptedException {
         executorService.submit(() -> {
             while (!action.isDone()) {
-                SingleAction a = action.getAvailableAction();
+                SingleAction a = action.getAvailableAction(action);
                 if (a != null) {
                     log.info("Submitting action for execution: " + a.getLabel());
                     a.setStatus(Action.Status.RUNNING);

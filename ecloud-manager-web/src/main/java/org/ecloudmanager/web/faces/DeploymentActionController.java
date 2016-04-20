@@ -295,7 +295,7 @@ public class DeploymentActionController extends FacesSupport implements Serializ
     }
 
     private void generateDependencyEdges(CyModel graphModel, Action rootAction, Map<Action, CyNode> action2node) {
-        rootAction.stream().forEach(action -> action.getDependencies().stream()
+        rootAction.stream().forEach(action -> action.getDependencies(rootAction).stream()
                 .forEach(dependency -> graphModel.addEdge(action2node.get(dependency), action2node.get(action))));
     }
 

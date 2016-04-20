@@ -44,6 +44,8 @@ import org.ecloudmanager.service.execution.ActionExecutor;
 import org.picketlink.Identity;
 
 import javax.ejb.Stateless;
+import javax.ejb.TransactionAttribute;
+import javax.ejb.TransactionAttributeType;
 import javax.inject.Inject;
 
 @Stateless
@@ -94,6 +96,7 @@ public class ApplicationDeploymentService extends ServiceSupport {
         return str;
     }
 
+    @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
     public void execute(final Deployable deployment, Action action, DeploymentAttempt.Type actionType) {
         log.info("Starting deployment action (" + actionType + ") for " + deployment.getName());
         log.info("Submitting action:" + action.toString());
@@ -106,7 +109,9 @@ public class ApplicationDeploymentService extends ServiceSupport {
 
                 DeploymentAttempt deploymentAttempt = new DeploymentAttempt(reloadedDeployment, action, actionType);
                 deploymentAttempt.setOwner(identity.getAccount().getId());
+                log.info("Before ada save");
                 deploymentAttemptRepository.save(deploymentAttempt);
+                log.info("After ada save");
 
                 actionExecutor.shutdown();
             });

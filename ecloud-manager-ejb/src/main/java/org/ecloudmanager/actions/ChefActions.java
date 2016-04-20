@@ -34,11 +34,12 @@ import javax.inject.Inject;
 
 @Service
 public class ChefActions {
+    public static String CREATE_ENVIRONMENT_ACTION = "Create Chef Environment";
     @Inject
     private ChefService chefService;
 
     public Action getCreateChefEnvironmentAction(ChefEnvironment chefEnvironment) {
-        return Action.single("Create Chef Environment",
+        return Action.single(CREATE_ENVIRONMENT_ACTION,
             () -> chefService.createEnvironment(chefEnvironment),
             chefEnvironment);
     }
