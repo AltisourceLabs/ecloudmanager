@@ -27,6 +27,7 @@ package org.ecloudmanager.deployment.app;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.Deployer;
+import org.jetbrains.annotations.NotNull;
 import org.mongodb.morphia.annotations.Entity;
 
 import java.util.ArrayList;
@@ -41,6 +42,7 @@ public class ApplicationDeployment extends Deployable {
     ApplicationDeployment() {
     }
 
+    @NotNull
     @Override
     public Deployer<ApplicationDeployment> getDeployer() {
         return new ApplicationDeployer();

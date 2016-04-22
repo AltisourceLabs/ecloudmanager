@@ -34,14 +34,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment> {
-    private static final String ETCD_ADDRESS = "etcdAddress";
-    private static final String ETCD_PATH = "etcdPath";
-
     public static final String PORT = "port";
     public static final String BIND_IP = "bind_ip";
+    public static final String HAPROXY_IP = "ha_proxy_ip";
+    private static final String ETCD_ADDRESS = "etcdAddress";
+    private static final String ETCD_PATH = "etcdPath";
     private static final String ETCD_CONFIG_NAME = "etcd";
 
     private HAProxyConfigurator haProxyConfigurator;
+
+    public static DeploymentObject getEtcdConfig(DeploymentObject deployment) {
+        return deployment.getTop().getChildByName(ETCD_CONFIG_NAME);
+    }
+
+    private static DeploymentObject createEtcdConfig(DeploymentObject deployment) {
+        DeploymentObject cfg = new Config(ETCD_CONFIG_NAME, "ETCD server configuration");
+        deployment.getTop().addChild(cfg);
+        return cfg;
+    }
 
     private HAProxyConfigurator getConfigurator(DeploymentObject deployment) {
         if (haProxyConfigurator == null) {
@@ -79,13 +89,13 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
             componentGroupDeployment.getHaProxyBackendConfig().getConfig());
     }
 
-
     @Override
     public void specifyConstraints(ProducedServiceDeployment deployment) {
         deployment.addField(ConstraintField.builder().name(PORT).description("Service port").defaultValue("22").type
             (ConstraintField.Type.NUMBER).build());
         deployment.addField(ConstraintField.builder().name(BIND_IP).description("Bind IP").defaultValue("*").build());
-
+        // TODO support multiple IP addresses??
+        deployment.addField(ConstraintField.builder().name(HAPROXY_IP).description("HAProxy IP address").required(true).build());
         DeploymentConstraint etcdConfig = getEtcdConfig(deployment);
         if (etcdConfig == null) {
             etcdConfig = createEtcdConfig(deployment);
@@ -134,16 +144,6 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
     @Override
     public Action getAfterChildrenUpdatedAction(ProducedServiceDeployment before, ProducedServiceDeployment after) {
         return null;
-    }
-
-    public static DeploymentObject getEtcdConfig(DeploymentObject deployment) {
-        return deployment.getTop().getChildByName(ETCD_CONFIG_NAME);
-    }
-
-    private static DeploymentObject createEtcdConfig(DeploymentObject deployment) {
-        DeploymentObject cfg = new Config(ETCD_CONFIG_NAME, "ETCD server configuration");
-        deployment.getTop().addChild(cfg);
-        return cfg;
     }
 
 }

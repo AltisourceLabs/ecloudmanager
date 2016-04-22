@@ -22,27 +22,27 @@
  * SOFTWARE.
  */
 
-package org.ecloudmanager.deployment.core;
+package org.ecloudmanager.web.faces;
 
-import org.jetbrains.annotations.NotNull;
+import org.ecloudmanager.deployment.es.ExternalServiceTemplate;
+import org.ecloudmanager.jeecore.web.faces.Controller;
+import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 
-import java.util.stream.Stream;
+import java.io.Serializable;
 
-public abstract class Deployable extends DeploymentObject {
-    protected Deployable() {
+@Controller
+public class ExternalServiceTemplateController extends FacesSupport implements Serializable {
+
+
+    public static String DIALOG_EDIT = "dlg_edit_ext_service";
+    private ExternalServiceTemplate value;
+
+    public ExternalServiceTemplate getValue() {
+        return value;
     }
 
-    @NotNull
-    public abstract Deployer getDeployer();
-
-    public void specifyConstraints() {
-        getDeployer().specifyConstraints(this);
-        children(Deployable.class).forEach(Deployable::specifyConstraints);
+    public void setValue(ExternalServiceTemplate value) {
+        this.value = value;
     }
 
-    public Stream<Deployable> getRequired() {
-        return children(Deployable.class).stream()
-            .flatMap(Deployable::getRequired)
-            .filter(d -> (!d.equals(this) && !children().contains(d))).distinct();
-    }
 }

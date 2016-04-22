@@ -1,0 +1,261 @@
+<!--
+~ MIT License
+~
+~ Copyright (c) 2016  Altisource
+~
+~ Permission is hereby granted, free of charge, to any person obtaining a copy
+~ of this software and associated documentation files (the "Software"), to deal
+~ in the Software without restriction, including without limitation the rights
+~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+~ copies of the Software, and to permit persons to whom the Software is
+~ furnished to do so, subject to the following conditions:
+~
+~ The above copyright notice and this permission notice shall be included in all
+~ copies or substantial portions of the Software.
+~
+~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+~ SOFTWARE.
+-->
+
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:components="http://java.sun.com/jsf/composite/components"
+                template="/WEB-INF/templates/default.xhtml">
+    <ui:define name="content">
+        <p:outputPanel id="out">
+            <h:panelGroup>
+                <h:form id="edit" style="width: 95%;height: 95%">
+                    <p>Name: <p:inputText value="#{applicationTemplateController.template.name}"/></p>
+                    <p>Entries:</p>
+                    <p:dataTable id="children" var="srv"
+                                 value="#{applicationTemplateController.template.children}"
+                                 resizableColumns="true" liveResize="true" styleClass="childrenTable">
+
+                        <p:column width="30%" headerText="Name" sortBy="#{srv.name}">
+                            <h:outputText value="#{srv}"/>
+                        </p:column>
+                        <p:column headerText="Endpoints">
+                            <h:outputText value="#{srv.endpoints}"/>
+                        </p:column>
+                        <p:column headerText="Required">
+                            <h:outputText value="#{srv.requiredEndpoints}"/>
+                        </p:column>
+
+                        <p:column width="60">
+                            <p:commandButton title="Edit" icon="ui-icon-pencil"
+                                             action="#{applicationTemplateController.startEditChild(srv)}"
+                            />
+                            <p:commandButton title="Delete" icon="ui-icon-close"
+                                             update="@(.childrenTable)"
+                                             action="#{applicationTemplateController.deleteChild(srv)}"
+                            >
+                            </p:commandButton>
+                        </p:column>
+                    </p:dataTable>
+                    <p:menuButton value="New...">
+                        <p:menuitem value="ProducedService"
+                                    action="#{applicationTemplateController.newProducedService}">
+                        </p:menuitem>
+                        <p:menuitem value="ExternalService"
+                                    action="#{applicationTemplateController.newExternalService}">
+                        </p:menuitem>
+                        <p:menuitem value="VM"
+                                    action="#{applicationTemplateController.newVmRef}">
+                        </p:menuitem>
+                    </p:menuButton>
+                    <p>Connections:</p>
+                    <p:dataTable id="links" var="link"
+                                 value="#{applicationTemplateController.template.links}"
+                                 resizableColumns="true" liveResize="true">
+
+                        <p:column width="30%" headerText="Destination" sortBy="#{link.consumer}">
+                            <h:outputText value="#{link.consumer}"/>
+                        </p:column>
+                        <p:column headerText="Source">
+                            <p:selectOneMenu value="#{link.supplier}">
+                                <f:selectItem itemLabel="None" itemValue=""/>
+                                <f:selectItems
+                                        value="#{applicationTemplateController.availableEndpoints}"
+                                        var="endpoint"
+                                        itemLabel="#{endpoint}" itemValue="#{endpoint}"/>
+                            </p:selectOneMenu>
+                        </p:column>
+                    </p:dataTable>
+                    <p>
+                        <p:commandButton value="save" update="out" action="#{applicationTemplateController.save()}"/>
+                    </p>
+                </h:form>
+            </h:panelGroup>
+
+            <p:dialog header="Edit Service" widgetVar="dlg_edit_service" modal="true" closeOnEscape="true" height="600"
+                      width="600" id="dlg_edit_service">
+                <h:panelGroup>
+                    <h:form style="width: 95%;height: 95%">
+                        <p:outputPanel id="attrDetail" rendered="#{not empty producedServiceTemplateController.value}">
+                            <p:panelGrid id="panel_attr_details" columns="2" style="margin-bottom:10px"
+                                         styleClass="ui-panelgrid-blank" cellpadding="5">
+
+                                <p:outputLabel id="label_op_name" for="op_key" value="Name:"/>
+                                <p:inputText id="op_key"
+                                             value="#{producedServiceTemplateController.value.name}">
+                                </p:inputText>
+                                <p:outputLabel value="HAProxy Frontend configuration:"/>
+                                <p:inputTextarea rows="6" cols="33"
+                                                 value="#{producedServiceTemplateController.value.haProxyFrontendConfig.config}"
+                                                 converter="stringListConverter"/>
+                                <p:outputLabel value="Component Groups:"/>
+                                <p:dataTable id="cg" var="cg"
+                                             value="#{producedServiceTemplateController.value.componentGroups}"
+                                             resizableColumns="true" liveResize="true">
+
+                                    <p:column width="30%" headerText="Name" sortBy="#{cg.name}">
+                                        <h:outputText value="#{cg.name}"/>
+                                    </p:column>
+                                    <p:column width="40%" headerText="VM">
+                                        <h:outputText value="#{cg.virtualMachineTemplate}"/>
+                                    </p:column>
+                                    <p:column width="60">
+                                        <p:commandButton title="Edit" icon="ui-icon-pencil"
+                                                         action="#{producedServiceTemplateController.startEditComponentGroup(cg)}"
+                                        />
+                                        <p:commandButton title="Delete" icon="ui-icon-close"
+                                                         update="out"
+                                                         action="#{producedServiceTemplateController.deleteComponentGroup(cg)}">
+                                            <p:confirm header="Confirmation" message="Are you sure?"
+                                                       icon="ui-icon-alert"/>
+                                        </p:commandButton>
+                                    </p:column>
+                                </p:dataTable>
+                                <p:outputLabel value=""/>
+                                <p:commandButton value="New" icon="ui-icon-plus"
+                                                 action="#{producedServiceTemplateController.newComponentGroup()}"/>
+                                <p:outputLabel value="Endpoint:"/>
+                                <p:panel>
+                                    <components:endpoint value="#{producedServiceTemplateController.value.endpoint}"
+                                                         id="endpoint"/>
+                                </p:panel>
+                            </p:panelGrid>
+                            <p:panelGrid id="attr_buttons" columns="2" style="margin-bottom:10px"
+                                         styleClass="ui-panelgrid-blank" cellpadding="5">
+                                <p:commandButton id="attr_button_save" value="save"
+                                                 action="#{applicationTemplateController.saveChild(producedServiceTemplateController.value)}"
+                                                 update="out"
+                                />
+                                <p:commandButton id="attr_button_cancel" value="cancel" immediate="true"
+                                                 action="#{applicationTemplateController.cancelChildEditing(producedServiceTemplateController.value)}"
+                                                 update="out"
+                                />
+                            </p:panelGrid>
+                        </p:outputPanel>
+                    </h:form>
+                </h:panelGroup>
+            </p:dialog>
+
+            <p:dialog header="Edit Component Group " widgetVar="dlg_edit_cg" modal="true" closeOnEscape="true"
+                      height="600" width="600" id="dlg_edit_cg">
+                <h:panelGroup>
+                    <h:form style="width: 95%;height: 95%">
+                        <p>Name: <p:inputText value="#{componentGroupTemplateController.value.name}"/></p>
+                        <p>
+                            <h:outputText value="HAProxy Backend configuration:"/>
+                        </p>
+
+                        <p:inputTextarea rows="6" cols="33"
+                                         value="#{componentGroupTemplateController.value.haProxyBackendConfig.config}"
+                                         converter="stringListConverter"/>
+                        <p>VM: <p:selectOneMenu value="#{componentGroupTemplateController.value.virtualMachineTemplate}"
+                                                converter="vmTemplateConverter">
+                            <f:selectItem itemLabel="None" itemValue=""/>
+                            <f:selectItems value="#{componentGroupTemplateController.virtualMachineTemplates}"
+                                           var="templ"
+                                           itemLabel="#{templ.name}" itemValue="#{templ}"/>
+                        </p:selectOneMenu></p>
+                        <p:panelGrid id="cg_buttons" columns="2" style="margin-bottom:10px"
+                                     styleClass="ui-panelgrid-blank" cellpadding="5">
+                            <p:commandButton id="cg_button_save" value="save"
+                                             action="#{producedServiceTemplateController.saveComponentGroup(componentGroupTemplateController.value)}"
+                                             update="out"
+                            />
+                            <p:commandButton id="cg_button_cancel" value="cancel" immediate="true"
+                                             action="#{producedServiceTemplateController.cancelComponentGroupEditing(componentGroupTemplateController.value)}"
+                                             update="out"
+                            />
+                        </p:panelGrid>
+                    </h:form>
+                </h:panelGroup>
+
+            </p:dialog>
+            <p:dialog header="Edit VM Template reference" widgetVar="dlg_edit_vm_ref" modal="true" closeOnEscape="true"
+                      height="600" width="600" id="dlg_edit_vm_ref">
+                <h:panelGroup>
+                    <h:form style="width: 95%;height: 95%">
+                            <p>VM: <p:selectOneMenu
+                                    value="#{virtualMachineTemplateReferenceController.value.virtualMachineTemplate}"
+                                    converter="vmTemplateConverter">
+                                <f:selectItem itemLabel="None" itemValue=""/>
+                                <f:selectItems
+                                        value="#{virtualMachineTemplateReferenceController.virtualMachineTemplates}"
+                                        var="templ"
+                                        itemLabel="#{templ.name}" itemValue="#{templ}"/>
+                            </p:selectOneMenu></p>
+                        <p:panelGrid id="ref_buttons" columns="2" style="margin-bottom:10px"
+                                     styleClass="ui-panelgrid-blank" cellpadding="5">
+                            <p:commandButton id="ref_button_save" value="save"
+                                             action="#{applicationTemplateController.saveChild(virtualMachineTemplateReferenceController.value)}"
+                                             update="out"
+                            />
+                            <p:commandButton id="ref_button_cancel" value="cancel" immediate="true"
+                                             action="#{applicationTemplateController.cancelChildEditing(virtualMachineTemplateReferenceController.value)}"
+                                             update="out"
+                            />
+                        </p:panelGrid>
+
+                    </h:form>
+                </h:panelGroup>
+            </p:dialog>
+            <p:dialog header="Edit External Service" widgetVar="dlg_edit_ext_service" modal="true" closeOnEscape="true"
+                      height="600"
+                      width="600" id="dlg_edit_ext_service">
+                <h:panelGroup>
+                    <h:form style="width: 95%;height: 95%">
+                        <p:outputPanel id="esDetail" rendered="#{not empty externalServiceTemplateController.value}">
+                            <p:panelGrid id="panel_es_details" columns="2" style="margin-bottom:10px"
+                                         styleClass="ui-panelgrid-blank" cellpadding="5">
+
+                                <p:outputLabel id="label_es_name" for="es_key" value="Name:"/>
+                                <p:inputText id="es_key"
+                                             value="#{externalServiceTemplateController.value.name}">
+                                </p:inputText>
+                                <p:outputLabel value="Description:"/>
+                                <p:inputTextarea rows="6" cols="33"
+                                                 value="#{externalServiceTemplateController.value.description}"/>
+                            </p:panelGrid>
+                            <p:panelGrid id="es_buttons" columns="2" style="margin-bottom:10px"
+                                         styleClass="ui-panelgrid-blank" cellpadding="5">
+                                <p:commandButton id="es_button_save" value="save"
+                                                 action="#{applicationTemplateController.saveChild(externalServiceTemplateController.value)}"
+                                                 update="out"
+                                />
+                                <p:commandButton id="es_button_cancel" value="cancel" immediate="true"
+                                                 action="#{applicationTemplateController.cancelChildEditing(externalServiceTemplateController.value)}"
+                                                 update="out"
+                                />
+                            </p:panelGrid>
+                        </p:outputPanel>
+                    </h:form>
+                </h:panelGroup>
+            </p:dialog>
+
+            <p:messages id="messages" showDetail="true" autoUpdate="true" closable="true"/>
+
+        </p:outputPanel>
+    </ui:define>
+</ui:composition>

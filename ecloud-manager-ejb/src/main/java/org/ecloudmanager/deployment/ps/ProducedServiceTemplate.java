@@ -24,7 +24,6 @@
 
 package org.ecloudmanager.deployment.ps;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ecloudmanager.deployment.core.EndpointTemplate;
 import org.ecloudmanager.deployment.core.Template;
 import org.ecloudmanager.deployment.ps.cg.ComponentGroupTemplate;
@@ -35,6 +34,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ProducedServiceTemplate implements Serializable, Template<ProducedServiceDeployment> {
 
@@ -43,20 +43,24 @@ public class ProducedServiceTemplate implements Serializable, Template<ProducedS
     private String name;
     private String description;
 
-    @JsonProperty("public")
-    private boolean publicHostname;
-
     private HAProxyFrontendConfig haProxyFrontendConfig = new HAProxyFrontendConfig();
 
     private List<ComponentGroupTemplate> componentGroups = new ArrayList<>();
-
-    private List<FirewallRule> firewallRules = new ArrayList<>();
+    private EndpointTemplate endpoint = new EndpointTemplate();
 
     public ProducedServiceTemplate() {
     }
 
     public ProducedServiceTemplate(String name) {
         this.name = name;
+    }
+
+    public EndpointTemplate getEndpoint() {
+        return endpoint;
+    }
+
+    public void setEndpoint(EndpointTemplate endpoint) {
+        this.endpoint = endpoint;
     }
 
     @Override
@@ -83,21 +87,13 @@ public class ProducedServiceTemplate implements Serializable, Template<ProducedS
     @NotNull
     @Override
     public List<EndpointTemplate> getEndpoints() {
-        return Collections.emptyList();
+        return Collections.singletonList(endpoint);
     }
 
     @NotNull
     @Override
     public List<String> getRequiredEndpoints() {
-        return Collections.emptyList();
-    }
-
-    public boolean isPublicHostname() {
-        return publicHostname;
-    }
-
-    public void setPublicHostname(boolean publicHostname) {
-        this.publicHostname = publicHostname;
+        return componentGroups.stream().flatMap(t -> t.getRequiredEndpointsIncludingTemplateName().stream()).collect(Collectors.toList());
     }
 
     public HAProxyFrontendConfig getHaProxyFrontendConfig() {
@@ -121,23 +117,13 @@ public class ProducedServiceTemplate implements Serializable, Template<ProducedS
         return "PS[" + name + "] : " + getComponentGroups().toString();
     }
 
-    public List<FirewallRule> getFirewallRules() {
-        return firewallRules;
-    }
-
-    public void setFirewallRules(List<FirewallRule> firewallRules) {
-        this.firewallRules = firewallRules;
-    }
-
     @NotNull
     @Override
     public ProducedServiceDeployment toDeployment() {
         ProducedServiceDeployment ps = new ProducedServiceDeployment();
         ps.setName(getName());
-        ps.setIsPublic(isPublicHostname());
         ps.setHaProxyFrontendConfig(new HAProxyFrontendConfig(getHaProxyFrontendConfig()));
         getComponentGroups().forEach(cg -> ps.addChild(cg.toDeployment()));
-        getFirewallRules().forEach(r -> ps.getFirewallRules().add(new FirewallRule(r)));
         return ps;
     }
 }

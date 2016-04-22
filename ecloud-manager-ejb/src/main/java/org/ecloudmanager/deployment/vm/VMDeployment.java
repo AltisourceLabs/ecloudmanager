@@ -34,6 +34,7 @@ import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployer;
 import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironment;
 import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironmentDeployer;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
+import org.jetbrains.annotations.NotNull;
 import org.mongodb.morphia.annotations.Transient;
 
 import java.util.*;
@@ -51,6 +52,7 @@ public class VMDeployment extends Deployable {
         setId(new ObjectId());
     }
 
+    @NotNull
     @Override
     public VMDeployer getDeployer() {
         if (deployer == null) {

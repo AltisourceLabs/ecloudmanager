@@ -1,0 +1,91 @@
+<!--
+  ~ MIT License
+  ~
+  ~ Copyright (c) 2016  Altisource
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/templates/default.xhtml">
+    <ui:define name="content">
+        <p:outputPanel id="out">
+            <h:panelGroup>
+                <h:form id="deployments_form" styleClass="contentForm" style="height: 90%">
+                    <p:confirmDialog id="confirm" global="true" showEffect="fade" hideEffect="fade">
+                        <p:commandButton id="yes" value="Yes" type="button" styleClass="ui-confirmdialog-yes"
+                                         icon="ui-icon-check"/>
+                        <p:commandButton id="no" value="No" type="button" styleClass="ui-confirmdialog-no"
+                                         icon="ui-icon-close"/>
+                    </p:confirmDialog>
+
+                    <p:dataTable id="entities" var="entity"
+                                 value="#{applicationTemplatesController.applicationTemplates}"
+                                 paginator="true" rows="10" resizableColumns="true" liveResize="true">
+                        <p:column headerText="Name" sortBy="#{entity.name}">
+                            <h:outputText value="#{entity.name}"/>
+                        </p:column>
+                        <p:column width="60%">
+                            <h:outputText value="#{entity.children}"/>
+                        </p:column>
+                        <p:column width="90">
+                            <p:button outcome="applicationTemplate" icon="ui-icon-pencil">
+                                <f:param name="template" value="#{entity.id.toString()}"/>
+                            </p:button>
+                            <p:commandButton title="Delete" icon="ui-icon-close"
+                                             update="out"
+                                             action="#{applicationTemplatesController.delete(entity)}">
+                                <p:confirm header="Confirmation" message="Are you sure?" icon="ui-icon-alert"/>
+                            </p:commandButton>
+                            <p:commandButton title="Download" icon="ui-icon-arrowstop-1-s"
+                                             ajax="false"
+                                             action="#{applicationTemplatesController.download(entity)}"/>
+                        </p:column>
+                        <p:column width="100">
+                            <p:menuButton value="Deploy...">
+                                <p:menuitem value="Deploy to Verizon" outcome="appdeployment"
+                                            icon="ui-icon-circle-triangle-e">
+                                    <f:param name="template" value="#{entity.id.toString()}"/>
+                                    <f:param name="infrastructure" value="VERIZON"/>
+                                </p:menuitem>
+                                <p:menuitem value="Deploy to AWS" outcome="appdeployment"
+                                            icon="ui-icon-circle-triangle-e">
+                                    <f:param name="template" value="#{entity.id.toString()}"/>
+                                    <f:param name="infrastructure" value="AWS"/>
+                                </p:menuitem>
+                                <p:menuitem value="Deploy..." outcome="appdeployment"
+                                            icon="ui-icon-circle-triangle-e">
+                                    <f:param name="template" value="#{entity.id.toString()}"/>
+                                </p:menuitem>
+                            </p:menuButton>
+                        </p:column>
+
+                    </p:dataTable>
+                    <p:button outcome="applicationTemplate" icon="ui-icon-plus"/>
+                    <p:growl id="messages" sticky="true" showDetail="true"/>
+                </h:form>
+            </h:panelGroup>
+
+        </p:outputPanel>
+    </ui:define>
+</ui:composition>

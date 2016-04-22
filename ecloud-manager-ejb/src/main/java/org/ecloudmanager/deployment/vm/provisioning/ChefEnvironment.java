@@ -26,11 +26,13 @@ package org.ecloudmanager.deployment.vm.provisioning;
 
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.Deployer;
+import org.jetbrains.annotations.NotNull;
 
 public class ChefEnvironment extends Deployable {
     ChefEnvironment() {
     }
 
+    @NotNull
     @Override
     public Deployer getDeployer() {
         return new ChefEnvironmentDeployer();

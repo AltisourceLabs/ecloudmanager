@@ -32,6 +32,7 @@ import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
 import org.ecloudmanager.deployment.vm.infrastructure.Infrastructure;
 import org.ecloudmanager.util.ClonerProducer;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.mongodb.morphia.annotations.Transient;
 
@@ -42,10 +43,8 @@ import java.util.stream.Collectors;
 public class ComponentGroupDeployment extends Deployable {
 
     private static final long serialVersionUID = 4963949678744410890L;
-
-    private HAProxyBackendConfig haProxyBackendConfig = new HAProxyBackendConfig();
-
     private static final String VM_CONFIG = "vmConfig";
+    private HAProxyBackendConfig haProxyBackendConfig = new HAProxyBackendConfig();
     @Transient
     private Deployer deployer;
 
@@ -60,10 +59,19 @@ public class ComponentGroupDeployment extends Deployable {
         return haProxyBackendConfig;
     }
 
+    void setHaProxyBackendConfig(HAProxyBackendConfig haProxyBackendConfig) {
+        this.haProxyBackendConfig = haProxyBackendConfig;
+    }
+
     public VirtualMachineTemplate getVirtualMachineTemplate() {
         return virtualMachineTemplate;
     }
 
+    void setVirtualMachineTemplate(VirtualMachineTemplate virtualMachineTemplate) {
+        this.virtualMachineTemplate = virtualMachineTemplate;
+    }
+
+    @NotNull
     @Override
     public Deployer getDeployer() {
         if (deployer == null) {
@@ -146,14 +154,6 @@ public class ComponentGroupDeployment extends Deployable {
                 c.clear();
             });
         });
-    }
-
-    void setHaProxyBackendConfig(HAProxyBackendConfig haProxyBackendConfig) {
-        this.haProxyBackendConfig = haProxyBackendConfig;
-    }
-
-    void setVirtualMachineTemplate(VirtualMachineTemplate virtualMachineTemplate) {
-        this.virtualMachineTemplate = virtualMachineTemplate;
     }
 
 

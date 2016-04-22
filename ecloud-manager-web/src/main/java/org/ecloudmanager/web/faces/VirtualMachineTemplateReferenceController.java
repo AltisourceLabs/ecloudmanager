@@ -24,27 +24,44 @@
 
 package org.ecloudmanager.web.faces;
 
+import org.ecloudmanager.deployment.vm.VMTemplateReference;
+import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
+import org.ecloudmanager.jeecore.web.faces.Controller;
+import org.ecloudmanager.jeecore.web.faces.FacesSupport;
+import org.ecloudmanager.repository.template.VirtualMachineTemplateRepository;
+
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import java.io.Serializable;
 import java.util.List;
 
-public abstract class ListEntityEditorController<T> extends EntityEditorController<T> {
-    protected ListEntityEditorController(Class<? extends T> impl) {
-        super(impl);
+@Controller
+public class VirtualMachineTemplateReferenceController extends FacesSupport implements Serializable {
+    public static String DIALOG_EDIT = "dlg_edit_vm_ref";
+    @Inject
+    private transient VirtualMachineTemplateRepository virtualMachineTemplateRepository;
+    private List<VirtualMachineTemplate> virtualMachineTemplates;
+    private VMTemplateReference value;
+
+    @PostConstruct
+    private void init() {
+        refresh();
     }
 
-    protected abstract List<T> getList();
-
-
-    public void delete(T entity) {
-        getList().remove(entity);
+    void refresh() {
+        virtualMachineTemplates = virtualMachineTemplateRepository.getAll();
     }
 
-    protected void doSave(T old, T entity) {
-        int i = getList().indexOf(old);
-        getList().set(i, entity);
+    public List<VirtualMachineTemplate> getVirtualMachineTemplates() {
+        return virtualMachineTemplates;
     }
 
-    protected void doAdd(T entity) {
-        getList().add(entity);
+    public VMTemplateReference getValue() {
+        return value;
+    }
+
+    public void setValue(VMTemplateReference value) {
+        this.value = value;
     }
 
 }

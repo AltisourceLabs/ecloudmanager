@@ -25,34 +25,22 @@
 package org.ecloudmanager.deployment.ps;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.Deployer;
 import org.ecloudmanager.deployment.ps.cg.ComponentGroupDeployment;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @JsonIgnoreProperties({"parent"})
 public class ProducedServiceDeployment extends Deployable {
-    @JsonProperty("public")
-    private boolean isPublic;
 
     private HAProxyFrontendConfig haProxyFrontendConfig = new HAProxyFrontendConfig();
-
-    private List<FirewallRule> firewallRules = new ArrayList<>();
 
     ProducedServiceDeployment() {
     }
 
-    public boolean isPublicHostname() {
-        return isPublic;
-    }
-
-    public void setIsPublic(boolean isPublic) {
-        this.isPublic = isPublic;
-    }
 
     public HAProxyFrontendConfig getHaProxyFrontendConfig() {
         return haProxyFrontendConfig;
@@ -69,14 +57,7 @@ public class ProducedServiceDeployment extends Deployable {
             .collect(Collectors.toList());
     }
 
-    public List<FirewallRule> getFirewallRules() {
-        return firewallRules;
-    }
-
-    public void setFirewallRules(List<FirewallRule> firewallRules) {
-        this.firewallRules = firewallRules;
-    }
-
+    @NotNull
     @Override
     public Deployer getDeployer() {
         return new HAProxyDeployer();

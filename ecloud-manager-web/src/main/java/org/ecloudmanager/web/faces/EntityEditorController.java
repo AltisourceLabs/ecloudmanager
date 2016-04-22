@@ -32,23 +32,20 @@ import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 
+@Deprecated
 public abstract class EntityEditorController<T> implements Serializable {
     private static final long serialVersionUID = -8687883396621377676L;
+    protected T selected;
+    private T old;
+    private boolean edit = false;
+    private Constructor<? extends T> ctor;
+    private Class<? extends T> impl;
+    protected EntityEditorController(Class<? extends T> impl) {
+        setClassImpl(impl);
+    }
 
     public T getOld() {
         return old;
-    }
-
-    private T old;
-    protected T selected;
-    private boolean edit = false;
-
-
-    private Constructor<? extends T> ctor;
-    private Class<? extends T> impl;
-
-    protected EntityEditorController(Class<? extends T> impl) {
-        setClassImpl(impl);
     }
 
     protected void setClassImpl(Class<? extends T> impl) {

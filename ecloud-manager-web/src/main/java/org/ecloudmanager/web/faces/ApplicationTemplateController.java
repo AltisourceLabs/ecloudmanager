@@ -24,147 +24,143 @@
 
 package org.ecloudmanager.web.faces;
 
+import org.apache.logging.log4j.Logger;
 import org.ecloudmanager.deployment.app.ApplicationTemplate;
 import org.ecloudmanager.deployment.core.Template;
-import org.ecloudmanager.deployment.ps.FirewallRule;
+import org.ecloudmanager.deployment.es.ExternalServiceTemplate;
 import org.ecloudmanager.deployment.ps.ProducedServiceTemplate;
-import org.ecloudmanager.deployment.ps.cg.ComponentGroupTemplate;
-import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
+import org.ecloudmanager.deployment.vm.VMTemplateReference;
 import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.template.ApplicationTemplateRepository;
-import org.ecloudmanager.repository.template.VirtualMachineTemplateRepository;
 import org.ecloudmanager.service.template.ApplicationTemplateService;
+import org.omnifaces.cdi.Param;
+import org.omnifaces.util.Beans;
+import org.primefaces.context.RequestContext;
 
 import javax.annotation.PostConstruct;
-import javax.faces.context.ExternalContext;
-import javax.faces.context.FacesContext;
 import javax.inject.Inject;
-import javax.servlet.http.Part;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.io.Serializable;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 public class ApplicationTemplateController extends FacesSupport implements Serializable {
+    private static final long serialVersionUID = -4809521504415887873L;
+    private static Map<Class, String> dialogs = new HashMap<>();
 
-    private static final long serialVersionUID = 418539347548538918L;
-    private Part file;
-    private List<VirtualMachineTemplate> virtualMachineTemplates;
+    static {
+        dialogs.put(ProducedServiceTemplate.class, ProducedServiceTemplateController.DIALOG_EDIT);
+        dialogs.put(ExternalServiceTemplate.class, ExternalServiceTemplateController.DIALOG_EDIT);
+        dialogs.put(VMTemplateReference.class, VirtualMachineTemplateReferenceController.DIALOG_EDIT);
+    }
+
+    private boolean newChild = false;
+    private boolean newTemplate = false;
+    @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
-    private transient VirtualMachineTemplateRepository virtualMachineTemplateRepository;
+    @Param(converter = "applicationTemplateConverter")
+    private ApplicationTemplate template;
     @Inject
-    private transient ApplicationTemplateRepository applicationRepository;
+    private Logger log;
+    @Inject
+    private transient ApplicationTemplateRepository applicationTemplateRepository;
     @Inject
     private transient ApplicationTemplateService applicationTemplateService;
-    @Inject
-    private ApplicationEntityEditorController applicationEntityEditorController;
-    @Inject
-    private TemplateEntityController templateEntityEditorController;
-    private List<ApplicationTemplate> applicationTemplates;
-    private FirewallRule.Protocol[] firewallRuleProtocols = FirewallRule.Protocol.values();
-    private EntityEditorController<ComponentGroupTemplate> componentGroupTemplateEntityEditorController = new
-            ListEntityEditorController<ComponentGroupTemplate>(ComponentGroupTemplate.class) {
-                @Override
-                protected List<ComponentGroupTemplate> getList() {
-                    if (templateEntityEditorController.getSelected() instanceof ProducedServiceTemplate) {
-                        return ((ProducedServiceTemplate) templateEntityEditorController.getSelected()).getComponentGroups();
-                    }
-                    return Collections.emptyList();
-                }
-            };
-    private EntityEditorController<FirewallRule> firewallRuleEntityEditorController = new
-            ListEntityEditorController<FirewallRule>(FirewallRule.class) {
-                @Override
-                protected List<FirewallRule> getList() {
-                    if (templateEntityEditorController.getSelected() instanceof ProducedServiceTemplate) {
-                        return ((ProducedServiceTemplate) templateEntityEditorController.getSelected()).getFirewallRules();
-                    }
-                    return Collections.emptyList();
-                }
-            };
 
-    public Part getFile() {
-        return file;
-    }
-
-    public void setFile(Part file) {
-        this.file = file;
-    }
-
-    public TemplateEntityController getTemplateEntityEditorController() {
-        return templateEntityEditorController;
-    }
-
-    public List<VirtualMachineTemplate> getVirtualMachineTemplates() {
-        return virtualMachineTemplates;
+    public ApplicationTemplate getTemplate() {
+        return template;
     }
 
     @PostConstruct
-    private void init() {
-        refresh();
-    }
-
-    void refresh() {
-        applicationTemplates = applicationRepository.getAll();
-        virtualMachineTemplates = virtualMachineTemplateRepository.getAll();
-    }
-
-    public List<ApplicationTemplate> getAppTemplates() {
-        return applicationTemplates;
-    }
-
-    public EntityEditorController<ComponentGroupTemplate> getComponentGroupTemplateEntityEditorController() {
-        return componentGroupTemplateEntityEditorController;
-    }
-
-    public void deleteChild(Template t) {
-        applicationEntityEditorController.getSelected().removeChild(t);
-    }
-
-    public void addChild() {
-        applicationEntityEditorController.getSelected().addChild(templateEntityEditorController.getSelected());
-        templateEntityEditorController.hideDialogs(true);
-
-        templateEntityEditorController.init();
-    }
-
-    public void saveChild() {
-        int i = applicationEntityEditorController.getSelected().getChildren().indexOf(templateEntityEditorController
-            .getOld());
-        applicationEntityEditorController.getSelected().setChild(i, templateEntityEditorController
-            .getSelected());
-        templateEntityEditorController.hideDialogs(true);
-        templateEntityEditorController.init();
-    }
-
-    public ApplicationEntityEditorController getApplicationEntityEditorController() {
-        return applicationEntityEditorController;
-    }
-
-    public EntityEditorController<FirewallRule> getFirewallRuleEntityEditorController() {
-        return firewallRuleEntityEditorController;
-    }
-
-    public FirewallRule.Protocol[] getFirewallRuleProtocols() {
-        return firewallRuleProtocols;
-    }
-
-    public void download(ApplicationTemplate app) throws IOException {
-        FacesContext fc = FacesContext.getCurrentInstance();
-        ExternalContext ec = fc.getExternalContext();
-        ec.responseReset();
-        ec.setResponseContentType("text/yaml");
-        ec.setResponseHeader("Content-Disposition", "attachment; filename=\"" + app.getName() + ".yaml" + "\"");
-        OutputStream output = ec.getResponseOutputStream();
-        String yaml = applicationTemplateService.toYaml(app);
-        output.write(yaml.getBytes());
-        output.close();
-        fc.responseComplete();
+    public void init() {
+        if (template == null) {
+            newTemplate = true;
+            template = new ApplicationTemplate();
+        }
     }
 
 
+    public void save() {
+        if (newTemplate) {
+            applicationTemplateService.saveApp(template);
+            newTemplate = false;
+        } else {
+            applicationTemplateService.updateApp(template);
+        }
+    }
+
+    public void startEditChild(Template child) {
+        if (child instanceof ProducedServiceTemplate) {
+            ProducedServiceTemplateController controller = Beans.getInstance(ProducedServiceTemplateController.class);
+            controller.setValue((ProducedServiceTemplate) child);
+        } else if (child instanceof VMTemplateReference) {
+            VirtualMachineTemplateReferenceController controller = Beans.getInstance(VirtualMachineTemplateReferenceController.class);
+            controller.setValue((VMTemplateReference) child);
+        } else if (child instanceof ExternalServiceTemplate) {
+            ExternalServiceTemplateController controller = Beans.getInstance(ExternalServiceTemplateController.class);
+            controller.setValue((ExternalServiceTemplate) child);
+        } else {
+            throw new RuntimeException("Uncnown instance type: " + child.getClass().getName());
+        }
+        showDialog(child.getClass());
+    }
+
+    public void deleteChild(Template child) {
+        template.removeChild(child);
+    }
+
+    public List<String> getAvailableEndpoints() {
+        List<String> result = new ArrayList<>();
+        template.getChildren().forEach(t -> t.getEndpoints().forEach(e -> result.add(t.getName() + ":" + e.getName())));
+        return result;
+    }
+
+    public void newProducedService() {
+        newChild = true;
+        startEditChild(new ProducedServiceTemplate());
+    }
+
+    public void newExternalService() {
+        newChild = true;
+        startEditChild(new ExternalServiceTemplate());
+
+    }
+
+    public void newVmRef() {
+        newChild = true;
+        startEditChild(new VMTemplateReference());
+    }
+
+    public void cancel() {
+    }
+
+    private void showDialog(Class c) {
+        String dialog = dialogs.get(c);
+        RequestContext ctx = RequestContext.getCurrentInstance();
+        ctx.update(dialog);
+        ctx.execute("PF('" + dialog + "').show()");
+    }
+
+    private void hideDialog(Class c) {
+        String dialog = dialogs.get(c);
+        RequestContext ctx = RequestContext.getCurrentInstance();
+        ctx.execute("PF('" + dialog + "').hide()");
+        ctx.update("out");
+    }
+
+    public void saveChild(Template c) {
+        if (newChild) {
+            template.addChild(c);
+            newChild = false;
+        }
+        hideDialog(c.getClass());
+    }
+
+    public void cancelChildEditing(Template c) {
+        newChild = false;
+        hideDialog(c.getClass());
+    }
 }
-

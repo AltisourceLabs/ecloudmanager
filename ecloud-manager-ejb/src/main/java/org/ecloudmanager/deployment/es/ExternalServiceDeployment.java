@@ -29,6 +29,7 @@ import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.Deployer;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
 import org.ecloudmanager.service.execution.Action;
+import org.jetbrains.annotations.NotNull;
 
 @JsonIgnoreProperties({"parent"})
 public class ExternalServiceDeployment extends Deployable {
@@ -48,6 +49,7 @@ public class ExternalServiceDeployment extends Deployable {
         this.description = address;
     }
 
+    @NotNull
     @Override
     public Deployer<ExternalServiceDeployment> getDeployer() {
         return new Deployer<ExternalServiceDeployment>() {
