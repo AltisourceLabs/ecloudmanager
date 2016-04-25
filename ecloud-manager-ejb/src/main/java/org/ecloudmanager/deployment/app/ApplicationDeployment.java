@@ -38,7 +38,7 @@ import java.util.List;
 public class ApplicationDeployment extends Deployable {
     private static final long serialVersionUID = -8557535271917698832L;
     private List<Link> links = new ArrayList<>();
-
+    private List<String> publicEndpoints = new ArrayList<>();
     ApplicationDeployment() {
     }
 
@@ -57,4 +57,11 @@ public class ApplicationDeployment extends Deployable {
     }
 
 
+    public List<String> getPublicEndpoints() {
+        return publicEndpoints;
+    }
+
+    public void setPublicEndpoints(List<String> publicEndpoints) {
+        this.publicEndpoints = publicEndpoints;
+    }
 }

@@ -59,6 +59,7 @@ public class ApplicationTemplateController extends FacesSupport implements Seria
 
     private boolean newChild = false;
     private boolean newTemplate = false;
+    private String publicEndpointToAdd;
     @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
     @Param(converter = "applicationTemplateConverter")
@@ -103,7 +104,7 @@ public class ApplicationTemplateController extends FacesSupport implements Seria
             ExternalServiceTemplateController controller = Beans.getInstance(ExternalServiceTemplateController.class);
             controller.setValue((ExternalServiceTemplate) child);
         } else {
-            throw new RuntimeException("Uncnown instance type: " + child.getClass().getName());
+            throw new RuntimeException("Unknown instance type: " + child.getClass().getName());
         }
         showDialog(child.getClass());
     }
@@ -114,7 +115,9 @@ public class ApplicationTemplateController extends FacesSupport implements Seria
 
     public List<String> getAvailableEndpoints() {
         List<String> result = new ArrayList<>();
-        template.getChildren().forEach(t -> t.getEndpoints().forEach(e -> result.add(t.getName() + ":" + e.getName())));
+        template.getChildren().forEach(t -> {
+            result.addAll(t.getEndpointsIncludingTemplateName());
+        });
         return result;
     }
 
@@ -162,5 +165,24 @@ public class ApplicationTemplateController extends FacesSupport implements Seria
     public void cancelChildEditing(Template c) {
         newChild = false;
         hideDialog(c.getClass());
+    }
+
+    public void deletePublicEndpoint(String ep) {
+        template.getPublicEndpoints().remove(ep);
+    }
+
+    public String getPublicEndpointToAdd() {
+        return publicEndpointToAdd;
+    }
+
+    public void setPublicEndpointToAdd(String publicEndpointToAdd) {
+        this.publicEndpointToAdd = publicEndpointToAdd;
+    }
+
+    public void addPublicEndpoint() {
+        if (publicEndpointToAdd != null) {
+            template.getPublicEndpoints().add(publicEndpointToAdd);
+            publicEndpointToAdd = null;
+        }
     }
 }

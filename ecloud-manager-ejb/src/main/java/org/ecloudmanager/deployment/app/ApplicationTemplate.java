@@ -50,11 +50,21 @@ public class ApplicationTemplate extends MongoObject implements Template<Applica
     private String description;
     private List<Link> links = new ArrayList<>();
     private List<Template> children = new ArrayList<>();
+    private List<String> publicEndpoints = new ArrayList<>();
 
     public ApplicationTemplate() {
     }
+
     public ApplicationTemplate(String name) {
         this.name = name;
+    }
+
+    public List<String> getPublicEndpoints() {
+        return publicEndpoints;
+    }
+
+    public void setPublicEndpoints(List<String> publicEndpoints) {
+        this.publicEndpoints = publicEndpoints;
     }
 
     public List<Link> getLinks() {
@@ -126,6 +136,7 @@ public class ApplicationTemplate extends MongoObject implements Template<Applica
         if (children.remove(child)) {
             List<String> oldEndpoints = child.getRequiredEndpointsIncludingTemplateName();
             oldEndpoints.forEach(this::deleteLink);
+            child.getEndpointsIncludingTemplateName().forEach(publicEndpoints::remove);
             return true;
         }
         return false;
@@ -145,6 +156,7 @@ public class ApplicationTemplate extends MongoObject implements Template<Applica
             ad.addChild(deployable);
         });
         ad.getLinks().addAll(links);
+        ad.getPublicEndpoints().addAll(publicEndpoints);
         return ad;
     }
 

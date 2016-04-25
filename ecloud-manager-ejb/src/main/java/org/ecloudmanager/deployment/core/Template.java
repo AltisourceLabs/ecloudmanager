@@ -47,4 +47,10 @@ public interface Template<T extends Deployable> extends App {
         return result;
     }
 
+    default List<String> getEndpointsIncludingTemplateName() {
+        List<String> result = new ArrayList<>();
+        getEndpoints().forEach(e -> result.add(getName() + ":" + e.getName()));
+        return result;
+    }
+
 }

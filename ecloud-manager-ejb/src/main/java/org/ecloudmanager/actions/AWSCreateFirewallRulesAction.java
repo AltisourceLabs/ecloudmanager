@@ -41,7 +41,7 @@ public class AWSCreateFirewallRulesAction extends SingleAction {
                     result.add(createVMAction.get());
                 }
             } else {
-                throw new RuntimeException("Unsupported endpoint:" + d);
+                // TODO implement managed HAProxy
             }
         });
         result.addAll(super.getDependencies(fullAction));

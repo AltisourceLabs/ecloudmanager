@@ -34,6 +34,7 @@ import com.amazonaws.services.route53.model.*;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Logger;
+import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.vm.VMDeployer;
@@ -81,6 +82,19 @@ public class AWSVmService {
     }
 
     public void createFirewallRules(VMDeployment deployment) {
+        ApplicationDeployment ad = (ApplicationDeployment) deployment.getTop();
+        String securityGroupId = AWSInfrastructureDeployer.getAwsSecurityGroupId(deployment);
+        deployment.children(Endpoint.class).forEach(e -> {
+            if (ad.getPublicEndpoints().contains(deployment.getName() + ":" + e.getName())) {
+                int port = Integer.parseInt(e.getConfigValue("port"));
+                AuthorizeSecurityGroupIngressRequest rule = new AuthorizeSecurityGroupIngressRequest()
+                        .withGroupId(securityGroupId)
+                        .withFromPort(port).withToPort(port)
+                        .withIpProtocol("TCP")
+                        .withCidrIp("0.0.0.0/0");
+                getAmazonEC2(deployment).authorizeSecurityGroupIngress(rule);
+            }
+        });
         List<Endpoint> required = deployment.getRequiredEndpoints();
         required.forEach(e -> {
             int port = Integer.parseInt(e.getConfigValue("port"));
@@ -88,7 +102,6 @@ public class AWSVmService {
             if (d instanceof VMDeployment) {
                 VMDeployment supplier = (VMDeployment) d;
                 String supplierSecurityGroupId = AWSInfrastructureDeployer.getAwsSecurityGroupId(supplier);
-                String securityGroupId = AWSInfrastructureDeployer.getAwsSecurityGroupId(deployment);
 
                 AuthorizeSecurityGroupIngressRequest inRule = new AuthorizeSecurityGroupIngressRequest()
                         .withGroupId(supplierSecurityGroupId)

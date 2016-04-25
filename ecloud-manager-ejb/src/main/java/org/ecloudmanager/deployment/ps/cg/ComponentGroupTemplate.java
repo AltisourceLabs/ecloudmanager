@@ -112,6 +112,9 @@ public class ComponentGroupTemplate implements Template<ComponentGroupDeployment
     @NotNull
     @Override
     public List<String> getRequiredEndpoints() {
-        return Collections.emptyList();
+        if (virtualMachineTemplate == null) {
+            return Collections.emptyList();
+        }
+        return virtualMachineTemplate.getRequiredEndpoints();
     }
 }

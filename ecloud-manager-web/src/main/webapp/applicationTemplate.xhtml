@@ -89,6 +89,28 @@
                             </p:selectOneMenu>
                         </p:column>
                     </p:dataTable>
+                    <p>Public endpoints:</p>
+                    <p:dataTable var="ep" value="#{applicationTemplateController.template.publicEndpoints}"
+                                 id="public_endpoints">
+                        <p:column id="column_endpoint" headerText="Endpoint">
+                            <h:outputText value="#{ep}"/>
+                        </p:column>
+                        <p:column id="column_ep_action" width="30">
+                            <p:commandButton id="delete_endpoint" title="Delete" icon="ui-icon-close"
+                                             update="public_endpoints"
+                                             action="#{applicationTemplateController.deletePublicEndpoint(ep)}"/>
+                        </p:column>
+                    </p:dataTable>
+                    <p:spacer/>
+                    <p:selectOneMenu id="addPublicEndpoint" value="#{applicationTemplateController.publicEndpointToAdd}"
+                                     styleClass="selectEndpoint">
+                        <f:selectItem itemLabel="Select endpoint to add" itemValue=""/>
+                        <f:selectItems value="#{applicationTemplateController.availableEndpoints}"/>
+                    </p:selectOneMenu>
+                    <p:commandButton id="add_public_endpoint" value="Add"
+                                     update="public_endpoints, addPublicEndpoint"
+                                     action="#{applicationTemplateController.addPublicEndpoint()}"/>
+
                     <p>
                         <p:commandButton value="save" update="out" action="#{applicationTemplateController.save()}"/>
                     </p>
