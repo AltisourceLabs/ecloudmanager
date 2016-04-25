@@ -112,8 +112,15 @@ public class VMDeployment extends Deployable {
         List<Endpoint> result = new ArrayList<>();
         ApplicationDeployment ad = (ApplicationDeployment) getTop();
         List<Link> links = ad.getLinks();
-        getVirtualMachineTemplate().getRequiredEndpointsIncludingTemplateName().forEach(r -> {
-            Optional<Link> o = links.stream().filter(l -> l.getConsumer().equals(r)).findFirst();
+        getVirtualMachineTemplate().getRequiredEndpoints().forEach(r -> {
+            String path;
+            if (getParent() == getTop()) { //FIXME find better way to handle different paths in ComponentGroup
+                path = getPath(":");
+            } else {
+                path = getParent().getPath(":");
+            }
+            String epPath = path + ":" + r;
+            Optional<Link> o = links.stream().filter(l -> l.getConsumer().equals(epPath)).findFirst();
             if (o.isPresent()) {
                 String endpoint = o.get().getSupplier();
                 String[] splitted = endpoint.split(":");

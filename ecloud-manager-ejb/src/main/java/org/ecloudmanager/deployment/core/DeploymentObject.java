@@ -58,6 +58,32 @@ public abstract class DeploymentObject extends DeploymentConstraint {
     public DeploymentObject() {
     }
 
+    private static @Nullable StringBuilder buildRelativePath(StringBuilder stringBuilder, @NotNull DeploymentObject
+            from, @NotNull DeploymentObject to) {
+        if (from.equals(to)) {
+            return stringBuilder;
+        }
+        if (from.contains(to)) {
+            DeploymentObject child = from.children().stream().filter(c -> c.equals(to)).findFirst().orElse(null);
+            if (child != null) {
+                return stringBuilder.append(child.getName()).append(PATH_SEPARATOR);
+            }
+            DeploymentObject containingChild = from.children().stream().filter(c -> c.contains(to)).findFirst()
+                    .orElse(null);
+            if (containingChild != null) {
+                return buildRelativePath(stringBuilder.append(containingChild.getName()).append(PATH_SEPARATOR),
+                        containingChild, to);
+            }
+            // should not happen
+            throw new RuntimeException();
+        }
+        if (from.getParent() == null) {
+            return null;
+        }
+        return buildRelativePath(stringBuilder.append(PARENT_REFERENCE), from.getParent(), to);
+
+    }
+
     public DeploymentObject getParent() {
         return parent;
     }
@@ -121,7 +147,6 @@ public abstract class DeploymentObject extends DeploymentConstraint {
         addChild(result);
         return result;
     }
-
 
     @Override
     public String toString() {
@@ -190,32 +215,6 @@ public abstract class DeploymentObject extends DeploymentConstraint {
         return result == null ? null : result.toString();
     }
 
-    private static @Nullable StringBuilder buildRelativePath(StringBuilder stringBuilder, @NotNull DeploymentObject
-        from, @NotNull DeploymentObject to) {
-        if (from.equals(to)) {
-            return stringBuilder;
-        }
-        if (from.contains(to)) {
-            DeploymentObject child = from.children().stream().filter(c -> c.equals(to)).findFirst().orElse(null);
-            if (child != null) {
-                return stringBuilder.append(child.getName()).append(PATH_SEPARATOR);
-            }
-            DeploymentObject containingChild = from.children().stream().filter(c -> c.contains(to)).findFirst()
-                .orElse(null);
-            if (containingChild != null) {
-                return buildRelativePath(stringBuilder.append(containingChild.getName()).append(PATH_SEPARATOR),
-                    containingChild, to);
-            }
-            // should not happen
-            throw new RuntimeException();
-        }
-        if (from.getParent() == null) {
-            return null;
-        }
-        return buildRelativePath(stringBuilder.append(PARENT_REFERENCE), from.getParent(), to);
-
-    }
-
     private boolean contains(DeploymentObject child) {
         return stream().anyMatch(c -> c.equals(child));
     }
@@ -234,6 +233,10 @@ public abstract class DeploymentObject extends DeploymentConstraint {
             return null;
         }
         return result;
+    }
+
+    public void setExtendedConfig(DeploymentObject ext) {
+        pathToExt = relativePathTo(ext);
     }
 
     @Nullable
@@ -260,10 +263,14 @@ public abstract class DeploymentObject extends DeploymentConstraint {
         return null;
     }
 
-    public void setExtendedConfig(DeploymentObject ext) {
-        pathToExt = relativePathTo(ext);
-    }
+    public String getPath(String separator) {
+        if (getTop().equals(this)) {
+            return "";
+        }
+        String parentPath = getParent().getPath(separator);
 
+        return parentPath + (parentPath.isEmpty() ? "" : separator) + getName();
+    }
 //    public List<DeploymentObject> getDependencies() {
 //
 //    }

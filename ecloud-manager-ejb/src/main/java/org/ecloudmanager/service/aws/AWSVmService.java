@@ -37,6 +37,7 @@ import org.apache.logging.log4j.Logger;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.core.Endpoint;
+import org.ecloudmanager.deployment.ps.HAProxyDeployer;
 import org.ecloudmanager.deployment.vm.VMDeployer;
 import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.infrastructure.AWSInfrastructureDeployer;
@@ -84,17 +85,35 @@ public class AWSVmService {
     public void createFirewallRules(VMDeployment deployment) {
         ApplicationDeployment ad = (ApplicationDeployment) deployment.getTop();
         String securityGroupId = AWSInfrastructureDeployer.getAwsSecurityGroupId(deployment);
-        deployment.children(Endpoint.class).forEach(e -> {
-            if (ad.getPublicEndpoints().contains(deployment.getName() + ":" + e.getName())) {
-                int port = Integer.parseInt(e.getConfigValue("port"));
-                AuthorizeSecurityGroupIngressRequest rule = new AuthorizeSecurityGroupIngressRequest()
-                        .withGroupId(securityGroupId)
-                        .withFromPort(port).withToPort(port)
-                        .withIpProtocol("TCP")
-                        .withCidrIp("0.0.0.0/0");
-                getAmazonEC2(deployment).authorizeSecurityGroupIngress(rule);
-            }
-        });
+        if (deployment.getTop() == deployment.getParent()) {
+            // TODO move public IP firewall rules creation to ApplicationDeployment?
+            deployment.children(Endpoint.class).forEach(e -> {
+                if (ad.getPublicEndpoints().contains(deployment.getName() + ":" + e.getName())) {
+                    int port = Integer.parseInt(e.getConfigValue("port"));
+                    AuthorizeSecurityGroupIngressRequest rule = new AuthorizeSecurityGroupIngressRequest()
+                            .withGroupId(securityGroupId)
+                            .withFromPort(port).withToPort(port)
+                            .withIpProtocol("TCP")
+                            .withCidrIp("0.0.0.0/0");
+                    getAmazonEC2(deployment).authorizeSecurityGroupIngress(rule);
+                }
+            });
+        } else {
+            // TODO move haproxy IP firewall rules creation to ComponentGroupDeployment?
+            String haproxyIp = deployment.getParent().getParent().getConfigValue(HAProxyDeployer.HAPROXY_IP);
+            deployment.getVirtualMachineTemplate().getEndpoints().forEach(e -> {
+                if (e.getPort() != null) {
+                    int port = e.getPort();
+                    AuthorizeSecurityGroupIngressRequest rule = new AuthorizeSecurityGroupIngressRequest()
+                            .withGroupId(securityGroupId)
+                            .withFromPort(port).withToPort(port)
+                            .withIpProtocol("TCP")
+                            .withCidrIp(haproxyIp + "/32");
+                    getAmazonEC2(deployment).authorizeSecurityGroupIngress(rule);
+                }
+            });
+        }
+
         List<Endpoint> required = deployment.getRequiredEndpoints();
         required.forEach(e -> {
             int port = Integer.parseInt(e.getConfigValue("port"));
