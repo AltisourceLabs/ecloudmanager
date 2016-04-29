@@ -106,10 +106,9 @@ public class ActionGroup extends Action {
                     hasFinished = true;
                     break;
                 case FAILED:
+                case NOT_RUN:
                     hasFinished = true;
                     hasFailed = true;
-                    break;
-                case NOT_RUN:
                     break;
             }
             if (hasFinished && hasNotFinished && (oldStatus == Status.ROLLBACK_RUNNING || oldStatus == Status

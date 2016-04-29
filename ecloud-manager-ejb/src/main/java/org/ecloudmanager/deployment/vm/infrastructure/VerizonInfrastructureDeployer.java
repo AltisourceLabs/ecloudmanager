@@ -24,6 +24,7 @@
 
 package org.ecloudmanager.deployment.vm.infrastructure;
 
+import org.ecloudmanager.actions.VerizonCreateFirewallRulesAction;
 import org.ecloudmanager.actions.VerizonVmActions;
 import org.ecloudmanager.deployment.core.Config;
 import org.ecloudmanager.deployment.core.ConstraintField;
@@ -46,8 +47,47 @@ public class VerizonInfrastructureDeployer extends InfrastructureDeployer {
     private static final String VERIZON_IPS = "verizonIPs";
 
     private VerizonVmActions verizonVmActions = CDI.current().select(VerizonVmActions.class).get();
-
     public VerizonInfrastructureDeployer() {
+    }
+
+    private static DeploymentObject getVerizonConfig(VMDeployment deployment) {
+        return deployment.createIfMissingAndGetConfig(VERIZON_CONFIG_NAME);
+    }
+
+    public static String getCatalog(VMDeployment deployment) {
+        return getVerizonConfig(deployment).getConfigValue(VERIZON_CATALOG);
+    }
+
+    public static String getEnvironment(Config config) {
+        return config.getConfigValue(VERIZON_ENVIRONMENT);
+    }
+
+    public static String getEnvironment(VMDeployment deployment) {
+        return getVerizonConfig(deployment).getConfigValue(VERIZON_ENVIRONMENT);
+    }
+
+    public static String getSubnet(VMDeployment deployment) {
+        return getVerizonConfig(deployment).getConfigValue(VERIZON_SUBNET);
+    }
+
+    public static String getGroup(VMDeployment deployment) {
+        return getVerizonConfig(deployment).getConfigValue(VERIZON_GROUP);
+    }
+
+    public static String getRow(Config config) {
+        return config.getConfigValue(VerizonInfrastructureDeployer.VERIZON_ROW);
+    }
+
+    public static String getRow(VMDeployment deployment) {
+        return getVerizonConfig(deployment).getConfigValue(VERIZON_ROW);
+    }
+
+    public static String getTags(VMDeployment deployment) {
+        return getVerizonConfig(deployment).getConfigValue(VERIZON_TAGS);
+    }
+
+    public static String getIps(VMDeployment deployment) {
+        return getVerizonConfig(deployment).getConfigValue(VERIZON_IPS);
     }
 
     @Override
@@ -93,9 +133,12 @@ public class VerizonInfrastructureDeployer extends InfrastructureDeployer {
         Action createVmAction = verizonVmActions.getCreateVmAction(vmDeployment);
         Action startupVmAction = verizonVmActions.getStartupVmAction(vmDeployment);
         Action detectVmIpAddressAction = verizonVmActions.getDetectVmIpAddressAction(vmDeployment);
+        Action assignVmIpAddressAction = verizonVmActions.getAssignIpAction(vmDeployment);
+
+        Action createFirewallRulesAction = new VerizonCreateFirewallRulesAction(vmDeployment);
         return Action.actionSequence(
             "Create, startup VM and detect IP",
-            createVmAction, startupVmAction, detectVmIpAddressAction
+                createVmAction, startupVmAction, detectVmIpAddressAction, assignVmIpAddressAction, createFirewallRulesAction
         );
     }
 
@@ -112,46 +155,6 @@ public class VerizonInfrastructureDeployer extends InfrastructureDeployer {
     @Override
     public Action getUpdateAction(DeploymentAttempt lastAttempt, VMDeployment before, VMDeployment after) {
         return verizonVmActions.getUpdateVmAction(after);
-    }
-
-    private static DeploymentObject getVerizonConfig(VMDeployment deployment) {
-        return deployment.createIfMissingAndGetConfig(VERIZON_CONFIG_NAME);
-    }
-
-    public static String getCatalog(VMDeployment deployment) {
-        return getVerizonConfig(deployment).getConfigValue(VERIZON_CATALOG);
-    }
-
-    public static String getEnvironment(Config config) {
-        return config.getConfigValue(VERIZON_ENVIRONMENT);
-    }
-
-    public static String getEnvironment(VMDeployment deployment) {
-        return getVerizonConfig(deployment).getConfigValue(VERIZON_ENVIRONMENT);
-    }
-
-    public static String getSubnet(VMDeployment deployment) {
-        return getVerizonConfig(deployment).getConfigValue(VERIZON_SUBNET);
-    }
-
-    public static String getGroup(VMDeployment deployment) {
-        return getVerizonConfig(deployment).getConfigValue(VERIZON_GROUP);
-    }
-
-    public static String getRow(Config config) {
-        return config.getConfigValue(VerizonInfrastructureDeployer.VERIZON_ROW);
-    }
-
-    public static String getRow(VMDeployment deployment) {
-        return getVerizonConfig(deployment).getConfigValue(VERIZON_ROW);
-    }
-
-    public static String getTags(VMDeployment deployment) {
-        return getVerizonConfig(deployment).getConfigValue(VERIZON_TAGS);
-    }
-
-    public static String getIps(VMDeployment deployment) {
-        return getVerizonConfig(deployment).getConfigValue(VERIZON_IPS);
     }
 
     @Override

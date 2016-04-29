@@ -126,12 +126,17 @@ public abstract class Action {
         if (getStatus() != Status.PENDING) {
             return false;
         }
+        boolean result = true;
         for (Action action : getDependencies(fullAction)) {
+            if (action.getStatus() == Status.FAILED || action.getStatus() == Status.NOT_RUN) {
+                setStatus(Status.NOT_RUN);
+            }
+
             if (action.getStatus() != Status.SUCCESSFUL) {
-                return false;
+                result = false;
             }
         }
-        return true;
+        return result;
     }
 
     protected boolean isRollbackReady() {

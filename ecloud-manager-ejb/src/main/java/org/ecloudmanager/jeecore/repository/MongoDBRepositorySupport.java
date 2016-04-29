@@ -24,6 +24,7 @@
 
 package org.ecloudmanager.jeecore.repository;
 
+import org.apache.logging.log4j.Logger;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.Datastore;
 
@@ -36,7 +37,8 @@ public class MongoDBRepositorySupport<T> {
 
     @Inject
     protected Datastore datastore;
-
+    @Inject
+    private Logger log;
     @SuppressWarnings("unchecked")
     protected Class<T> getEntityType() {
         ParameterizedType type = (ParameterizedType) getClass().getGenericSuperclass();
@@ -68,7 +70,11 @@ public class MongoDBRepositorySupport<T> {
     }
 
     public void save(T entity) {
-        datastore.save(entity);
+        try {
+            datastore.save(entity);
+        } catch (Throwable t) {
+            log.error("Failed to save " + entity, t);
+        }
     }
 
     public void saveAll(Collection<T> entities) {

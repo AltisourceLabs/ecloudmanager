@@ -154,4 +154,9 @@ public interface VirtualMachineService {
     @Consumes
     @Path("/{virtualMachineId}")
     TaskType editVirtualMachine(@PathParam("virtualMachineId") String virtualMachineId, VirtualMachineType virtualMachineType);
+
+    @PUT
+    @Consumes
+    @Path("/{virtualMachineId}/assignedIps")
+    TaskType editVirtulMachineAssignedIp(@PathParam("virtualMachineId") String virtualMachineId, AssignedIpAddressesType assignedIpAddressesType);
 }

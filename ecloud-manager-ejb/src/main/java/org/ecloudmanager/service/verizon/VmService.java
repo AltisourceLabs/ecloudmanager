@@ -25,11 +25,15 @@
 package org.ecloudmanager.service.verizon;
 
 import com.google.common.collect.Sets;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
+import org.ecloudmanager.deployment.app.ApplicationDeployment;
+import org.ecloudmanager.deployment.core.DeploymentObject;
+import org.ecloudmanager.deployment.core.Endpoint;
+import org.ecloudmanager.deployment.ps.ProducedServiceDeployment;
 import org.ecloudmanager.deployment.vm.VMDeployer;
 import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
+import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployer;
 import org.ecloudmanager.deployment.vm.infrastructure.VerizonInfrastructureDeployer;
 import org.ecloudmanager.domain.verizon.deployment.VirtualMachine;
 import org.ecloudmanager.jeecore.service.ServiceSupport;
@@ -41,48 +45,42 @@ import org.ecloudmanager.service.verizon.infrastructure.CloudCachedEntityService
 import org.ecloudmanager.tmrk.cloudapi.model.*;
 import org.ecloudmanager.tmrk.cloudapi.service.device.VirtualMachineService;
 import org.ecloudmanager.tmrk.cloudapi.service.environment.TaskService;
+import org.ecloudmanager.tmrk.cloudapi.service.network.FirewallRuleService;
 import org.ecloudmanager.tmrk.cloudapi.service.network.NetworkService;
 import org.ecloudmanager.tmrk.cloudapi.util.TmrkUtils;
 
 import javax.ejb.Stateless;
 import javax.inject.Inject;
+import javax.xml.bind.JAXBElement;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 
 @Stateless
 public class VmService extends ServiceSupport {
     private static final Set<Integer> ALLOWED_CPU_VALUES = Sets.newHashSet(1, 2, 4, 8);
-
-    @Inject
-    private Logger log;
-
-    @Inject
-    private VirtualMachineService virtualMachineService;
-
-    @Inject
-    private TaskService taskService;
-
-    @Inject
-    private VmByNamesAdapterService vmByNamesAdapterService;
-
-    @Inject
-    private VirtualMachineRepository vmRepository;
-
-    @Inject
-    private NetworkService networkService;
-
-    @Inject
-    private CloudCachedEntityService cacheService;
-
+    private static final long VZ_TASK_TIMEOUT_SEC = 1000;
     @Inject
     SynchronousPoller synchronousPoller;
-
-    private static final long VZ_TASK_TIMEOUT_SEC = 1000;
-
+    @Inject
+    private Logger log;
+    @Inject
+    private VirtualMachineService virtualMachineService;
+    @Inject
+    private TaskService taskService;
+    @Inject
+    private VmByNamesAdapterService vmByNamesAdapterService;
+    @Inject
+    private VirtualMachineRepository vmRepository;
+    @Inject
+    private NetworkService networkService;
+    @Inject
+    private CloudCachedEntityService cacheService;
+    @Inject
+    private FirewallRuleService firewallRuleService;
     private ObjectFactory objectFactory = new ObjectFactory();
 
     public String createVm(VMDeployment vmDeployment) {
@@ -401,4 +399,135 @@ public class VmService extends ServiceSupport {
         );
     }
 
+    public void createFirewallRules(VMDeployment deployment) {
+        ApplicationDeployment ad = (ApplicationDeployment) deployment.getTop();
+        if (deployment.getTop() == deployment.getParent()) {
+            // TODO move public IP firewall rules creation to ApplicationDeployment?
+            deployment.children(Endpoint.class).forEach(e -> {
+                if (ad.getPublicEndpoints().contains(deployment.getName() + ":" + e.getName())) {
+                    int port = Integer.parseInt(e.getConfigValue("port"));
+//                    FirewallAclType result = createFirewallRule(getEnv(deployment), firewallAclEndpointTypeAny(), firewallAclEndpointType(deployment), port);
+//                    String href = result.getHref();
+                }
+            });
+        } else {
+            // TODO move haproxy IP firewall rules creation to ComponentGroupDeployment?
+            ProducedServiceDeployment psd = (ProducedServiceDeployment) deployment.getParent().getParent();
+            deployment.getVirtualMachineTemplate().getEndpoints().forEach(e -> {
+                if (e.getPort() != null) {
+                    int port = e.getPort();
+
+//                    FirewallAclType result = createFirewallRule(getEnv(deployment), haProxyFirewallAclEndpointType(psd), firewallAclEndpointType(deployment), port);
+//                    String href = result.getHref();
+                }
+            });
+        }
+
+        List<Endpoint> required = deployment.getRequiredEndpoints();
+        required.forEach(e -> {
+            int port = Integer.parseInt(e.getConfigValue("port"));
+            DeploymentObject d = e.getParent();
+            if (d instanceof VMDeployment) {
+                VMDeployment target = (VMDeployment) d;
+                FirewallAclType result = createFirewallRule(getEnv(target), firewallAclEndpointType(deployment), firewallAclEndpointType(target), port);
+
+            } else {
+                log.warn("Unsupported endpoint:" + d);
+            }
+        });
+
+    }
+
+    public FirewallAclType createFirewallRule(String envId, FirewallAclEndpointType source, FirewallAclEndpointType dest, long port) {
+        CreateFirewallAclType firewallAcl = objectFactory.createCreateFirewallAclType();
+
+        firewallAcl.setPermission(AclPermissionTypeEnum.ALLOW);
+        firewallAcl.setProtocol(ProtocolTypeEnum.TCP);
+
+        firewallAcl.setSource(source);
+
+        firewallAcl.setDestination(objectFactory.createFirewallAclTypeDestination(dest));
+        PortRangeType portRange = new PortRangeType();
+        portRange.setStart(port);
+        portRange.setEnd(port);
+        firewallAcl.setPortRange(objectFactory.createPortRange(portRange));
+        FirewallAclType result = null;
+        JAXBElement<CreateFirewallAclType> request = objectFactory.createCreateFirewallAcl(firewallAcl);
+        try {
+            result = firewallRuleService.createFirewallRuleForEnvironment(envId, request);
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+        return result;
+
+    }
+
+    private FirewallAclEndpointType firewallAclEndpointType(VMDeployment deployment) {
+
+        FirewallAclEndpointType fwaclet = new FirewallAclEndpointType();
+        IpAddressReferenceType v = objectFactory.createIpAddressReferenceType();
+        String ip = InfrastructureDeployer.getIP(deployment);
+        String network = getNetwork(deployment);
+        String href = "/cloudapi/ecloud/ipaddresses/networks/" + network + "/" + ip;
+        v.setHref(href);
+        v.setName(ip);
+        fwaclet.setType(FirewallAclEndpointTypeEnum.IP_ADDRESS);
+        fwaclet.setIpAddress(objectFactory.createFirewallAclEndpointTypeIpAddress(v));
+        return fwaclet;
+    }
+
+
+    private FirewallAclEndpointType firewallAclEndpointTypeAny() {
+        FirewallAclEndpointType fwaclet = new FirewallAclEndpointType();
+        fwaclet.setType(FirewallAclEndpointTypeEnum.ANY);
+        return fwaclet;
+    }
+
+    private String getEnv(VMDeployment deployment) {
+        EnvironmentType href = cacheService.getByHrefOrName(EnvironmentType.class, VerizonInfrastructureDeployer.getEnvironment(deployment));
+        return TmrkUtils.getIdFromHref(href.getHref());
+    }
+
+    private String getNetwork(VMDeployment deployment) {
+        String vmId = InfrastructureDeployer.getVmId(deployment);
+        VirtualMachineType selectedVm = virtualMachineService.getVirtualMachineById(vmId);
+
+        HardwareConfigurationType hwconfig = selectedVm.getHardwareConfiguration().getValue();
+        NicsType nics = hwconfig.getNics().getValue();
+        NetworkReferenceType network = nics.getNic().get(0).getNetwork();
+        String networkId = network.getHref().substring(network.getHref().lastIndexOf("/") + 1, network.getHref()
+                .length());
+
+        return networkId;
+    }
+
+    private FirewallAclEndpointType haProxyFirewallAclEndpointType(ProducedServiceDeployment deployment) {
+        return firewallAclEndpointTypeAny(); //FIXME
+    }
+
+    public void assignIp(String vmId, String network, String ipAddress) {
+        AssignedIpAddressesType assignedIp = objectFactory.createAssignedIpAddressesType();
+        ArrayOfActionType aat = objectFactory.createArrayOfActionType();
+        ActionType at = objectFactory.createActionType();
+        at.setHref("/cloudapi/ecloud/virtualMachines/" + vmId + "/assignedIps");
+        at.setName("edit");
+        aat.getAction().add(at);
+        assignedIp.setActions(objectFactory.createResourceTypeActions(aat));
+        DeviceNetworkType dn = objectFactory.createDeviceNetworkType();
+        DeviceNetworksType dnt = objectFactory.createDeviceNetworksType();
+        dn.setName(network);
+        NetworksType networks = cacheService.getByHrefOrName(NetworksType.class, network);
+
+        String networkHref = networks.getHref();
+        dn.setHref(networkHref);
+        DeviceIpsType ips = objectFactory.createDeviceIpsType();
+
+        ips.getIpAddress().add(ipAddress);
+
+        dn.setIpAddresses(objectFactory.createDeviceNetworkTypeIpAddresses(ips));
+        dnt.getNetwork().add(dn);
+        assignedIp.setNetworks(objectFactory.createAssignedIpAddressesTypeNetworks(dnt));
+        TaskType task = virtualMachineService.editVirtulMachineAssignedIp(vmId, assignedIp);
+        waitUntilTaskNotFinished(task);
+    }
 }

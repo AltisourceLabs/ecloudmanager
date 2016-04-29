@@ -39,6 +39,8 @@ import javax.inject.Inject;
 
 @Service
 public class VerizonVmActions {
+    final static String DETECT_IP_ACTION = "Detect VM IP address";
+    final static String ASSIGN_IP_ACTION = "Assign VM IP address";
     @Inject
     private ApplicationDeploymentService applicationDeploymentService;
     @Inject
@@ -69,7 +71,7 @@ public class VerizonVmActions {
     }
 
     public Action getDetectVmIpAddressAction(VMDeployment vmDeployment) {
-        return Action.single("Detect VM IP address",
+        return Action.single(DETECT_IP_ACTION,
             () -> {
                 String vmId = VerizonInfrastructureDeployer.getVmId(vmDeployment);
                 String ipAddress = vmService.getIpAddress(vmId, 180);
@@ -77,6 +79,18 @@ public class VerizonVmActions {
                 applicationDeploymentService.update((ApplicationDeployment) vmDeployment.getTop());
             },
             vmDeployment);
+    }
+
+    public Action getAssignIpAction(VMDeployment deployment) {
+        return Action.single(ASSIGN_IP_ACTION,
+                () -> {
+                    String vmId = VerizonInfrastructureDeployer.getVmId(deployment);
+                    String ipAddress = InfrastructureDeployer.getIP(deployment);
+                    String network = VerizonInfrastructureDeployer.getSubnet(deployment);
+                    vmService.assignIp(vmId, network, ipAddress);
+
+                },
+                deployment);
     }
 
     public Action getShutdownVmAction(VMDeployment vmDeployment) {
@@ -125,4 +139,6 @@ public class VerizonVmActions {
         InfrastructureDeployer.removeIP(vmDeployment);
         InfrastructureDeployer.removeSSHConfiguration(vmDeployment);
     }
+
+
 }
