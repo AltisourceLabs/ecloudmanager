@@ -121,4 +121,17 @@ public class ApplicationDeploymentService extends ServiceSupport {
             log.error("Error during application deployment (" + actionType + "): " + e.getMessage());
         }
     }
+
+    public boolean isDeployed(ApplicationDeployment applicationDeployment) {
+        DeploymentAttempt lastAttempt = deploymentAttemptRepository.findLastAttempt(applicationDeployment);
+        if (
+                lastAttempt != null &&
+                lastAttempt.getType() != DeploymentAttempt.Type.DELETE &&
+                lastAttempt.getAction().getStatus() == Action.Status.SUCCESSFUL
+        ) {
+            return true;
+        }
+
+        return false;
+    }
 }

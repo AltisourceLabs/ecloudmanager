@@ -1,0 +1,118 @@
+<!--
+  ~ The MIT License (MIT)
+  ~
+  ~ Copyright (c) 2016 Altisource Labs
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:components="http://java.sun.com/jsf/composite/components" xmlns:f="http://xmlns.jcp.org/jsf/core"
+                template="/WEB-INF/templates/default.xhtml">
+    <ui:define name="content">
+        <h:outputScript target="body">
+            ////////////////////////
+            // Restore scroll position of the datatable on ajax update in case if it is scrollable
+            // and autoscroll main window otherwise
+            var scrollPos;
+
+            function saveScrollPos() {
+                scrollPos = $('.ui-layout-center .ui-widget-content').scrollTop();
+            }
+
+            $('.ui-layout-center .ui-widget-content').scroll(function() {
+                saveScrollPos();
+            });
+
+            function getScrollPos() {
+                $('.ui-layout-center .ui-widget-content').scrollTop(scrollPos);
+            }
+        </h:outputScript>
+
+        <p:outputPanel id="out">
+                <h:form id="topForm" styleClass="contentForm">
+                    <p:poll interval="10"
+                            widgetVar="poll"
+                            listener="#{serviceMonitoringController.loadData}"
+                            update="@(.serviceMonitoringTabs)"
+                            onstart="saveScrollPos()"
+                            oncomplete="getScrollPos()"
+                    />
+                    <p:growl id="messages" sticky="true" showDetail="true"/>
+                    <p:layout style="min-height: 600px">
+                        <p:layoutUnit position="west" resizable="true" collapsible="true" header="Select a Deployment Object" size="350" minSize="150">
+                            <p:treeTable var="node" nodeVar="treeNode" value="#{serviceMonitoringController.tree}" selectionMode="single" selected="serviceMonitoringController.selectedNode" style="width: auto; height: auto">
+                                <p:column headerText="Deployment Object">
+                                    <h:outputText styleClass="fa fa-cubes pull-left"
+                                                  rendered="#{node['class'].simpleName eq 'ApplicationDeployment'}"/>
+                                    <h:outputText styleClass="fa fa-cog pull-left"
+                                                  rendered="#{node['class'].simpleName eq 'ProducedServiceDeployment'}"/>
+                                    <h:outputText styleClass="fa fa-server pull-left"
+                                                  rendered="#{node['class'].simpleName eq 'ComponentGroupDeployment'}"/>
+                                    <h:outputText styleClass="fa fa-desktop pull-left"
+                                                  rendered="#{node['class'].simpleName eq 'VMDeployment'}"/>
+                                    <p:tooltip for="nodeValue" value="#{node}" trackMouse="true"/>
+                                    <h:outputText id="nodeValue" value="#{node.name}"/>
+                                </p:column>
+                                <p:column headerText="Monitoring" style="width: 55px">
+                                    <p:selectBooleanButton
+                                            value="#{treeNode.monitoringEnabled}"
+                                            onIcon="fa fa-toggle-on" onLabel="On"
+                                            offLabel="Off" offIcon="fa fa-toggle-off"
+                                            rendered="#{node['class'].simpleName eq 'ProducedServiceDeployment'}"
+                                    >
+                                        <p:ajax event="change" listener="#{serviceMonitoringController.monitoringChanged(treeNode)}"/>
+                                    </p:selectBooleanButton>
+                                </p:column>
+                                <p:ajax event="select" update="@(.serviceMonitoringTabs)" listener="#{serviceMonitoringController.treeNodeSelected}"/>
+                            </p:treeTable>
+                        </p:layoutUnit>
+                        <p:layoutUnit position="center">
+                            <p:tabView id="tabs" styleClass="serviceMonitoringTabs" dynamic="true">
+                                <p:tab title="Status">
+                                    <components:statsLatest group="STATUS"/>
+                                </p:tab>
+                                <p:tab title="Queue">
+                                    <components:statsLatest group="QUEUE"/>
+                                </p:tab>
+                                <p:tab title="Sessions">
+                                    <components:statsLatest group="SESSIONS"/>
+                                </p:tab>
+                                <p:tab title="Responses">
+                                    <components:statsLatest group="RESPONSE"/>
+                                </p:tab>
+                                <p:tab title="Traffic">
+                                    <components:statsLatest group="TRAFFIC"/>
+                                </p:tab>
+                                <p:tab title="Errors">
+                                    <components:statsLatest group="ERRORS"/>
+                                </p:tab>
+                                <p:tab title="Latency">
+                                    <components:statsLatest group="LATENCY"/>
+                                </p:tab>
+                            </p:tabView>
+                        </p:layoutUnit>
+                    </p:layout>
+                </h:form>
+        </p:outputPanel>
+    </ui:define>
+</ui:composition>

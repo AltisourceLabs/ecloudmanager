@@ -43,7 +43,6 @@ import org.ecloudmanager.service.chef.ChefGenerationService;
 import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
 import org.omnifaces.cdi.Param;
 import org.primefaces.event.NodeSelectEvent;
-import org.primefaces.model.DefaultTreeNode;
 import org.primefaces.model.TreeNode;
 
 import javax.annotation.PostConstruct;
@@ -55,7 +54,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -121,26 +119,6 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
 
     public Deployable getDeployment() {
         return deployment;
-    }
-
-    private class SortableDefaultTreeNode extends DefaultTreeNode {
-        private static final long serialVersionUID = 1148053228529718801L;
-
-        public SortableDefaultTreeNode(Object data) {
-            super(data);
-        }
-
-        public SortableDefaultTreeNode(Object data, TreeNode parent) {
-            super(data, parent);
-        }
-
-        public void sort() {
-            Collections.sort(this.getChildren(), (n1, n2) -> n1.getData().toString().compareTo(n2.getData().toString
-                ()));
-            for (TreeNode child : getChildren()) {
-                ((SortableDefaultTreeNode) child).sort();
-            }
-        }
     }
 
     public TreeNode getTree() {

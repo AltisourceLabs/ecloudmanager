@@ -34,6 +34,7 @@ import org.ecloudmanager.deployment.history.DeploymentAttempt;
 import org.ecloudmanager.deployment.ps.ProducedServiceDeployment;
 import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
+import org.ecloudmanager.monitoring.HaproxyStats;
 import org.ecloudmanager.repository.deployment.StackTraceElementEntityConverter;
 import org.mongodb.morphia.Datastore;
 import org.mongodb.morphia.Morphia;
@@ -116,8 +117,10 @@ public class MorphiaDatastoreProducer {
                 .mapPackageFromClass(ExternalServiceDeployment.class)
                 .mapPackageFromClass(ProducedServiceDeployment.class)
             ;
+            morphia.map(HaproxyStats.class);
             datastore = morphia.createDatastore(mongoClient(log), DB_NAME);
             datastore.ensureIndexes();
+            datastore.ensureCaps();
         }
         return datastore;
     }

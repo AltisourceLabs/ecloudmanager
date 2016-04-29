@@ -37,6 +37,7 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
     public static final String PORT = "port";
     public static final String BIND_IP = "bind_ip";
     public static final String HAPROXY_IP = "ha_proxy_ip";
+    public static final String HAPROXY_MONITORING = "ha_proxy_monitoring";
     private static final String ETCD_ADDRESS = "etcdAddress";
     private static final String ETCD_PATH = "etcdPath";
     private static final String ETCD_CONFIG_NAME = "etcd";
@@ -96,6 +97,14 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
         deployment.addField(ConstraintField.builder().name(BIND_IP).description("Bind IP").defaultValue("*").build());
         // TODO support multiple IP addresses??
         deployment.addField(ConstraintField.builder().name(HAPROXY_IP).description("HAProxy IP address").required(true).build());
+        deployment.addField(ConstraintField.builder()
+                .name(HAPROXY_MONITORING)
+                .description("HAProxy Monitoring Enabled")
+                .required(false)
+                .readOnly(true)
+                .allowReference(false)
+                .build()
+        );
         DeploymentConstraint etcdConfig = getEtcdConfig(deployment);
         if (etcdConfig == null) {
             etcdConfig = createEtcdConfig(deployment);

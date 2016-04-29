@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~ The MIT License (MIT)
+  ~
+  ~ Copyright (c) 2016 Altisource Labs
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:composite="http://java.sun.com/jsf/composite" xmlns:h="http://xmlns.jcp.org/jsf/html">
+
+<composite:interface>
+    <composite:attribute name="group" required="true"
+                         type="java.lang.String"/>
+</composite:interface>
+
+<composite:implementation>
+    <h:outputScript name="primefaces/jqplot.DateAxisRenderer.js" target="body"/>
+    <h:outputScript target="body">
+        function addZoomHandler() {
+            // Stop polling when zoomed in and continue when zoomed out
+            $.jqplot.postDrawHooks.push(zoomHandler);
+
+            $.jqplot.preDrawHooks.push(function() {
+                // Fix data bounds for constant graph, otherwise jqplot will draw the graph on the edge of the grid
+                if (this.axes.yaxis._dataBounds.min == this.axes.yaxis._dataBounds.max) {
+                    this.axes.yaxis._dataBounds.min = this.axes.yaxis._dataBounds.min - 1;
+                    this.axes.yaxis._dataBounds.max = this.axes.yaxis._dataBounds.max + 1;
+                }
+            });
+        }
+
+        function zoomHandler() {
+            var c = this.plugins.cursor;
+            if (c._zoom.zooming) {
+                if (PF('poll').active) {
+                    PF('poll').stop(); // 'Zoom In'
+                }
+            } else {
+                if (!PF('poll').active) {
+                    PF('poll').start(); // 'Zoom Out'
+                }
+            }
+        }
+
+        function configureJqplot() {
+            this.cfg.enablePlugins = true;
+
+            this.cfg.cursor = {
+                show: true,
+                zoom: true,
+                // looseZoom: false,
+                // cursorLegendFormatString: '%s Date: %s, Value: %s',
+                tooltipFormatString: '%s Date: %s, Value: %s',
+                showTooltipDataPosition: true,
+                clickReset: true,
+                constrainZoomTo: 'x',
+                showVerticalLine: true,
+                followMouse: true
+            };
+
+            this.cfg.axesDefaults = {
+                //borderWidth: 0,
+                // rendererOptions: {
+                //     tickInset: 0.2
+                // }
+            };
+
+            // this.cfg.axes = {
+            //     xaxis:{
+            //         renderer:$.jqplot.DateAxisRenderer,
+            //         rendererOptions:{
+            //             tickRenderer:$.jqplot.CanvasAxisTickRenderer
+            //         },
+            //         max: new Date().getTime(),
+            //         numberTicks: 10,
+            //         tickOptions: {
+            //             fontSize:'10pt',
+            //             fontFamily:'Tahoma',
+            //             angle:-40
+            //         }
+            //     }
+            // };
+
+            this.cfg.noDataIndicator = {
+                show: true, //Show the grid. It was false
+                indicator: 'No data found',  //Show a message
+                axes: {
+                    xaxis: {
+                        max: new Date().getTime(),
+                        numberTicks: 10
+                    }
+                }
+            };
+
+            addZoomHandler();
+        }
+
+        // PrimeFaces.widgets.wChart.plot.target.bind('jqplotZoom', function(ev, gridpos, datapos, plot, cursor) {
+        //     window.alert(chart.axes.xaxis.min);
+        //     window.alert(chart.axes.xaxis.max);
+        // });
+    </h:outputScript>
+
+    <h:outputText rendered="#{serviceMonitoringController.selectedNode == null}" value="Select a deployment object to view the data"/>
+    <h:outputText rendered="#{serviceMonitoringController.haproxyStatsData == null and serviceMonitoringController.selectedNode != null}"
+                  value="No data found for the selected item.
+                                                        Check if haproxy statistics is available on port 22002 and haproxy
+                                                        address is configured in the deployment constraints."/>
+    <p:dataTable var="entry" value="#{serviceMonitoringController.getGroupData(cc.attrs.group)}"
+                 rendered="#{serviceMonitoringController.haproxyStatsData != null}">
+        <p:column>
+            <p:tooltip for="fieldName" value="#{entry.key.description}"/>
+            <h:outputText id="fieldName" value="#{entry.key.name}"/>
+        </p:column>
+        <p:column>
+            <h:outputText value="#{entry.value}"/>
+        </p:column>
+    </p:dataTable>
+
+    <p:outputPanel rendered="#{serviceMonitoringController.selectedNode != null and serviceMonitoringController.getChartFields(cc.attrs.group).size() > 0}"
+                   style="margin-top: 20px;"
+    >
+        <b><h:outputText value="Select a metric to display:" style="vertical-align:middle;"/></b>
+        <p:selectOneMenu id="chartField" value="#{serviceMonitoringController.chartField}" converter="haproxyStatsFieldConverter" style="vertical-align:middle; margin-left: 10px">
+            <p:ajax update="chartField" async="true"/>
+            <p:ajax update="chart" event="change" listener="#{serviceMonitoringController.loadData()}" />
+            <f:selectItems value="#{serviceMonitoringController.getChartFields(cc.attrs.group)}" var="item" itemLabel="#{item.name}"/>
+        </p:selectOneMenu>
+
+        <h:outputText value="Drag the cursor to zoom the graph, left-click to reset zoom" style="vertical-align:middle; margin-left: 20px"/>
+
+        <p:chart id="chart" widgetVar="wChart" type="line" model="#{serviceMonitoringController.chartModel}" style="margin: 10px"/>
+        <p:selectOneButton id="range" value="#{serviceMonitoringController.chartRange}" style="margin: 0; padding: 0">
+            <p:ajax update="range" async="true"/>
+            <p:ajax update="chart" event="change" listener="#{serviceMonitoringController.loadData()}" />
+            <f:selectItem itemLabel="5 Minutes" itemValue="PT5M" />
+            <f:selectItem itemLabel="Hour" itemValue="PT1H" />
+            <f:selectItem itemLabel="Day" itemValue="P1D" />
+            <f:selectItem itemLabel="Month" itemValue="P1M" />
+        </p:selectOneButton>
+    </p:outputPanel>
+</composite:implementation>
+</html>
+

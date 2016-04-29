@@ -24,6 +24,7 @@
 
 package org.ecloudmanager.deployment.core;
 
+import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.mongodb.morphia.annotations.EntityListeners;
@@ -86,6 +87,27 @@ public abstract class DeploymentObject extends DeploymentConstraint {
 
     public DeploymentObject getParent() {
         return parent;
+    }
+
+    @Nullable
+    public static <T extends DeploymentObject> T  getParentOfType(@Nullable DeploymentObject element, @NotNull Class<T> aClass, boolean strict) {
+        if (element == null) return null;
+
+        if (strict) {
+            element = element.getParent();
+        }
+
+        while (element != null) {
+            if (aClass.isInstance(element)) {
+                //noinspection unchecked
+                return (T)element;
+            }
+
+            if (element instanceof ApplicationDeployment) return null;
+            element = element.getParent();
+        }
+
+        return null;
     }
 
     public void setParent(DeploymentObject parent) {
