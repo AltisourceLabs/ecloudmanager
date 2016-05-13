@@ -219,7 +219,18 @@
                       height="600" width="600" id="dlg_edit_vm_ref">
                 <h:panelGroup>
                     <h:form style="width: 95%;height: 95%">
-                            <p>VM: <p:selectOneMenu
+                        <p:panelGrid id="panel_ref_details" columns="2" style="margin-bottom:10px"
+                                     styleClass="ui-panelgrid-blank" cellpadding="5">
+
+                            <p:outputLabel id="label_ref_name" for="ref_name" value="Name:"/>
+                            <p:inputText id="ref_name"
+                                         value="#{virtualMachineTemplateReferenceController.value.name}">
+                            </p:inputText>
+                            <p:outputLabel value="Description:"/>
+                            <p:inputTextarea rows="6" cols="33"
+                                             value="#{virtualMachineTemplateReferenceController.value.description}"/>
+                            <p:outputLabel value="VM:"/>
+                            <p:selectOneMenu
                                     value="#{virtualMachineTemplateReferenceController.value.virtualMachineTemplate}"
                                     converter="vmTemplateConverter">
                                 <f:selectItem itemLabel="None" itemValue=""/>
@@ -227,7 +238,8 @@
                                         value="#{virtualMachineTemplateReferenceController.virtualMachineTemplates}"
                                         var="templ"
                                         itemLabel="#{templ.name}" itemValue="#{templ}"/>
-                            </p:selectOneMenu></p>
+                            </p:selectOneMenu>
+                        </p:panelGrid>
                         <p:panelGrid id="ref_buttons" columns="2" style="margin-bottom:10px"
                                      styleClass="ui-panelgrid-blank" cellpadding="5">
                             <p:commandButton id="ref_button_save" value="save"

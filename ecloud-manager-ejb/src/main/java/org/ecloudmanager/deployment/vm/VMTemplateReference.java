@@ -60,7 +60,9 @@ public class VMTemplateReference implements Template<VMDeployment>, App {
     @NotNull
     @Override
     public VMDeployment toDeployment() {
-        return virtualMachineTemplate.toDeployment();
+        VMDeployment deployment = virtualMachineTemplate.toDeployment();
+        deployment.setName(name);
+        return deployment;
     }
 
     @Override
@@ -97,6 +99,6 @@ public class VMTemplateReference implements Template<VMDeployment>, App {
     }
 
     public String toString() {
-        return "VM[" + virtualMachineTemplate + "]";
+        return name + " VM[" + virtualMachineTemplate + "]";
     }
 }
