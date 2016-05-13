@@ -25,6 +25,7 @@
 package org.ecloudmanager.deployment.ps;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.bson.types.ObjectId;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.Deployer;
 import org.ecloudmanager.deployment.ps.cg.ComponentGroupDeployment;
@@ -39,6 +40,7 @@ public class ProducedServiceDeployment extends Deployable {
     private HAProxyFrontendConfig haProxyFrontendConfig = new HAProxyFrontendConfig();
 
     ProducedServiceDeployment() {
+        setId(new ObjectId());
     }
 
 

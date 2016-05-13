@@ -24,6 +24,7 @@
 
 package org.ecloudmanager.web.faces;
 
+import org.apache.commons.lang3.StringUtils;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.core.ConstraintValue;
 import org.ecloudmanager.deployment.core.DeploymentObject;
@@ -41,7 +42,9 @@ import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.joda.time.Period;
+import org.picketlink.common.util.StringUtil;
 import org.primefaces.event.NodeSelectEvent;
+import org.primefaces.event.TabChangeEvent;
 import org.primefaces.model.TreeNode;
 import org.primefaces.model.chart.*;
 
@@ -54,6 +57,17 @@ import java.util.stream.Collectors;
 
 @Controller
 public class ServiceMonitoringController extends FacesSupport implements Serializable {
+    private static Map<Integer, String> tabIndexToGroupName = new HashMap<>();
+    static {
+        tabIndexToGroupName.put(0, "STATUS");
+        tabIndexToGroupName.put(1, "QUEUE");
+        tabIndexToGroupName.put(2, "SESSIONS");
+        tabIndexToGroupName.put(3, "RESPONSE");
+        tabIndexToGroupName.put(4, "TRAFFIC");
+        tabIndexToGroupName.put(5, "ERRORS");
+        tabIndexToGroupName.put(6, "LATENCY");
+    }
+
     @Inject
     ApplicationDeploymentRepository applicationDeploymentRepository;
     @Inject
@@ -71,6 +85,8 @@ public class ServiceMonitoringController extends FacesSupport implements Seriali
     private String chartRange = "PT1H";
 
     private HaproxyStatsField chartField;
+
+    private Integer activeTab;
 
     public static class ServiceMonitoringTreeNode extends SortableDefaultTreeNode {
         private boolean monitoringEnabled;
@@ -92,8 +108,6 @@ public class ServiceMonitoringController extends FacesSupport implements Seriali
     private void init() {
         createTree();
         createChartModel();
-
-        chartField = getChartFields("STATUS").get(0);
     }
 
     private void createChartModel() {
@@ -167,8 +181,6 @@ public class ServiceMonitoringController extends FacesSupport implements Seriali
             dateAxis.setMin(startDate.getTime());
             dateAxis.setMax(new Date().getTime());
 
-//            chartModel.getSeries().clear();
-
             haproxyStatsData = haproxyStatsService.loadHaproxyStats(startDate, (DeploymentObject) selectedNode.getData(), chartField);
 
             if (chartField != null && haproxyStatsData != null) {
@@ -207,10 +219,12 @@ public class ServiceMonitoringController extends FacesSupport implements Seriali
 
     public List<HaproxyStatsField> getChartFields(String groupName) {
         HaproxyStatsField.Group group = HaproxyStatsField.Group.valueOf(groupName);
-        Set<HaproxyStatsField> fields = HaproxyStatsField.getFields(group);
+        DeploymentObject deploymentObject = selectedNode == null ? null : (DeploymentObject) selectedNode.getData();
+        Set<HaproxyStatsField> fields = HaproxyStatsField.getFields(group, deploymentObject);
 
         return fields.stream()
                 .filter(HaproxyStatsField::isGraphSupported)
+                .sorted()
                 .collect(Collectors.toList());
     }
 
@@ -229,6 +243,15 @@ public class ServiceMonitoringController extends FacesSupport implements Seriali
             applicationDeploymentService.save((ApplicationDeployment) deploymentObject.getTop());
             addMessage(new FacesMessage("Monitoring setting changed to '" + value + "' for service " + deploymentObject.getName()));
         }
+    }
+
+    public void onTabChange(TabChangeEvent event) {
+        String group = tabIndexToGroupName.get(activeTab);
+        List<HaproxyStatsField> chartFields = getChartFields(group);
+        if (chartFields.size() > 0) {
+            chartField = chartFields.get(0);
+        }
+        loadData();
     }
 
     public TreeNode getTree() {
@@ -252,7 +275,9 @@ public class ServiceMonitoringController extends FacesSupport implements Seriali
     }
 
     public void setChartRange(String chartRange) {
-        this.chartRange = chartRange;
+        if (!StringUtils.isEmpty(chartRange)) {
+            this.chartRange = chartRange;
+        }
     }
 
     public HaproxyStatsField getChartField() {
@@ -260,6 +285,16 @@ public class ServiceMonitoringController extends FacesSupport implements Seriali
     }
 
     public void setChartField(HaproxyStatsField chartField) {
-        this.chartField = chartField;
+        if (chartField != null) {
+            this.chartField = chartField;
+        }
+    }
+
+    public Integer getActiveTab() {
+        return activeTab;
+    }
+
+    public void setActiveTab(Integer activeTab) {
+        this.activeTab = activeTab;
     }
 }

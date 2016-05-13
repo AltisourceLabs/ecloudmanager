@@ -25,104 +25,89 @@
 package org.ecloudmanager.monitoring;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.logging.log4j.Logger;
 import org.ecloudmanager.deployment.core.DeploymentObject;
-import org.ecloudmanager.deployment.ps.HAProxyDeployer;
-import org.ecloudmanager.deployment.ps.ProducedServiceDeployment;
-import org.ecloudmanager.deployment.ps.cg.ComponentGroupDeployment;
-import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.jeecore.service.Service;
+import org.ecloudmanager.monitoring.rrd.RrdDbService;
 import org.ecloudmanager.repository.monitoring.HaproxyStatsRepository;
+import org.rrd4j.ConsolFun;
+import org.rrd4j.core.FetchData;
+import org.rrd4j.core.FetchRequest;
+import org.rrd4j.core.RrdDb;
 
 import javax.inject.Inject;
-import java.util.*;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static org.ecloudmanager.monitoring.HaproxyStatsField.PROXY_NAME;
-import static org.ecloudmanager.monitoring.HaproxyStatsField.SERVICE_NAME;
 
 @Service
 public class HaproxyStatsService {
     @Inject
     HaproxyStatsRepository haproxyStatsRepository;
+    @Inject
+    RrdDbService rrdDbService;
+    @Inject
+    Logger log;
 
     public HaproxyStatsData loadHaproxyStats(Date startDate, DeploymentObject deploymentObject, HaproxyStatsField timeSeriesField) {
-        ProducedServiceDeployment producedServiceDeployment = DeploymentObject.getParentOfType(deploymentObject, ProducedServiceDeployment.class, false);
-        if (producedServiceDeployment == null) {
+        HaproxyStats latestStats = haproxyStatsRepository.getStats(deploymentObject.getId());
+        if (latestStats == null) {
             return null;
-        }
-
-        String haproxyStatsAddress = producedServiceDeployment.getConfigValue(HAProxyDeployer.HAPROXY_IP);
-        if (StringUtils.isEmpty(haproxyStatsAddress)) {
-            return null;
-        }
-        haproxyStatsAddress = haproxyStatsAddress + ":22002";
-
-        List<HaproxyStats> stats = haproxyStatsRepository.getStats(haproxyStatsAddress, startDate);
-        if (stats.size() == 0) {
-            return null;
-        }
-
-        Map<HaproxyStats, Integer> indicesMap = stats.stream()
-                .filter(s -> s.getData() != null)
-                .map(s -> new ImmutablePair<>(s, getIndexInStatsRecordsList(s, deploymentObject)))
-                .filter(p -> p.getRight() != null)
-                .collect(Collectors.toMap(ImmutablePair::getLeft, ImmutablePair::getRight));
-
-        HaproxyStats latestStats = stats.get(0);
-        Integer latestStatsIndex = indicesMap.get(latestStats);
-        if (latestStatsIndex == null) {
-            return null; // In the latest stats there's no csv record for this deployment object
         }
 
         HaproxyStatsData data = new HaproxyStatsData();
         data.setTimestamp(latestStats.getTimestamp());
         Map<HaproxyStatsField, String> latestData =
                 Stream.of(HaproxyStatsField.values())
-                        .filter(sf -> !StringUtils.isEmpty(latestStats.getData().get(latestStatsIndex).get(sf.getKey())))
+                        .filter(sf -> !StringUtils.isEmpty(latestStats.getData().get(sf.getKey())))
                         .sorted((o1, o2) -> Integer.compare(o2.ordinal(), o1.ordinal()))
-                        .collect(Collectors.toMap(sf -> sf, sf -> latestStats.getData().get(latestStatsIndex).get(sf.getKey()), (k1,k2) -> k1, TreeMap::new));
+                        .collect(Collectors.toMap(sf -> sf, sf -> latestStats.getData().get(sf.getKey()), (k1,k2) -> k1, TreeMap::new));
         data.setLatestData(latestData);
 
         data.setTimeSeriesField(timeSeriesField);
 
-        Map<Object, Number> timeSeries = createTimeSeries(timeSeriesField, stats, indicesMap);
+        Map<Object, Number> timeSeries = createTimeSeries(startDate, deploymentObject, timeSeriesField);
         data.setTimeSeriesData(timeSeries);
 
         return data;
     }
 
-    private Map<Object, Number> createTimeSeries(HaproxyStatsField field, List<HaproxyStats> stats, Map<HaproxyStats, Integer> indicesMap) {
+    private Map<Object, Number> createTimeSeries(Date startDate, DeploymentObject deploymentObject, HaproxyStatsField field) {
         if (field == null) {
             return Collections.emptyMap();
         }
 
-        return stats.stream()
-                .filter(s -> indicesMap.get(s) != null)
-                .filter(s -> !StringUtils.isEmpty(s.getData().get(indicesMap.get(s)).get(field.getKey())))
-                .collect(Collectors.toMap(s -> s.getTimestamp().getTime(), s -> Long.parseLong(s.getData().get(indicesMap.get(s)).get(field.getKey()))));
-    }
-
-    private Integer getIndexInStatsRecordsList(HaproxyStats stats, DeploymentObject deploymentObject) {
-        String pxname, svname;
-        if (deploymentObject instanceof VMDeployment) {
-            pxname = deploymentObject.getParent().getName();
-            svname = deploymentObject.getName();
-        } else if (deploymentObject instanceof ProducedServiceDeployment) {
-            pxname = deploymentObject.getName();
-            svname = "FRONTEND";
-        } else if (deploymentObject instanceof ComponentGroupDeployment) {
-            pxname = deploymentObject.getName();
-            svname = "BACKEND";
-        } else {
-            return null;
+        RrdDb rrdDb = rrdDbService.openRrdDb(deploymentObject, true);
+        if (rrdDb == null) {
+            return Collections.emptyMap();
         }
 
-        return stats.getData().stream()
-                .filter(r -> r.get(PROXY_NAME.getKey()).equals(pxname) && r.get(SERVICE_NAME.getKey()).startsWith(svname))
-                .findAny()
-                .map(r -> stats.getData().indexOf(r))
-                .orElse(null);
+        long start = startDate.getTime() / 1000;
+        long end = new Date().getTime() / 1000;
+        //ConsolFun consolFun = end - start < 60 * 60 * 24 ? ConsolFun.LAST : ConsolFun.AVERAGE;
+        ConsolFun consolFun = ConsolFun.AVERAGE;
+        FetchRequest fetchRequest = rrdDb.createFetchRequest(consolFun, start, end);
+        fetchRequest.setFilter(field.getKey());
+        try {
+            FetchData fetchData = fetchRequest.fetchData();
+            long[] timestamps = fetchData.getTimestamps();
+            double[] values = fetchData.getValues(field.getKey());
+            Map<Object, Number> result = new TreeMap<>();
+            for (int i = 0; i < timestamps.length; i++) {
+                result.put(timestamps[i]*1000, Double.isNaN(values[i]) ? null : values[i]);
+            }
+
+            // Don't need to close - we don't write here
+            // rrdDb.close();
+
+            return result;
+        } catch (IOException e) {
+            log.error("Cannot fetch data from rrd", e);
+            return null;
+        }
     }
 }

@@ -24,6 +24,7 @@
 
 package org.ecloudmanager.repository.monitoring;
 
+import org.bson.types.ObjectId;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
 import org.ecloudmanager.jeecore.repository.MongoDBRepositorySupport;
@@ -35,12 +36,9 @@ import java.util.List;
 
 @Repository
 public class HaproxyStatsRepository extends MongoDBRepositorySupport<HaproxyStats> {
-    public List<HaproxyStats> getStats(String haproxyStatsAddress, Date startDate) {
+    public HaproxyStats getStats(ObjectId deploymentObjectId) {
         return datastore.createQuery(getEntityType())
-                .field("haproxyStatsAddress").equal(haproxyStatsAddress)
-                .field("timestamp").greaterThan(startDate)
-                .order("-timestamp")
-                .asList();
+                .field("deploymentObjectId").equal(deploymentObjectId)
+                .get();
     }
-
 }

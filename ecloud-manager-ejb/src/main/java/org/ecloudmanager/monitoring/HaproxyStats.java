@@ -24,6 +24,7 @@
 
 package org.ecloudmanager.monitoring;
 
+import org.bson.types.ObjectId;
 import org.ecloudmanager.jeecore.domain.MongoObject;
 import org.mongodb.morphia.annotations.*;
 
@@ -31,35 +32,38 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-@Entity(cap = @CappedAt(value = 1024 * 1024 * 500))
-@Indexes(@Index("haproxyStatsAddress, -timestamp"))
+@Entity
 public class HaproxyStats extends MongoObject {
-    @Indexed
     private Date timestamp;
     @Indexed
-    private String haproxyStatsAddress;
-    private List<Map<String, String>> data;
+    private ObjectId deploymentObjectId;
+
+    private Map<String, String> data;
 
     public HaproxyStats() {}
 
-    public String getHaproxyStatsAddress() {
-        return haproxyStatsAddress;
+    public ObjectId getDeploymentObjectId() {
+        return deploymentObjectId;
     }
 
-    public void setHaproxyStatsAddress(String haproxyStatsAddress) {
-        this.haproxyStatsAddress = haproxyStatsAddress;
+    public void setDeploymentObjectId(ObjectId deploymentObjectId) {
+        this.deploymentObjectId = deploymentObjectId;
     }
 
-    public List<Map<String, String>> getData() {
+    public Map<String, String> getData() {
         return data;
     }
 
-    public void setData(List<Map<String, String>> data) {
+    public void setData(Map<String, String> data) {
         this.data = data;
     }
 
     public Date getTimestamp() {
         return timestamp;
+    }
+
+    public void setTimestamp(Date timestamp) {
+        this.timestamp = timestamp;
     }
 
     @PrePersist

@@ -24,6 +24,7 @@
 
 package org.ecloudmanager.deployment.ps.cg;
 
+import org.bson.types.ObjectId;
 import org.ecloudmanager.deployment.core.Config;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.Deployer;
@@ -53,6 +54,7 @@ public class ComponentGroupDeployment extends Deployable {
     private VirtualMachineTemplate virtualMachineTemplate;
 
     ComponentGroupDeployment() {
+        setId(new ObjectId());
     }
 
     public HAProxyBackendConfig getHaProxyBackendConfig() {

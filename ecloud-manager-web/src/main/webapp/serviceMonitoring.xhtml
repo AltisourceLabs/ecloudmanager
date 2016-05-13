@@ -87,7 +87,8 @@
                             </p:treeTable>
                         </p:layoutUnit>
                         <p:layoutUnit position="center">
-                            <p:tabView id="tabs" styleClass="serviceMonitoringTabs" dynamic="true">
+                            <p:tabView id="tabs" styleClass="serviceMonitoringTabs" dynamic="true" activeIndex="#{serviceMonitoringController.activeTab}">
+                                <p:ajax event="tabChange" listener="#{serviceMonitoringController.onTabChange}" update="@(.serviceMonitoringTabs)"/>
                                 <p:tab title="Status">
                                     <components:statsLatest group="STATUS"/>
                                 </p:tab>
