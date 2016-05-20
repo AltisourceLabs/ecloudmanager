@@ -1,11 +1,9 @@
 package org.ecloudmanager.actions;
 
-import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.service.aws.AWSVmService;
-import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
 import org.ecloudmanager.service.execution.Action;
 import org.ecloudmanager.service.execution.SingleAction;
 
@@ -18,11 +16,10 @@ public class AWSCreateFirewallRulesAction extends SingleAction {
         super();
     }
 
-    public AWSCreateFirewallRulesAction(VMDeployment deployable, AWSVmService vmService, ApplicationDeploymentService applicationDeploymentService) {
+    public AWSCreateFirewallRulesAction(VMDeployment deployable, AWSVmService vmService) {
         super(null, "Create Firewall Rules", deployable);
         setRunnable(() -> {
             vmService.createFirewallRules(deployable);
-            applicationDeploymentService.update((ApplicationDeployment) deployable.getTop());
         });
     }
 

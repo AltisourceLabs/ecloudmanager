@@ -54,6 +54,7 @@ public class AWSVmActions {
                 Action.single("Create Security Group", () -> {
                     String securityGroupId = vmService.createSecurityGroup(vmDeployment);
                     AWSInfrastructureDeployer.addSecurityGroupId(vmDeployment, securityGroupId);
+                    applicationDeploymentService.update((ApplicationDeployment) vmDeployment.getTop());
                 }, vmDeployment),
                 Action.single(CREATE_VM, () -> {
                     Instance instance = vmService.createVm(vmDeployment);
@@ -70,8 +71,9 @@ public class AWSVmActions {
                     if (instance.getPrivateIpAddress() != null) {
                         InfrastructureDeployer.addIP(vmDeployment, instance.getPrivateIpAddress());
                     }
+                    applicationDeploymentService.update((ApplicationDeployment) vmDeployment.getTop());
                 }, vmDeployment),
-                new AWSCreateFirewallRulesAction(vmDeployment, vmService, applicationDeploymentService));
+                new AWSCreateFirewallRulesAction(vmDeployment, vmService));
 
     }
 
