@@ -63,10 +63,6 @@ public class AWSVmActions {
                     // Save VM id for future use
                     InfrastructureDeployer.addVMId(vmDeployment, instance.getInstanceId());
 
-                    // Set ssh configuration name to the selected environment name
-                    InfrastructureDeployer.addSshConfiguration(vmDeployment, AWSInfrastructureDeployer.getAwsKeypair
-                            (vmDeployment));
-
                     // Set IP address
                     if (instance.getPrivateIpAddress() != null) {
                         InfrastructureDeployer.addIP(vmDeployment, instance.getPrivateIpAddress());
@@ -119,14 +115,12 @@ public class AWSVmActions {
                         // Remove VM id and ip address and update DB
                         InfrastructureDeployer.removeVMId(realVmDeployment);
                         InfrastructureDeployer.removeIP(realVmDeployment);
-                        InfrastructureDeployer.removeSSHConfiguration(realVmDeployment);
                         applicationDeploymentService.update(applicationDeployment);
                     });
         }
         // Remove VM id and ip address in memory, to keep it in synch, just in case...
         InfrastructureDeployer.removeVMId(vmDeployment);
         InfrastructureDeployer.removeIP(vmDeployment);
-        InfrastructureDeployer.removeSSHConfiguration(vmDeployment);
     }
 
 }

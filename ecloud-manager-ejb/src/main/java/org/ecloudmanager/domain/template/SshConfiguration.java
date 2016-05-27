@@ -27,16 +27,9 @@ package org.ecloudmanager.domain.template;
 import org.ecloudmanager.domain.OwnedMongoObject;
 import org.ecloudmanager.security.Encrypted;
 import org.ecloudmanager.security.EncryptedStringConverter;
-import org.ecloudmanager.security.UserWithEncryptor;
-import org.jasypt.util.text.TextEncryptor;
 import org.mongodb.morphia.annotations.Converters;
 import org.mongodb.morphia.annotations.Entity;
-import org.mongodb.morphia.annotations.PrePersist;
-import org.mongodb.morphia.annotations.PreSave;
-import org.picketlink.Identity;
-import org.picketlink.idm.model.Account;
 
-import javax.enterprise.inject.spi.CDI;
 import java.io.Serializable;
 
 @Entity(noClassnameStored = true)
@@ -44,7 +37,7 @@ import java.io.Serializable;
 public class SshConfiguration extends OwnedMongoObject implements Serializable {
     private static final long serialVersionUID = 1293171298086413994L;
 
-    private String environment;
+    private String name;
     private String jumpHost1;
     private String jumpHost1Username;
     private String jumpHost2;
@@ -68,7 +61,7 @@ public class SshConfiguration extends OwnedMongoObject implements Serializable {
 
     public SshConfiguration(SshConfiguration configuration) {
         setId(configuration.getId());
-        environment = configuration.getEnvironment();
+        name = configuration.getName();
         jumpHost1 = configuration.getJumpHost1();
         jumpHost1Username = configuration.getJumpHost1Username();
         jumpHost2 = configuration.getJumpHost2();
@@ -122,12 +115,12 @@ public class SshConfiguration extends OwnedMongoObject implements Serializable {
         this.username = username;
     }
 
-    public String getEnvironment() {
-        return environment;
+    public String getName() {
+        return name;
     }
 
-    public void setEnvironment(String environment) {
-        this.environment = environment;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getPrivateKey() {
@@ -181,12 +174,12 @@ public class SshConfiguration extends OwnedMongoObject implements Serializable {
     @Override
     public String toString() {
         return "SshConfiguration{" +
-            "environment='" + environment + '\'' +
-            ", jumpHost1='" + jumpHost1 + '\'' +
-            ", jumpHost1Username='" + jumpHost1Username + '\'' +
-            ", jumpHost2='" + jumpHost2 + '\'' +
-            ", jumpHost2Username='" + jumpHost2Username + '\'' +
-            ", username='" + username + '\'' +
-            '}';
+               "name='" + name + '\'' +
+               ", jumpHost1='" + jumpHost1 + '\'' +
+               ", jumpHost1Username='" + jumpHost1Username + '\'' +
+               ", jumpHost2='" + jumpHost2 + '\'' +
+               ", jumpHost2Username='" + jumpHost2Username + '\'' +
+               ", username='" + username + '\'' +
+               '}';
     }
 }

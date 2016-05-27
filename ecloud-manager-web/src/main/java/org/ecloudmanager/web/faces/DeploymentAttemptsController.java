@@ -31,9 +31,7 @@ import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.deployment.DeploymentAttemptRepository;
 import org.omnifaces.cdi.Param;
-import org.picketlink.common.util.StringUtil;
 import org.picketlink.idm.IdentityManager;
-import org.picketlink.idm.model.basic.BasicModel;
 import org.picketlink.idm.model.basic.User;
 
 import javax.annotation.PostConstruct;
@@ -52,7 +50,7 @@ public class DeploymentAttemptsController extends FacesSupport implements Serial
 
     @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
-    @Param(converter = "applicationDeploymentConverter")
+    @Param(converter = "topLevelDeployableConverter")
     private ApplicationDeployment deployment;
 
     private List<DeploymentAttempt> deploymentAttempts;

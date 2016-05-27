@@ -45,16 +45,12 @@ import org.ecloudmanager.domain.template.SshConfiguration;
 import org.ecloudmanager.jeecore.service.Service;
 import org.ecloudmanager.repository.SshConfigurationRepository;
 import org.ecloudmanager.service.chef.ChefGenerationService;
-import org.ecloudmanager.service.execution.ActionException;
-import org.ecloudmanager.service.execution.SynchronousPoller;
 
 import javax.enterprise.event.Event;
 import javax.inject.Inject;
 import java.io.*;
-import java.net.ConnectException;
 import java.util.HashMap;
 import java.util.Stack;
-import java.util.concurrent.Callable;
 
 @Service
 public class GlobalProvisioningService {
@@ -96,7 +92,7 @@ public class GlobalProvisioningService {
         DeploymentObject config = ChefEnvironmentDeployer.getServerConfig(deployment.getChefEnvironment());
 
         String ipAddress = InfrastructureDeployer.getIP(deployment);
-        String sshConfigurationName = InfrastructureDeployer.getSshConfiguration(deployment);
+        String sshConfigurationName = VMDeployer.getSshConfiguration(deployment);
         Stack<Session> sessionsChain = createSshSessionChain(sshConfigurationName, ipAddress);
 
         Session session = sessionsChain.peek();
@@ -131,8 +127,7 @@ public class GlobalProvisioningService {
         //commands
         if (firstRun) {
             command.append("sudo yum install -y wget;");
-            command.append("wget https://opscode-omnibus-packages.s3.amazonaws.com/el/6/x86_64/chef-12.0.3-1.x86_64.rpm;");
-            command.append("sudo rpm -ivh chef-12.0.3-1.x86_64.rpm;");
+            command.append("curl -L https://omnitruck.chef.io/install.sh | sudo bash -s -- -v 12.8.1;");
             command.append("sudo mkdir /etc/chef;");
             command.append("sudo chmod 777 /etc/chef;");
             command.append("mv -f client.rb /etc/chef;");

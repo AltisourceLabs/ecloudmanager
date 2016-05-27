@@ -166,7 +166,7 @@ public class DeploymentActionController extends FacesSupport implements Serializ
 
     @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
-    @Param(converter = "applicationDeploymentConverter")
+    @Param(converter = "topLevelDeployableConverter")
     private ApplicationDeployment deployment;
 
     @SuppressWarnings("CdiInjectionPointsInspection")

@@ -32,10 +32,4 @@ public class Endpoint extends DeploymentObject {
         setName(name);
         setDescription(description);
     }
-
-    @Override
-    public String toString() {
-        return getName() +
-                ((getDescription() == null || getDescription().isEmpty()) ? "" : " (" + getDescription() + ")");
-    }
 }

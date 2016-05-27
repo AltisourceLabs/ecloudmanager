@@ -33,6 +33,7 @@ import org.ecloudmanager.deployment.core.*;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
 import org.ecloudmanager.deployment.ps.cg.ComponentGroupDeployment;
 import org.ecloudmanager.deployment.vm.VMDeployment;
+import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
 import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironmentDeployer;
 import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
@@ -41,6 +42,7 @@ import org.ecloudmanager.repository.deployment.DeploymentAttemptRepository;
 import org.ecloudmanager.repository.template.ApplicationTemplateRepository;
 import org.ecloudmanager.service.chef.ChefGenerationService;
 import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
+import org.ecloudmanager.service.deployment.GatewayService;
 import org.omnifaces.cdi.Param;
 import org.primefaces.event.NodeSelectEvent;
 import org.primefaces.model.TreeNode;
@@ -64,7 +66,7 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
 
     @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
-    @Param(converter = "applicationDeploymentConverter")
+    @Param(converter = "topLevelDeployableConverter")
     private ApplicationDeployment deployment;
 
     @SuppressWarnings("CdiInjectionPointsInspection")
@@ -77,11 +79,24 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
     @Param
     private String infrastructure;
 
+    // Parameters for a gateway deployment
+    @SuppressWarnings("CdiInjectionPointsInspection")
+    @Inject
+    @Param(converter = "vmTemplateConverter")
+    private VirtualMachineTemplate vmTemplate;
+
+    @SuppressWarnings("CdiInjectionPointsInspection")
+    @Inject
+    @Param
+    private String gatewayName;
+
     @Inject
     private Logger log;
 
     @Inject
     private transient ApplicationDeploymentService applicationDeploymentService;
+    @Inject
+    private transient GatewayService gatewayService;
     @Inject
     private transient ApplicationDeploymentRepository applicationDeploymentRepository;
     @Inject
@@ -114,6 +129,8 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
     public void init() {
         if (template != null) {
             deployment = applicationDeploymentService.create(template, infrastructure);
+        } else if (gatewayName != null) {
+            deployment = gatewayService.create(gatewayName, vmTemplate, infrastructure);
         }
     }
 

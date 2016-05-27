@@ -28,9 +28,7 @@ import com.rits.cloning.Cloner;
 import org.jboss.weld.context.bound.BoundSessionContext;
 import org.picketlink.Identity;
 
-import javax.ejb.Asynchronous;
-import javax.ejb.LocalBean;
-import javax.ejb.Stateless;
+import javax.ejb.*;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
@@ -52,6 +50,7 @@ public class ContextExecutor implements Executor {
     @Inject
     private BeanManager beanManager;
 
+    @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
     @Asynchronous
     @Override
     public void execute(Runnable command) {

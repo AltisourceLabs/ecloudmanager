@@ -33,24 +33,6 @@ import org.jetbrains.annotations.Nullable;
 public abstract class InfrastructureDeployer implements Deployer<VMDeployment> {
     private static final String VM_ID = "vmId";
     private static final String VM_IP_ADDRESS = "vmIpAddress";
-    private static final String SSH_CONFIGURATION = "sshConfiguration";
-
-    public static String getSshConfiguration(VMDeployment deployment) {
-        return deployment.getConfigValue(SSH_CONFIGURATION);
-
-    }
-
-    public static void addSshConfiguration(VMDeployment deployment, String configuration) {
-        deployment.addField(
-            ConstraintField.builder()
-                .name(SSH_CONFIGURATION)
-                .description("SSH access configuration")
-                .defaultValue(configuration)
-                .allowReference(false)
-                .build()
-        );
-
-    }
 
     @Nullable
     public static String getVmId(VMDeployment deployment) {
@@ -92,10 +74,6 @@ public abstract class InfrastructureDeployer implements Deployer<VMDeployment> {
 
     public static void removeIP(VMDeployment deployment) {
         deployment.removeField(VM_IP_ADDRESS);
-    }
-
-    public static void removeSSHConfiguration(VMDeployment deployment) {
-        deployment.removeField(SSH_CONFIGURATION);
     }
 
     protected abstract DeploymentObject getInfrastructureConfig(VMDeployment deployment);

@@ -109,9 +109,7 @@ public class ApplicationDeploymentService extends ServiceSupport {
 
                 DeploymentAttempt deploymentAttempt = new DeploymentAttempt(reloadedDeployment, action, actionType);
                 deploymentAttempt.setOwner(identity.getAccount().getId());
-                log.info("Before ada save");
                 deploymentAttemptRepository.save(deploymentAttempt);
-                log.info("After ada save");
 
                 actionExecutor.shutdown();
             });

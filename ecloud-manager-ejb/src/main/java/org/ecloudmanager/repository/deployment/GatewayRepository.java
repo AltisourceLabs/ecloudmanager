@@ -1,7 +1,7 @@
 /*
- * MIT License
+ * The MIT License (MIT)
  *
- * Copyright (c) 2016  Altisource
+ * Copyright (c) 2016 Altisource Labs
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,17 +22,12 @@
  * SOFTWARE.
  */
 
-package org.ecloudmanager.repository;
+package org.ecloudmanager.repository.deployment;
 
-import org.ecloudmanager.domain.template.SshConfiguration;
+import org.ecloudmanager.deployment.gateway.GatewayDeployment;
 import org.ecloudmanager.jeecore.repository.MongoDBRepositorySupport;
 import org.ecloudmanager.jeecore.repository.Repository;
-import org.jetbrains.annotations.Nullable;
 
 @Repository
-public class SshConfigurationRepository extends MongoDBRepositorySupport<SshConfiguration> {
-    @Nullable
-    public SshConfiguration find(String name) {
-        return super.find("name", name);
-    }
+public class GatewayRepository extends MongoDBRepositorySupport<GatewayDeployment> {
 }

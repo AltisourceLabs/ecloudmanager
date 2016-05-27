@@ -39,8 +39,8 @@
                     <p:dataTable id="services" var="sshConfiguration" value="#{sshConfigurationController.sshConfigurations}"
                                  paginator="true" rows="10" resizableColumns="true" liveResize="true">
 
-                        <p:column headerText="Environment" width="150" sortBy="#{sshConfiguration.environment}">
-                            <h:outputText value="#{sshConfiguration.environment}"/>
+                        <p:column headerText="Name" width="150" sortBy="#{sshConfiguration.name}">
+                            <h:outputText value="#{sshConfiguration.name}"/>
                         </p:column>
                         <p:column headerText="Username">
                             <h:outputText value="#{sshConfiguration.username}"/>
@@ -82,14 +82,14 @@
                 <h:panelGroup>
                     <h:form style="width: 95%;height: 95%">
                         <h:panelGroup rendered="#{sshConfigurationController.editorController.edit}">
-                            <h3>Edit Ssh Configuration for environment #{sshConfigurationController.editorController.selected.environment}</h3>
+                            <h3>Edit ssh configuration "#{sshConfigurationController.editorController.selected.name}"</h3>
                         </h:panelGroup>
                         <h:panelGroup rendered="#{!sshConfigurationController.editorController.edit}">
                             <h3>Add Service</h3>
                         </h:panelGroup>
                         <h:panelGrid columns="2" cellpadding="5">
-                            <h:outputText value="Environment:"/>
-                            <p:inputText value="#{sshConfigurationController.editorController.selected.environment}"/>
+                            <h:outputText value="Name:"/>
+                            <p:inputText value="#{sshConfigurationController.editorController.selected.name}"/>
                             <h:outputText value="Username:"/>
                             <p:inputText value="#{sshConfigurationController.editorController.selected.username}"/>
                             <h:outputText value="Private key:"/>

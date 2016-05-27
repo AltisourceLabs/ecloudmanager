@@ -31,7 +31,7 @@
                 template="/WEB-INF/templates/default.xhtml">
     <ui:define name="content">
         <f:metadata>
-            <f:viewParam name="deployment" value="#{deploymentActionController.deployment}" converter="applicationDeploymentConverter"/>
+            <f:viewParam name="deployment" value="#{deploymentActionController.deployment}" converter="topLevelDeployableConverter"/>
             <f:viewParam name="actionType" value="#{deploymentActionController.actionType}"/>
         </f:metadata>
 

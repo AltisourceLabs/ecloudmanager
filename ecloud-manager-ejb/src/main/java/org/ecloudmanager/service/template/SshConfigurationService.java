@@ -27,13 +27,17 @@ package org.ecloudmanager.service.template;
 import org.apache.logging.log4j.Logger;
 import org.ecloudmanager.domain.template.SshConfiguration;
 import org.ecloudmanager.jeecore.service.ServiceSupport;
+import org.ecloudmanager.repository.SshConfigurationRepository;
 import org.picketlink.Identity;
 
 import javax.ejb.Stateless;
 import javax.inject.Inject;
+import java.util.List;
 
 @Stateless
 public class SshConfigurationService extends ServiceSupport {
+    @Inject
+    SshConfigurationRepository sshConfigurationRepository;
     @Inject
     Identity identity;
 
@@ -41,21 +45,25 @@ public class SshConfigurationService extends ServiceSupport {
     private Logger log;
 
     public void save(SshConfiguration configuration) {
-        log.info("Saving SshConfiguration " + configuration.getEnvironment());
+        log.info("Saving SshConfiguration " + configuration.getName());
         configuration.setOwner(identity.getAccount().getId());
         super.save(configuration);
         fireEvent(configuration);
     }
 
     public void update(SshConfiguration configuration) {
-        log.info("Updating SshConfiguration " + configuration.getEnvironment());
+        log.info("Updating SshConfiguration " + configuration.getName());
         super.update(configuration);
         fireEvent(configuration);
     }
 
     public void remove(SshConfiguration configuration) {
-        log.info("Deleting SshConfiguration " + configuration.getEnvironment());
+        log.info("Deleting SshConfiguration " + configuration.getName());
         delete(configuration);
         fireEvent(configuration);
+    }
+
+    public List<SshConfiguration> getAllForCurrentUser() {
+        return sshConfigurationRepository.getAllForUser(identity.getAccount().getId());
     }
 }

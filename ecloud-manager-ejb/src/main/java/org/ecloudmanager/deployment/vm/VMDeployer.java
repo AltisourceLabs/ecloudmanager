@@ -26,8 +26,11 @@ package org.ecloudmanager.deployment.vm;
 
 import org.ecloudmanager.deployment.core.ConstraintField;
 import org.ecloudmanager.deployment.core.Deployer;
+import org.ecloudmanager.deployment.core.DeploymentConstraint;
+import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
 import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployer;
+import org.ecloudmanager.deployment.vm.infrastructure.SshConfigurationSuggestionsProvider;
 import org.ecloudmanager.deployment.vm.provisioning.ChefProvisioningDeployer;
 import org.ecloudmanager.service.execution.Action;
 import org.ecloudmanager.service.execution.SingleAction;
@@ -36,12 +39,22 @@ import java.util.stream.Stream;
 
 public class VMDeployer implements Deployer<VMDeployment> {
     public static final String VM_NAME = "vmName";
+    private static final String SSH_CONFIGURATION = "sshConfiguration";
+    private static final String SSH_CONFIG_NAME = "ssh";
 
     private InfrastructureDeployer infrastructureDeployer;
     private ChefProvisioningDeployer chefProvisioningDeployer = new ChefProvisioningDeployer();
 
     public VMDeployer(InfrastructureDeployer infrastructureDeployer) {
         this.infrastructureDeployer = infrastructureDeployer;
+    }
+
+    private static DeploymentObject getSshConfig(VMDeployment deployment) {
+        return deployment.createIfMissingAndGetConfig(SSH_CONFIG_NAME);
+    }
+
+    public static String getSshConfiguration(VMDeployment deployment) {
+        return getSshConfig(deployment).getConfigValue(SSH_CONFIGURATION);
     }
 
     @Override
@@ -56,6 +69,15 @@ public class VMDeployer implements Deployer<VMDeployment> {
 
         infrastructureDeployer.specifyConstraints(deployment);
         chefProvisioningDeployer.specifyConstraints(deployment);
+
+        DeploymentConstraint sshConstraint = getSshConfig(deployment);
+        sshConstraint.addField(
+                ConstraintField.builder()
+                        .name(SSH_CONFIGURATION)
+                        .description("SSH access configuration")
+                        .suggestionsProvider(new SshConfigurationSuggestionsProvider())
+                        .build()
+        );
     }
 
     @Override

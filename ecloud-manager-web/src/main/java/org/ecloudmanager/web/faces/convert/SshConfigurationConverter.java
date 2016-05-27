@@ -1,7 +1,7 @@
 /*
- * MIT License
+ * The MIT License (MIT)
  *
- * Copyright (c) 2016  Altisource
+ * Copyright (c) 2016 Altisource Labs
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,17 +22,14 @@
  * SOFTWARE.
  */
 
-package org.ecloudmanager.repository;
+package org.ecloudmanager.web.faces.convert;
 
 import org.ecloudmanager.domain.template.SshConfiguration;
-import org.ecloudmanager.jeecore.repository.MongoDBRepositorySupport;
-import org.ecloudmanager.jeecore.repository.Repository;
-import org.jetbrains.annotations.Nullable;
+import org.ecloudmanager.jeecore.web.faces.convert.MongoEntityConverter;
 
-@Repository
-public class SshConfigurationRepository extends MongoDBRepositorySupport<SshConfiguration> {
-    @Nullable
-    public SshConfiguration find(String name) {
-        return super.find("name", name);
-    }
+import javax.faces.convert.FacesConverter;
+
+@FacesConverter("sshConfigurationConverter")
+public class SshConfigurationConverter extends MongoEntityConverter<SshConfiguration> {
+
 }

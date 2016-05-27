@@ -1,7 +1,7 @@
 <!--
-  ~ MIT License
+  ~ The MIT License (MIT)
   ~
-  ~ Copyright (c) 2016  Altisource
+  ~ Copyright (c) 2016 Altisource Labs
   ~
   ~ Permission is hereby granted, free of charge, to any person obtaining a copy
   ~ of this software and associated documentation files (the "Software"), to deal
@@ -31,7 +31,7 @@
     <ui:define name="content">
         <p:outputPanel id="out">
             <h:panelGroup>
-                <h:form id="deployments_form" styleClass="contentForm" style="height: 90%">
+                <h:form styleClass="contentForm" style="height: 90%">
                     <p:confirmDialog id="confirm" global="true" showEffect="fade" hideEffect="fade">
                         <p:commandButton id="yes" value="Yes" type="button" styleClass="ui-confirmdialog-yes"
                                          icon="ui-icon-check"/>
@@ -40,48 +40,69 @@
                     </p:confirmDialog>
 
                     <p:dataTable id="entities" var="entity"
-                                 value="#{applicationTemplatesController.applicationTemplates}"
+                                 value="#{gatewaysController.gatewayDeployments}"
                                  paginator="true" rows="10" resizableColumns="true" liveResize="true">
                         <p:column headerText="Name" sortBy="#{entity.name}">
                             <h:outputText value="#{entity.name}"/>
                         </p:column>
-                        <p:column width="60%">
-                            <h:outputText value="#{entity.children}"/>
+                        <p:column width="90" headerText="State" sortBy="#{entity.name}">
+                            <h:outputText value="#{gatewaysController.isDeployed(entity) ? 'Deployed' : 'Not Deployed'}"/>
                         </p:column>
                         <p:column width="90">
-                            <p:button outcome="applicationTemplate" icon="ui-icon-pencil">
-                                <f:param name="template" value="#{entity.id.toString()}"/>
+                            <p:button outcome="appdeployment" icon="ui-icon-pencil">
+                                <f:param name="deployment" value="#{entity.id.toString()}"/>
                             </p:button>
                             <p:commandButton title="Delete" icon="ui-icon-close"
                                              update="out"
-                                             action="#{applicationTemplatesController.delete(entity)}">
+                                             action="#{gatewaysController.delete(entity)}">
                                 <p:confirm header="Confirmation" message="Are you sure?" icon="ui-icon-alert"/>
                             </p:commandButton>
-                            <p:commandButton title="Download" icon="ui-icon-arrowstop-1-s"
-                                             ajax="false"
-                                             action="#{applicationTemplatesController.download(entity)}"/>
                         </p:column>
-                        <p:column width="100">
-                            <p:menuButton value="Deploy...">
-                                <p:menuitem value="Deploy to Verizon" outcome="appdeployment"
-                                            icon="ui-icon-circle-triangle-e">
-                                    <f:param name="template" value="#{entity.id.toString()}"/>
-                                    <f:param name="infrastructure" value="VERIZON"/>
-                                </p:menuitem>
-                                <p:menuitem value="Deploy to AWS" outcome="appdeployment"
-                                            icon="ui-icon-circle-triangle-e">
-                                    <f:param name="template" value="#{entity.id.toString()}"/>
-                                    <f:param name="infrastructure" value="AWS"/>
-                                </p:menuitem>
-                            </p:menuButton>
-                        </p:column>
-
                     </p:dataTable>
-                    <p:button outcome="applicationTemplate" icon="ui-icon-plus" value="New"/>
+                    <p:commandButton value="New" icon="ui-icon-plus" id="new"
+                                     update="dlg_add" oncomplete="PF('dlg_add').show();"/>
                     <p:growl id="messages" sticky="true" showDetail="true"/>
                 </h:form>
             </h:panelGroup>
+            <p:dialog header="Add Gateway" widgetVar="dlg_add" modal="true" closeOnEscape="true" height="90%"
+                      width="auto" id="dlg_add">
+                <h:panelGroup>
+                    <h:form id="add_form" style="width: auto; height: 90%">
+                        <h:panelGroup>
+                            <h3>Create New Gateway</h3>
+                        </h:panelGroup>
 
+                        <p:messages id="msgs" for="fields"/>
+
+                        <h:panelGrid columns="2" cellpadding="5" id="fields">
+                            <h:outputText value="Gateway Name:"/>
+                            <p:inputText value="#{gatewaysController.newGatewayName}" required="true"/>
+                            <h:outputText value="VM Template (should have empty runlist):"/>
+                            <p:selectOneMenu value="#{gatewaysController.newGatewayVmTemplate}" converter="vmTemplateConverter" required="true">
+                                <f:selectItem itemLabel="None" itemValue=""/>
+                                <f:selectItems value="#{gatewaysController.getVmTemplates()}"
+                                               var="templ"
+                                               itemLabel="#{templ.name}" itemValue="#{templ}"/>
+                            </p:selectOneMenu>
+                        </h:panelGrid>
+
+                        <p:spacer/>
+
+                        <h:panelGroup>
+                            <p:spacer/>
+                            <p:menuButton value="Deploy...">
+                                <p:menuitem value="Deploy to Verizon" action="#{gatewaysController.goToDeployment('VERIZON')}"
+                                            icon="ui-icon-circle-triangle-e">
+                                </p:menuitem>
+                                <p:menuitem value="Deploy to AWS" action="#{gatewaysController.goToDeployment('AWS')}"
+                                            icon="ui-icon-circle-triangle-e">
+                                </p:menuitem>
+                            </p:menuButton>
+                            <p:commandButton id="cancel" value="Cancel" update="out" action="#{gatewaysController.cancel}" immediate="true"/>
+                        </h:panelGroup>
+                    </h:form>
+                </h:panelGroup>
+            </p:dialog>
         </p:outputPanel>
     </ui:define>
 </ui:composition>

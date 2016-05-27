@@ -1,7 +1,7 @@
 /*
- * MIT License
+ * The MIT License (MIT)
  *
- * Copyright (c) 2016  Altisource
+ * Copyright (c) 2016 Altisource Labs
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,17 +22,27 @@
  * SOFTWARE.
  */
 
-package org.ecloudmanager.repository;
+package org.ecloudmanager.deployment.vm.infrastructure;
 
+import org.ecloudmanager.deployment.core.ConstraintFieldSuggestion;
+import org.ecloudmanager.deployment.core.ConstraintFieldSuggestionsProvider;
+import org.ecloudmanager.deployment.core.DeploymentConstraint;
 import org.ecloudmanager.domain.template.SshConfiguration;
-import org.ecloudmanager.jeecore.repository.MongoDBRepositorySupport;
-import org.ecloudmanager.jeecore.repository.Repository;
-import org.jetbrains.annotations.Nullable;
+import org.ecloudmanager.service.template.SshConfigurationService;
 
-@Repository
-public class SshConfigurationRepository extends MongoDBRepositorySupport<SshConfiguration> {
-    @Nullable
-    public SshConfiguration find(String name) {
-        return super.find("name", name);
+import javax.enterprise.inject.spi.CDI;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static org.ecloudmanager.deployment.core.ConstraintFieldSuggestion.suggestionsList;
+
+public class SshConfigurationSuggestionsProvider implements ConstraintFieldSuggestionsProvider {
+    @Override
+    public List<ConstraintFieldSuggestion> getSuggestions(DeploymentConstraint deploymentConstraint) {
+        SshConfigurationService sshConfigurationService = CDI.current().select(SshConfigurationService.class).get();
+        List<String> sshConfigNames = sshConfigurationService.getAllForCurrentUser().stream()
+                .map(SshConfiguration::getName)
+                .collect(Collectors.toList());
+        return suggestionsList(sshConfigNames);
     }
 }

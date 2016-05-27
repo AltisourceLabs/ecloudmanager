@@ -1,7 +1,7 @@
 /*
- * MIT License
+ * The MIT License (MIT)
  *
- * Copyright (c) 2016  Altisource
+ * Copyright (c) 2016 Altisource Labs
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,46 +22,20 @@
  * SOFTWARE.
  */
 
-package org.ecloudmanager.deployment.app;
+package org.ecloudmanager.deployment.gateway;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import org.ecloudmanager.deployment.core.Deployable;
+import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.core.Deployer;
 import org.jetbrains.annotations.NotNull;
 import org.mongodb.morphia.annotations.Entity;
 
-import java.util.ArrayList;
-import java.util.List;
-
-@JsonIgnoreProperties({"id", "version", "new"})
-@Entity("deployments")
-public class ApplicationDeployment extends Deployable {
-    private static final long serialVersionUID = -8557535271917698832L;
-    private List<Link> links = new ArrayList<>();
-    private List<String> publicEndpoints = new ArrayList<>();
-    protected ApplicationDeployment() {
+@Entity
+public class GatewayDeployment extends ApplicationDeployment {
+    public GatewayDeployment() {
     }
 
-    @NotNull
     @Override
-    public Deployer<ApplicationDeployment> getDeployer() {
-        return new ApplicationDeployer();
-    }
-
-    public List<Link> getLinks() {
-        return links;
-    }
-
-    public void setLinks(List<Link> links) {
-        this.links = links;
-    }
-
-
-    public List<String> getPublicEndpoints() {
-        return publicEndpoints;
-    }
-
-    public void setPublicEndpoints(List<String> publicEndpoints) {
-        this.publicEndpoints = publicEndpoints;
+    public @NotNull Deployer getDeployer() {
+        return new GatewayDeployer();
     }
 }

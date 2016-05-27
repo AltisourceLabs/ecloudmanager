@@ -94,12 +94,12 @@ public class EndpointTemplate {
         }
         endpoint.addField(builder.build());
 
-        ConstraintField hostField = ConstraintField.builder()
-                .name(HOST)
-//                .required(true)
-                .build();
-
-        endpoint.addField(hostField);
+//        ConstraintField hostField = ConstraintField.builder()
+//                .name(HOST)
+////                .required(true)
+//                .build();
+//
+//        endpoint.addField(hostField);
         return endpoint;
     }
 }
