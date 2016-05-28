@@ -193,6 +193,8 @@
                         <p:inputTextarea rows="6" cols="33"
                                          value="#{componentGroupTemplateController.value.haProxyBackendConfig.config}"
                                          converter="stringListConverter"/>
+                        <p>Backend server options: <p:inputText value="#{componentGroupTemplateController.value.haProxyBackendConfig.serverOptions}"/></p>
+
                         <p>VM: <p:selectOneMenu value="#{componentGroupTemplateController.value.virtualMachineTemplate}"
                                                 converter="vmTemplateConverter">
                             <f:selectItem itemLabel="None" itemValue=""/>

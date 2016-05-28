@@ -32,6 +32,7 @@ public class HAProxyBackendConfig {
     private String name;
 
     private List<String> config = new ArrayList<>();
+    private String serverOptions;
 
     public HAProxyBackendConfig() {
     }
@@ -39,6 +40,7 @@ public class HAProxyBackendConfig {
     public HAProxyBackendConfig(HAProxyBackendConfig cfg) {
         name = cfg.getName();
         config.addAll(cfg.getConfig());
+        serverOptions = cfg.getServerOptions();
     }
 
     public List<String> getConfig() {
@@ -57,4 +59,11 @@ public class HAProxyBackendConfig {
         this.name = name;
     }
 
+    public String getServerOptions() {
+        return serverOptions;
+    }
+
+    public void setServerOptions(String serverOptions) {
+        this.serverOptions = serverOptions;
+    }
 }

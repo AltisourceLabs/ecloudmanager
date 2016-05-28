@@ -26,6 +26,9 @@ package org.ecloudmanager.deployment.ps;
 
 import org.ecloudmanager.deployment.core.*;
 import org.ecloudmanager.deployment.ps.cg.ComponentGroupDeployment;
+import org.ecloudmanager.deployment.vm.VMDeployer;
+import org.ecloudmanager.deployment.vm.VMDeployment;
+import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployer;
 import org.ecloudmanager.service.execution.Action;
 import org.ecloudmanager.service.provisioning.HAProxyConfigurator;
 import org.jetbrains.annotations.NotNull;
@@ -66,9 +69,25 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
 
     public void configure(ProducedServiceDeployment serviceDeployment) {
         List<String> config = getFrontendConfigWithBind(serviceDeployment);
-        getConfigurator(serviceDeployment).saveFrontend(serviceDeployment.getName(), config);
-        for (ComponentGroupDeployment cg : serviceDeployment.getComponentGroups()) {
-            configure(cg);
+        HAProxyConfigurator configurator = getConfigurator(serviceDeployment);
+        configurator.saveFrontend(serviceDeployment.getName(), config);
+        for (ComponentGroupDeployment componentGroupDeployment : serviceDeployment.getComponentGroups()) {
+            configurator.saveBackend(componentGroupDeployment.getName(), componentGroupDeployment.getHaProxyBackendConfig().getConfig());
+
+            componentGroupDeployment.stream(VMDeployment.class).forEach(vmDeployment -> {
+                String serverName = vmDeployment.getConfigValue(VMDeployer.VM_NAME);
+                String ip = InfrastructureDeployer.getIP(vmDeployment);
+                @NotNull List<EndpointTemplate> endpoints = vmDeployment.getVirtualMachineTemplate().getEndpoints();
+                // TODO - the user shuould be able to select an endpoint for the backend server when there's more then one in a runlist
+                String port = endpoints.get(0).getPort().toString();
+                configurator.saveServer(
+                        componentGroupDeployment.getName(),
+                        serverName,
+                        ip,
+                        port,
+                        componentGroupDeployment.getHaProxyBackendConfig().getServerOptions()
+                    );
+            });
         }
     }
 
@@ -83,11 +102,6 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
         config.add("bind " + ip + ":" + port);
         config.addAll(serviceDeployment.getHaProxyFrontendConfig().getConfig());
         return config;
-    }
-
-    public void configure(ComponentGroupDeployment componentGroupDeployment) {
-        getConfigurator(componentGroupDeployment).saveBackend(componentGroupDeployment.getName(),
-            componentGroupDeployment.getHaProxyBackendConfig().getConfig());
     }
 
     @Override
@@ -117,20 +131,25 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
 
     @Override
     public Action getBeforeChildrenCreatedAction(ProducedServiceDeployment deployable) {
-        return Action.single("Configure HAProxy frontend", () -> configure(deployable), deployable);
+        return null;
     }
 
     @Override
     public Action getAfterChildrenCreatedAction(ProducedServiceDeployment deployable) {
-        return null;
+        return Action.single("Configure HAProxy frontend", () -> configure(deployable), deployable);
     }
 
     @Override
     public Action getAfterChildrenDeletedAction(ProducedServiceDeployment deployable) {
         return Action.single("Delete HAProxy configuration", () -> {
-            getConfigurator(deployable).deleteFrontend(deployable.getName());
+            HAProxyConfigurator configurator = getConfigurator(deployable);
+            configurator.deleteFrontend(deployable.getName());
             for (ComponentGroupDeployment cg : deployable.getComponentGroups()) {
-                getConfigurator(deployable).deleteBackend(cg.getName());
+                configurator.deleteBackend(cg.getName());
+                cg.stream(VMDeployment.class).forEach(vmDeployment -> {
+                    String serverName = vmDeployment.getConfigValue(VMDeployer.VM_NAME);
+                    configurator.deleteServer(cg.getName(), serverName);
+                });
             }
         }, deployable);
     }
@@ -142,17 +161,17 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
 
     @Override
     public Action getBeforeChildrenUpdatedAction(ProducedServiceDeployment before, ProducedServiceDeployment after) {
-        // Doesn't make any sense to check if update is needed as this operation is pretty fast
-        return Action.actionSequence(
-            "Update HAProxy configuration for " + after.getName(),
-            getAfterChildrenDeletedAction(before),
-            getBeforeChildrenCreatedAction(after)
-        );
+        return null;
     }
 
     @Override
     public Action getAfterChildrenUpdatedAction(ProducedServiceDeployment before, ProducedServiceDeployment after) {
-        return null;
+        // Doesn't make any sense to check if update is needed as this operation is pretty fast
+        return Action.actionSequence(
+                "Update HAProxy configuration for " + after.getName(),
+                getAfterChildrenDeletedAction(before),
+                getAfterChildrenCreatedAction(after)
+        );
     }
 
 }

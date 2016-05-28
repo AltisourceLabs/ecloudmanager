@@ -27,6 +27,7 @@ package org.ecloudmanager.service.provisioning;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import mousio.etcd4j.EtcdClient;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,6 +38,7 @@ public class HAProxyConfigurator {
     private Logger log = LogManager.getLogger(HAProxyConfigurator.class);
 
     private static final char PATH_SEPARATOR = '/';
+    private static final String PATH_SERVER = "server";
     private static final String PATH_BACKEND = "backend";
     private static final String PATH_FRONTEND = "frontend";
     private static final String PATH_LISTEN = "listen";
@@ -60,6 +62,7 @@ public class HAProxyConfigurator {
 
 
     private enum Path {
+        SERVER(PATH_SERVER),
         BACKEND(PATH_BACKEND),
         FRONTEND(PATH_FRONTEND),
         LISTEN(PATH_LISTEN);
@@ -75,6 +78,17 @@ public class HAProxyConfigurator {
 
         public String keyPath(String prefix, String name) {
             return prefix + PATH_SEPARATOR + type + PATH_SEPARATOR + name;
+        }
+    }
+
+    public void saveServer(String groupName, String serverName, String ip, String port, String options) {
+        log.info("Saving HAProxy server: " + serverName);
+        try {
+            String optionsStr = StringUtils.isEmpty(options) ? "" : " " + options;
+            etcdClient.put(Path.SERVER.keyPath(prefix, groupName + PATH_SEPARATOR + serverName), ip + ":" + port + optionsStr).send().get();
+        } catch (Exception e) {
+            log.error("Can't save server " + serverName, e);
+            throw new RuntimeException("Can't save server " + serverName, e);
         }
     }
 
@@ -100,6 +114,11 @@ public class HAProxyConfigurator {
     public void deleteFrontend(String name) {
         log.info("Deleting HAProxy frontend: " + name);
         delete(Path.FRONTEND, name);
+    }
+
+    public void deleteServer(String groupName, String serverName) {
+        log.info("Deleting HAProxy server: " + serverName);
+        delete(Path.SERVER, groupName + PATH_SEPARATOR + serverName);
     }
 
     public void deleteListen(String name) {
