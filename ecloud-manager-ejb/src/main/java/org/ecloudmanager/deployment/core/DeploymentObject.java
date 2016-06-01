@@ -161,11 +161,16 @@ public abstract class DeploymentObject extends DeploymentConstraint {
 
     @NotNull
     public DeploymentObject createIfMissingAndGetConfig(String name) {
+        return createIfMissingAndGetConfig(name, "");
+    }
+
+    @NotNull
+    public DeploymentObject createIfMissingAndGetConfig(String name, String description) {
         DeploymentObject result = getChildByName(name);
         if (result != null) {
             return result;
         }
-        result = new Config(name);
+        result = new Config(name, description);
         addChild(result);
         return result;
     }

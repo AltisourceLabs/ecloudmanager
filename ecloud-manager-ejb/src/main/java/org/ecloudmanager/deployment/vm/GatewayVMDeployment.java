@@ -39,6 +39,8 @@ public class GatewayVMDeployment extends VMDeployment {
     private static List<Recipe> gatewayRunlist = new ArrayList<>();
 
     public static final String HAPROXY_STATS = "haproxyStats";
+    public static final String ETCD_NODE = "etcd_node";
+    public static final String ETCD_PATH = "etcd_path";
 
     static {
         Recipe selinux = new Recipe("selinux");
@@ -67,7 +69,7 @@ public class GatewayVMDeployment extends VMDeployment {
 
         Recipe confd = new Recipe("rf_infra-confd");
         confd.setVersion("= 0.1.0");
-        ChefAttribute confdAttrs = new ChefAttribute("rf_infra-confd", "{\"etcd_nodes\":[{{etcd_nodes}}], \"etcd_path\":\"{{etcd_path}}\"}");
+        ChefAttribute confdAttrs = new ChefAttribute("rf_infra-confd", "{\"etcd_nodes\":[\"{{" + ETCD_NODE + "}}\"], \"etcd_path\":\"{{" + ETCD_PATH + "}}\"}");
         confdAttrs.setEnvironmentAttribute(false);
         confd.addChefAttribute(confdAttrs);
 

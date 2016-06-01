@@ -22,16 +22,26 @@
  * SOFTWARE.
  */
 
-package org.ecloudmanager.repository.deployment;
+package org.ecloudmanager.deployment.gateway;
 
-import org.ecloudmanager.deployment.gateway.GatewayDeployment;
-import org.ecloudmanager.jeecore.repository.MongoDBRepositorySupport;
-import org.ecloudmanager.jeecore.repository.Repository;
-import org.jetbrains.annotations.Nullable;
+import org.ecloudmanager.deployment.core.ConstraintFieldSuggestion;
+import org.ecloudmanager.deployment.core.ConstraintFieldSuggestionsProvider;
+import org.ecloudmanager.deployment.core.DeploymentConstraint;
+import org.ecloudmanager.repository.deployment.GatewayRepository;
 
-@Repository
-public class GatewayRepository extends MongoDBRepositorySupport<GatewayDeployment> {
-    public @Nullable GatewayDeployment find(String name) {
-        return super.find("name", name);
+import javax.enterprise.inject.spi.CDI;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static org.ecloudmanager.deployment.core.ConstraintFieldSuggestion.suggestionsList;
+
+public class GatewaySuggestionsProvider implements ConstraintFieldSuggestionsProvider {
+    @Override
+    public List<ConstraintFieldSuggestion> getSuggestions(DeploymentConstraint deploymentConstraint) {
+        GatewayRepository gatewayRepository = CDI.current().select(GatewayRepository.class).get();
+        List<String> gatewayNames = gatewayRepository.getAll().stream()
+                .map(GatewayDeployment::getName)
+                .collect(Collectors.toList());
+        return suggestionsList(gatewayNames);
     }
 }

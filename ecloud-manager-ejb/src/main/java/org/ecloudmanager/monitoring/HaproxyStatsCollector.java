@@ -74,10 +74,10 @@ public class HaproxyStatsCollector {
                 .flatMap(applicationDeployment -> applicationDeployment.children(ProducedServiceDeployment.class).stream())
                 .filter(producedServiceDeployment -> {
                     String monitored = producedServiceDeployment.getConfigValue(HAProxyDeployer.HAPROXY_MONITORING);
-                    return !StringUtils.isEmpty(producedServiceDeployment.getConfigValue(HAProxyDeployer.HAPROXY_IP)) &&
-                           "true".equals(monitored);
+                    return "true".equals(monitored) &&
+                           !StringUtils.isEmpty(HAProxyDeployer.getHaproxyIp(producedServiceDeployment));
                 })
-                .map(producedServiceDeployment -> producedServiceDeployment.getConfigValue(HAProxyDeployer.HAPROXY_IP))
+                .map(HAProxyDeployer::getHaproxyIp)
                 .distinct()
                 .forEach(this::collectStats);
     }
@@ -113,7 +113,7 @@ public class HaproxyStatsCollector {
                 .flatMap(applicationDeployment -> applicationDeployment.children(ProducedServiceDeployment.class).stream())
                 .filter(producedServiceDeployment -> {
                     String monitored = producedServiceDeployment.getConfigValue(HAProxyDeployer.HAPROXY_MONITORING);
-                    String haproxyAddr = producedServiceDeployment.getConfigValue(HAProxyDeployer.HAPROXY_IP);
+                    String haproxyAddr = HAProxyDeployer.getHaproxyIp(producedServiceDeployment);
                     return haproxyStatsAddr.equals(haproxyAddr) &&
                            "true".equals(monitored);
                 })

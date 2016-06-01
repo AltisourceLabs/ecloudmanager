@@ -38,6 +38,7 @@ import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.ps.HAProxyDeployer;
+import org.ecloudmanager.deployment.ps.ProducedServiceDeployment;
 import org.ecloudmanager.deployment.vm.VMDeployer;
 import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.infrastructure.AWSInfrastructureDeployer;
@@ -100,7 +101,7 @@ public class AWSVmService {
             });
         } else {
             // TODO move haproxy IP firewall rules creation to ComponentGroupDeployment?
-            String haproxyIp = deployment.getParent().getParent().getConfigValue(HAProxyDeployer.HAPROXY_IP);
+            String haproxyIp = HAProxyDeployer.getHaproxyIp((ProducedServiceDeployment) deployment.getParent().getParent());
             deployment.getVirtualMachineTemplate().getEndpoints().forEach(e -> {
                 if (e.getPort() != null) {
                     int port = e.getPort();
