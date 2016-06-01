@@ -27,6 +27,7 @@ package org.ecloudmanager.service.provisioning;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import mousio.etcd4j.EtcdClient;
+import mousio.etcd4j.responses.EtcdException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -138,8 +139,15 @@ public class HAProxyConfigurator {
         try {
             etcdClient.delete(path.keyPath(prefix, name)).recursive().send().get();
         } catch (Exception e) {
-            log.error("Can't delete " + path.type + " " + name, e);
-            throw new RuntimeException("Can't delete " + path.type + " " + name, e);
+            if (e instanceof EtcdException) {
+                EtcdException etcdException = (EtcdException) e;
+                if (etcdException.errorCode == 100) {
+                    log.warn("Can't delete " + path.type + " " + name + ", nothing to delete.", e);
+                }
+            } else {
+                log.error("Can't delete " + path.type + " " + name, e);
+                throw new RuntimeException("Can't delete " + path.type + " " + name, e);
+            }
         }
     }
 

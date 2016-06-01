@@ -62,6 +62,7 @@ public class VMDeployment extends Deployable {
         return deployer;
     }
 
+    @NotNull
     public Infrastructure getInfrastructure() {
         return infrastructure;
     }

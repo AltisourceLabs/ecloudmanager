@@ -39,6 +39,7 @@ import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.ps.HAProxyDeployer;
 import org.ecloudmanager.deployment.ps.ProducedServiceDeployment;
+import org.ecloudmanager.deployment.vm.GatewayVMDeployment;
 import org.ecloudmanager.deployment.vm.VMDeployer;
 import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.infrastructure.AWSInfrastructureDeployer;
@@ -83,6 +84,57 @@ public class AWSVmService {
         return securityGroupId;
     }
 
+    public void deleteFirewallRules(ProducedServiceDeployment producedServiceDeployment) {
+        ApplicationDeployment ad = (ApplicationDeployment) producedServiceDeployment.getTop();
+        // TODO - here we use the same port from endpoint both for frontend and backend. They should be different.
+        // Delete firewall rule for haproxy frontend if there's a public endpoint
+        producedServiceDeployment.children(Endpoint.class).forEach(endpoint -> {
+            int port = Integer.parseInt(endpoint.getConfigValue("port"));
+            String publicEndpointName = producedServiceDeployment.getName() + ":" + endpoint.getName();
+            if (ad.getPublicEndpoints().contains(publicEndpointName)) {
+                GatewayVMDeployment gatewayVmDeployment = HAProxyDeployer.getGatewayVmDeployment(producedServiceDeployment);
+                String haproxySecurityGroupId = AWSInfrastructureDeployer.getAwsSecurityGroupId(gatewayVmDeployment);
+                RevokeSecurityGroupIngressRequest frontendRule = new RevokeSecurityGroupIngressRequest()
+                        .withGroupId(haproxySecurityGroupId)
+                        .withFromPort(port)
+                        .withToPort(port)
+                        .withIpProtocol("TCP")
+                        .withCidrIp("0.0.0.0/0");
+                try {
+                    log.info("Deleting firewall rule for public endpoint " + publicEndpointName);
+                    getAmazonEC2(gatewayVmDeployment).revokeSecurityGroupIngress(frontendRule);
+                } catch (AmazonServiceException e) {
+                    if (e.getErrorCode().equals("InvalidPermission.NotFound")) {
+                        log.warn("Firewall rule for public endpoint " + publicEndpointName + " not found, nothing to delete.", e);
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+        });
+    }
+
+    public void createFirewallRules(ProducedServiceDeployment producedServiceDeployment) {
+        ApplicationDeployment ad = (ApplicationDeployment) producedServiceDeployment.getTop();
+        // TODO - here we use the same port from endpoint both for frontend and backend. They should be different.
+        // Create firewall rule for haproxy frontend if there's a public endpoint
+        producedServiceDeployment.children(Endpoint.class).forEach(e -> {
+            int port = Integer.parseInt(e.getConfigValue("port"));
+            String publicEndpointName = producedServiceDeployment.getName() + ":" + e.getName();
+            if (ad.getPublicEndpoints().contains(publicEndpointName)) {
+                GatewayVMDeployment gatewayVmDeployment = HAProxyDeployer.getGatewayVmDeployment(producedServiceDeployment);
+                String haproxySecurityGroupId = AWSInfrastructureDeployer.getAwsSecurityGroupId(gatewayVmDeployment);
+                AuthorizeSecurityGroupIngressRequest frontendRule = new AuthorizeSecurityGroupIngressRequest()
+                        .withGroupId(haproxySecurityGroupId)
+                        .withFromPort(port).withToPort(port)
+                        .withIpProtocol("TCP")
+                        .withCidrIp("0.0.0.0/0");
+                log.info("Creating firewall rule for public endpoint " + publicEndpointName);
+                getAmazonEC2(gatewayVmDeployment).authorizeSecurityGroupIngress(frontendRule);
+            }
+        });
+    }
+
     public void createFirewallRules(VMDeployment deployment) {
         ApplicationDeployment ad = (ApplicationDeployment) deployment.getTop();
         String securityGroupId = AWSInfrastructureDeployer.getAwsSecurityGroupId(deployment);
@@ -101,7 +153,8 @@ public class AWSVmService {
             });
         } else {
             // TODO move haproxy IP firewall rules creation to ComponentGroupDeployment?
-            String haproxyIp = HAProxyDeployer.getHaproxyIp((ProducedServiceDeployment) deployment.getParent().getParent());
+            ProducedServiceDeployment producedServiceDeployment = (ProducedServiceDeployment) deployment.getParent().getParent();
+            String haproxyIp = HAProxyDeployer.getHaproxyIp(producedServiceDeployment);
             deployment.getVirtualMachineTemplate().getEndpoints().forEach(e -> {
                 if (e.getPort() != null) {
                     int port = e.getPort();

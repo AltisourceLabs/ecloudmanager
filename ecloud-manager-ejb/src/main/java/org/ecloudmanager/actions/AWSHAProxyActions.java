@@ -1,7 +1,7 @@
 /*
- * MIT License
+ * The MIT License (MIT)
  *
- * Copyright (c) 2016  Altisource
+ * Copyright (c) 2016 Altisource Labs
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,39 +24,27 @@
 
 package org.ecloudmanager.actions;
 
-import org.ecloudmanager.deployment.vm.VMDeployment;
-import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironment;
+import org.ecloudmanager.deployment.ps.ProducedServiceDeployment;
 import org.ecloudmanager.jeecore.service.Service;
-import org.ecloudmanager.service.chef.ChefService;
+import org.ecloudmanager.service.aws.AWSVmService;
 import org.ecloudmanager.service.execution.Action;
 
 import javax.inject.Inject;
 
 @Service
-public class ChefActions {
-    public static String CREATE_ENVIRONMENT_ACTION = "Create Chef Environment";
+public class AWSHAProxyActions {
     @Inject
-    private ChefService chefService;
+    private AWSVmService vmService;
 
-    public Action getCreateChefEnvironmentAction(ChefEnvironment chefEnvironment) {
-        return Action.single(CREATE_ENVIRONMENT_ACTION,
-            () -> chefService.createEnvironment(chefEnvironment),
-            chefEnvironment);
+    public Action getCreatePublicEndpointFirewallRulesAction(ProducedServiceDeployment producedServiceDeployment) {
+        return Action.single("Create Firewall Rules for Public Endpoints", () -> {
+            vmService.createFirewallRules(producedServiceDeployment);
+        }, producedServiceDeployment);
     }
 
-    public Action getDeleteChefEnvironmentAction(ChefEnvironment chefEnvironment) {
-        return Action.single("Delete Chef Environment",
-            () -> chefService.deleteEnvironment(chefEnvironment),
-            chefEnvironment);
-    }
-
-    public Action getDeleteChefNodeAndClientAction(VMDeployment vmDeployment) {
-        return Action.single("Delete Chef Node and Client",
-            () -> chefService.deleteNodeAndClient(vmDeployment),
-            vmDeployment);
-    }
-
-    public boolean needUpdateChefEnvironment(ChefEnvironment deployment) {
-        return chefService.needUpdateChefEnvironment(deployment);
+    public Action getDeletePublicEndpointFirewallRulesAction(ProducedServiceDeployment producedServiceDeployment) {
+        return Action.single("Delete Firewall Rules for Public Endpoints", () -> {
+            vmService.deleteFirewallRules(producedServiceDeployment);
+        }, producedServiceDeployment);
     }
 }

@@ -50,7 +50,7 @@ public class AWSVmActions {
 
     public Action getCreateVmAction(VMDeployment vmDeployment) {
 
-        return Action.actionSequence("Create and start VM",
+        return Action.actionSequence("Create and Start VM",
                 Action.single("Create Security Group", () -> {
                     String securityGroupId = vmService.createSecurityGroup(vmDeployment);
                     AWSInfrastructureDeployer.addSecurityGroupId(vmDeployment, securityGroupId);

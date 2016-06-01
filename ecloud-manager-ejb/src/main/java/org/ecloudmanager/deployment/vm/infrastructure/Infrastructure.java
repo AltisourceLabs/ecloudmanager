@@ -31,13 +31,13 @@ import org.ecloudmanager.service.template.VerizonConfigurationService;
 import javax.enterprise.inject.spi.CDI;
 
 public enum Infrastructure {
-    VERIZON(new VerizonInfrastructureDeployer()) {
+    VERIZON(new VerizonInfrastructureDeployer(), new VerizonInfrastructureHAProxyDeployer()) {
         @Override
         public RunlistHolder getRunlistHolder() {
             return CDI.current().select(VerizonConfigurationService.class).get().getCurrentConfiguration();
         }
     },
-    AWS(new AWSInfrastructureDeployer()) {
+    AWS(new AWSInfrastructureDeployer(), new AWSInfrastructureHAProxyDeployer()) {
         @Override
         public RunlistHolder getRunlistHolder() {
             return CDI.current().select(AWSConfigurationService.class).get().getCurrentConfiguration();
@@ -45,9 +45,11 @@ public enum Infrastructure {
     };
 
     private InfrastructureDeployer deployer;
+    private InfrastructureHAProxyDeployer haProxyDeployer;
 
-    Infrastructure(InfrastructureDeployer deployer) {
+    Infrastructure(InfrastructureDeployer deployer, InfrastructureHAProxyDeployer haProxyDeployer) {
         this.deployer = deployer;
+        this.haProxyDeployer = haProxyDeployer;
     }
 
     @Override
@@ -57,6 +59,10 @@ public enum Infrastructure {
 
     public InfrastructureDeployer getDeployer() {
         return deployer;
+    }
+
+    public InfrastructureHAProxyDeployer getHaProxyDeployer() {
+        return haProxyDeployer;
     }
 
     public abstract RunlistHolder getRunlistHolder();
