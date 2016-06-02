@@ -342,3 +342,20 @@ form > button.ui-button {
     border: 1px solid #D5D5D5;
     padding: 1em;
 }
+
+.colLabel {
+}
+
+.colValue {
+    width: 550px;
+    padding-right: 1em;
+}
+
+.colValue input {
+    width: 100%;
+}
+
+.colValue textarea {
+    width: 100%;
+    max-height: 60px;
+}

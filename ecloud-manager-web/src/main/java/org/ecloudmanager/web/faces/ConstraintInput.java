@@ -28,7 +28,6 @@ import org.ecloudmanager.deployment.core.ConstraintField;
 import org.ecloudmanager.deployment.core.ConstraintFieldSuggestion;
 import org.ecloudmanager.deployment.core.ConstraintValue;
 import org.ecloudmanager.deployment.core.DeploymentConstraint;
-import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironmentDeployer;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -57,8 +56,7 @@ public class ConstraintInput {
     }
 
     public boolean isMultiline() {
-        return ChefEnvironmentDeployer.CHEF_CLIENT_SECRET.equals(getName()) || ChefEnvironmentDeployer
-            .CHEF_VALIDATION_CLIENT_SECRET.equals(getName());
+        return false; // Now there's no multiline fields any more
     }
 
     public String getName() {

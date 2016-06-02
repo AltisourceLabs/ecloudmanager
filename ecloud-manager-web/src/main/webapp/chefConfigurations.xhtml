@@ -1,0 +1,111 @@
+<!--
+  ~ The MIT License (MIT)
+  ~
+  ~ Copyright (c) 2016 Altisource Labs
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/templates/default.xhtml">
+    <ui:define name="content">
+        <p:outputPanel id="out">
+            <h:panelGroup>
+                <h:form styleClass="contentForm">
+                    <p:confirmDialog global="true" showEffect="fade" hideEffect="fade">
+                        <p:commandButton value="Yes" type="button" styleClass="ui-confirmdialog-yes" icon="ui-icon-check"/>
+                        <p:commandButton value="No" type="button" styleClass="ui-confirmdialog-no" icon="ui-icon-close"/>
+                    </p:confirmDialog>
+
+                    <p:dataTable id="services" var="chefConfiguration" value="#{chefConfigurationController.chefConfigurations}"
+                                 paginator="true" rows="10" resizableColumns="true" liveResize="true">
+
+                        <p:column headerText="Name" width="150" sortBy="#{chefConfiguration.name}">
+                            <h:outputText value="#{chefConfiguration.name}"/>
+                        </p:column>
+                        <p:column headerText="Server">
+                            <h:outputText value="#{chefConfiguration.chefServerAddress}"/>
+                        </p:column>
+                        <p:column headerText="Client" style="white-space: normal;">
+                            <h:outputText value="#{chefConfiguration.chefClientName}"/>
+                        </p:column>
+                        <p:column headerText="Validation Client" style="white-space: normal;">
+                            <h:outputText value="#{chefConfiguration.chefValidationClientName}"/>
+                        </p:column>
+
+                        <p:column width="60">
+                            <p:commandButton title="Edit" icon="ui-icon-pencil"
+                                             update="dlg_edit"
+                                             action="#{chefConfigurationController.editorController.startEdit(chefConfiguration)}"
+                                             oncomplete="PF('dlg_edit').show();"/>
+                            <p:commandButton title="Delete" icon="ui-icon-close"
+                                             update="out"
+                                             action="#{chefConfigurationController.editorController.delete(chefConfiguration)}">
+                                <p:confirm header="Confirmation" message="Are you sure?" icon="ui-icon-alert"/>
+                            </p:commandButton>
+                        </p:column>
+
+                    </p:dataTable>
+                    <p:commandButton value="New" icon="ui-icon-plus"
+                                     update="dlg_edit" oncomplete="PF('dlg_edit').show();"/>
+
+                    <p:growl id="messages" sticky="true" showDetail="true"/>
+                </h:form>
+            </h:panelGroup>
+            <p:dialog header="Edit Chef Configuration" widgetVar="dlg_edit" modal="true" closeOnEscape="true" style="width: 900px; position: absolute" id="dlg_edit">
+                <p:ajax event="close" listener="#{chefConfigurationController.editorController.handleClose}" />
+                <h:panelGroup>
+                    <h:form>
+                        <h:panelGroup rendered="#{chefConfigurationController.editorController.edit}">
+                            <h3>Edit chef configuration "#{chefConfigurationController.editorController.selected.name}"</h3>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{!chefConfigurationController.editorController.edit}">
+                            <h3>Add chef configuration</h3>
+                        </h:panelGroup>
+                        <h:panelGrid columns="2" cellpadding="5" columnClasses="colLabel, colValue">
+                            <h:outputText value="Name:"/>
+                            <p:inputText value="#{chefConfigurationController.editorController.selected.name}"/>
+                            <h:outputText value="Chef Server Address:"/>
+                            <p:inputText value="#{chefConfigurationController.editorController.selected.chefServerAddress}"/>
+                            <h:outputText value="Chef Client:"/>
+                            <p:inputText value="#{chefConfigurationController.editorController.selected.chefClientName}"/>
+                            <h:outputText value="Chef Client Secret:"/>
+                            <p:inputTextarea value="#{chefConfigurationController.editorController.selected.chefClientSecret}"/>
+                            <h:outputText value="Chef Validaition Client:"/>
+                            <p:inputText value="#{chefConfigurationController.editorController.selected.chefValidationClientName}"/>
+                            <h:outputText value="Chef Validaition Client Secret:"/>
+                            <p:inputTextarea value="#{chefConfigurationController.editorController.selected.chefValidationClientSecret}"/>
+                        </h:panelGrid>
+                        <h:panelGroup rendered="#{chefConfigurationController.editorController.edit}">
+                                <p:commandButton value="Save" update="out" action="#{chefConfigurationController.editorController.save}"/>
+                                <p:commandButton value="Cancel" update="out" action="#{chefConfigurationController.editorController.cancel}"/>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{!chefConfigurationController.editorController.edit}">
+                                <p:commandButton value="Add" update="out" action="#{chefConfigurationController.editorController.add}"/>
+                                <p:commandButton value="Cancel" update="out" action="#{chefConfigurationController.editorController.cancel}"/>
+                        </h:panelGroup>
+                    </h:form>
+                </h:panelGroup>
+            </p:dialog>
+        </p:outputPanel>
+    </ui:define>
+</ui:composition>

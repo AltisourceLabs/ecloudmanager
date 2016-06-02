@@ -77,17 +77,17 @@
                     <p:growl id="messages" sticky="true" showDetail="true"/>
                 </h:form>
             </h:panelGroup>
-            <p:dialog header="Edit SSH Configuration" widgetVar="dlg_edit" modal="true" closeOnEscape="true" height="600" width="600" id="dlg_edit">
+            <p:dialog header="Edit SSH Configuration" widgetVar="dlg_edit" modal="true" closeOnEscape="true" style="width: 900px; position: absolute" id="dlg_edit">
                 <p:ajax event="close" listener="#{sshConfigurationController.editorController.handleClose}" />
                 <h:panelGroup>
-                    <h:form style="width: 95%;height: 95%">
+                    <h:form>
                         <h:panelGroup rendered="#{sshConfigurationController.editorController.edit}">
                             <h3>Edit ssh configuration "#{sshConfigurationController.editorController.selected.name}"</h3>
                         </h:panelGroup>
                         <h:panelGroup rendered="#{!sshConfigurationController.editorController.edit}">
-                            <h3>Add Service</h3>
+                            <h3>Add ssh configuration</h3>
                         </h:panelGroup>
-                        <h:panelGrid columns="2" cellpadding="5">
+                        <h:panelGrid columns="2" cellpadding="5" columnClasses="colLabel, colValue">
                             <h:outputText value="Name:"/>
                             <p:inputText value="#{sshConfigurationController.editorController.selected.name}"/>
                             <h:outputText value="Username:"/>
@@ -114,15 +114,14 @@
                             <p:password value="#{sshConfigurationController.editorController.selected.jumpHost2PrivateKeyPassphrase}" autocomplete="new-password" redisplay="true"/>
                         </h:panelGrid>
                         <h:panelGroup rendered="#{sshConfigurationController.editorController.edit}">
-                            <p><p:commandButton value="save" update="out" action="#{sshConfigurationController.editorController.save}"/>
-                                <p:commandButton value="cancel" update="out" action="#{sshConfigurationController.editorController.cancel}"/>
+                            <p><p:commandButton value="Save" update="out" action="#{sshConfigurationController.editorController.save}"/>
+                                <p:commandButton value="Cancel" update="out" action="#{sshConfigurationController.editorController.cancel}"/>
                             </p>
                         </h:panelGroup>
                         <h:panelGroup rendered="#{!sshConfigurationController.editorController.edit}">
-                            <p><p:commandButton value="add" update="out"
-                                                action="#{sshConfigurationController.editorController.add}"/><p:commandButton value="cancel"
-                                                                                                       update="out"
-                                                                                                       action="#{sshConfigurationController.editorController.cancel}"/>
+                            <p>
+                                <p:commandButton value="Add" update="out" action="#{sshConfigurationController.editorController.add}"/>
+                                <p:commandButton value="Cancel" update="out" action="#{sshConfigurationController.editorController.cancel}"/>
                             </p>
                         </h:panelGroup>
                     </h:form>

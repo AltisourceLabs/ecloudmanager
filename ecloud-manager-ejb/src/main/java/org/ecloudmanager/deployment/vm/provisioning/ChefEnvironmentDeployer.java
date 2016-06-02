@@ -35,6 +35,8 @@ import org.ecloudmanager.deployment.core.DeploymentConstraint;
 import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
 import org.ecloudmanager.deployment.vm.VMDeployment;
+import org.ecloudmanager.domain.chef.ChefConfiguration;
+import org.ecloudmanager.repository.ChefConfigurationRepository;
 import org.ecloudmanager.service.execution.Action;
 
 import javax.enterprise.inject.spi.CDI;
@@ -45,31 +47,31 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ChefEnvironmentDeployer implements Deployer<ChefEnvironment> {
-
-    //extends AbstractDeployer<ApplicationDeployment> {
     public static final String CHEF_CONFIG_NAME = "chef";
     public static final String CHEF_CONFIG_SERVER = "server";
     public static final String CHEF_CONFIG_VERSIONS = "cookbookVersions";
     public static final String CHEF_CONFIG_ATTRIBUTES = "environmentAttributes";
 
-    public static final String CHEF_SERVER_ADDRESS = "chefServerAddress";
-    public static final String CHEF_CLIENT_NAME = "chefClientName";
-    public static final String CHEF_CLIENT_SECRET = "chefClientSecret";
-    public static final String CHEF_VALIDATION_CLIENT_NAME = "chefValidationClientName";
-    public static final String CHEF_VALIDATION_CLIENT_SECRET = "chefValidationClientSecret";
+    public static final String CHEF_CONFIGURATION = "chefConfiguration";
 
     private ChefActions chefActions = CDI.current().select(ChefActions.class).get();
 
+    public static ChefConfiguration getChefConfiguration(ChefEnvironment chefEnvironment) {
+        DeploymentObject serverConfig = getServerConfig(chefEnvironment);
+        String configurationName = serverConfig.getConfigValue(CHEF_CONFIGURATION);
+        ChefConfigurationRepository chefConfigurationRepository = CDI.current().select(ChefConfigurationRepository.class).get();
+        return chefConfigurationRepository.find(configurationName);
+    }
 
     @Override
     public void specifyConstraints(ChefEnvironment deployment) {
         DeploymentConstraint config = getServerConfig(deployment);
-        config.addField(CHEF_SERVER_ADDRESS, "Chef server address");
-        config.addField(CHEF_CLIENT_NAME, "Chef client name");
-        config.addField(CHEF_CLIENT_SECRET, "Chef client secret");
-        config.addField(ConstraintField.builder().name(CHEF_VALIDATION_CLIENT_NAME).description("Chef validation " +
-            "client name").defaultValue("chef-validator").build());
-        config.addField(CHEF_VALIDATION_CLIENT_SECRET, "Chef validation client secret");
+        config.addField(ConstraintField.builder()
+                .name(CHEF_CONFIGURATION)
+                .description("Chef server configuration")
+                .suggestionsProvider(new ChefConfigurationSuggestionsProvider())
+                .build()
+        );
     }
 
     @Override

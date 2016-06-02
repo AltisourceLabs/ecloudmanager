@@ -25,9 +25,9 @@
 package org.ecloudmanager.service.chef;
 
 import org.apache.logging.log4j.Logger;
-import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironment;
 import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironmentDeployer;
+import org.ecloudmanager.domain.chef.ChefConfiguration;
 import org.jclouds.Constants;
 import org.jclouds.ContextBuilder;
 import org.jclouds.chef.ChefApi;
@@ -61,13 +61,13 @@ public class ChefApiService {
     }
 
     public ChefApi getChefApi(ChefEnvironment env) {
-        DeploymentObject config = ChefEnvironmentDeployer.getServerConfig(env);
+        ChefConfiguration chefConfiguration = ChefEnvironmentDeployer.getChefConfiguration(env);
         return createChefApi(
-            config.getConfigValue(ChefEnvironmentDeployer.CHEF_SERVER_ADDRESS),
-            config.getConfigValue(ChefEnvironmentDeployer.CHEF_CLIENT_NAME),
-            config.getConfigValue(ChefEnvironmentDeployer.CHEF_CLIENT_SECRET),
-            config.getConfigValue(ChefEnvironmentDeployer.CHEF_VALIDATION_CLIENT_NAME),
-            config.getConfigValue(ChefEnvironmentDeployer.CHEF_VALIDATION_CLIENT_SECRET)
+                chefConfiguration.getChefServerAddress(),
+                chefConfiguration.getChefClientName(),
+                chefConfiguration.getChefClientSecret(),
+                chefConfiguration.getChefValidationClientName(),
+                chefConfiguration.getChefValidationClientSecret()
         );
     }
 }

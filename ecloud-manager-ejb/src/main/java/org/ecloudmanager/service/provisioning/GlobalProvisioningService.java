@@ -35,12 +35,12 @@ import com.jcraft.jsch.Session;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
-import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.vm.VMDeployer;
 import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployer;
 import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironment;
 import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironmentDeployer;
+import org.ecloudmanager.domain.chef.ChefConfiguration;
 import org.ecloudmanager.domain.template.SshConfiguration;
 import org.ecloudmanager.jeecore.service.Service;
 import org.ecloudmanager.repository.SshConfigurationRepository;
@@ -88,9 +88,6 @@ public class GlobalProvisioningService {
         String nodeName = deployment.getConfigValue(VMDeployer.VM_NAME);
         log.info("Started provisioning of vm: " + nodeName);
 
-        DeploymentObject applicationDeployment = deployment.getTop();
-        DeploymentObject config = ChefEnvironmentDeployer.getServerConfig(deployment.getChefEnvironment());
-
         String ipAddress = InfrastructureDeployer.getIP(deployment);
         String sshConfigurationName = VMDeployer.getSshConfiguration(deployment);
         Stack<Session> sessionsChain = createSshSessionChain(sshConfigurationName, ipAddress);
@@ -106,8 +103,8 @@ public class GlobalProvisioningService {
                 nodeName);
             transferChannel.put(clientRbStream, "client.rb");
 
-            transferChannel.put(new ByteArrayInputStream(config.getConfigValue(ChefEnvironmentDeployer
-                .CHEF_VALIDATION_CLIENT_SECRET).getBytes()), "chef-validator.pem");
+            ChefConfiguration chefConfiguration = ChefEnvironmentDeployer.getChefConfiguration(deployment.getChefEnvironment());
+            transferChannel.put(new ByteArrayInputStream(chefConfiguration.getChefValidationClientSecret().getBytes()), "chef-validator.pem");
         }
 
         InputStream nodeConfigJsonStream = generateNodeJson(deployment, "\"recipe[hostnames]\"");
@@ -232,13 +229,12 @@ public class GlobalProvisioningService {
         MustacheFactory mf = new UnescapedMustacheFactory();
         Mustache mustache = mf.compile(new InputStreamReader(clientRbTemplate), "client.rb");
 
-        DeploymentObject config = ChefEnvironmentDeployer.getServerConfig(env);
+        ChefConfiguration chefConfiguration = ChefEnvironmentDeployer.getChefConfiguration(env);
         HashMap<String, String> scopes = new HashMap<>();
         scopes.put("node_name", nodeName);
-        scopes.put("chef_server_url", config.getConfigValue(ChefEnvironmentDeployer.CHEF_SERVER_ADDRESS));
+        scopes.put("chef_server_url", chefConfiguration.getChefServerAddress());
         scopes.put("environment", env.getTop().getName());
-        scopes.put("validation_client_name", config.getConfigValue(ChefEnvironmentDeployer
-                .CHEF_VALIDATION_CLIENT_NAME));
+        scopes.put("validation_client_name", chefConfiguration.getChefValidationClientName());
 
         StringWriter writer = new StringWriter();
         mustache.execute(writer, scopes);

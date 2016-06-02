@@ -22,13 +22,13 @@
  * SOFTWARE.
  */
 
-package org.ecloudmanager.deployment.gateway;
+package org.ecloudmanager.deployment.vm.provisioning;
 
 import org.ecloudmanager.deployment.core.ConstraintFieldSuggestion;
 import org.ecloudmanager.deployment.core.ConstraintFieldSuggestionsProvider;
 import org.ecloudmanager.deployment.core.DeploymentConstraint;
-import org.ecloudmanager.repository.deployment.GatewayRepository;
-import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
+import org.ecloudmanager.domain.chef.ChefConfiguration;
+import org.ecloudmanager.service.template.ChefConfigurationService;
 
 import javax.enterprise.inject.spi.CDI;
 import java.util.List;
@@ -36,15 +36,13 @@ import java.util.stream.Collectors;
 
 import static org.ecloudmanager.deployment.core.ConstraintFieldSuggestion.suggestionsList;
 
-public class GatewaySuggestionsProvider implements ConstraintFieldSuggestionsProvider {
+public class ChefConfigurationSuggestionsProvider implements ConstraintFieldSuggestionsProvider {
     @Override
     public List<ConstraintFieldSuggestion> getSuggestions(DeploymentConstraint deploymentConstraint) {
-        GatewayRepository gatewayRepository = CDI.current().select(GatewayRepository.class).get();
-        ApplicationDeploymentService applicationDeploymentService = CDI.current().select(ApplicationDeploymentService.class).get();
-        List<String> gatewayNames = gatewayRepository.getAll().stream()
-                .filter(applicationDeploymentService::isDeployed)
-                .map(GatewayDeployment::getName)
+        ChefConfigurationService chefConfigurationService = CDI.current().select(ChefConfigurationService.class).get();
+        List<String> chefConfigNames = chefConfigurationService.getAllForCurrentUser().stream()
+                .map(ChefConfiguration::getName)
                 .collect(Collectors.toList());
-        return suggestionsList(gatewayNames);
+        return suggestionsList(chefConfigNames);
     }
 }
