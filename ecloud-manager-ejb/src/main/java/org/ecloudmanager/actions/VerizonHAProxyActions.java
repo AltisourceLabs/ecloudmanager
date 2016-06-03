@@ -22,26 +22,31 @@
  * SOFTWARE.
  */
 
-package org.ecloudmanager.deployment.vm.infrastructure;
+package org.ecloudmanager.actions;
 
-import org.ecloudmanager.actions.VerizonHAProxyActions;
 import org.ecloudmanager.deployment.ps.ProducedServiceDeployment;
+import org.ecloudmanager.jeecore.service.Service;
 import org.ecloudmanager.service.execution.Action;
+import org.ecloudmanager.service.verizon.VmService;
 
-import javax.enterprise.inject.spi.CDI;
+import javax.inject.Inject;
 
-public class VerizonInfrastructureHAProxyDeployer extends InfrastructureHAProxyDeployer {
-    private VerizonHAProxyActions verizonHAProxyActions = CDI.current().select(VerizonHAProxyActions.class).get();
+@Service
+public class VerizonHAProxyActions {
+    @Inject
+    private VmService vmService;
 
-    @Override
-    public Action getCreateAction(ProducedServiceDeployment deployable) {
-        // create public endpoints for haproxy
-        return verizonHAProxyActions.getCreatePublicEndpointFirewallRulesAction(deployable);
+    public Action getCreatePublicEndpointFirewallRulesAction(ProducedServiceDeployment producedServiceDeployment) {
+        return null;
+//        return Action.single("Create Firewall Rules for Public Endpoints", () -> {
+//            vmService.createFirewallRules(producedServiceDeployment);
+//        }, producedServiceDeployment);
     }
 
-    @Override
-    public Action getDeleteAction(ProducedServiceDeployment deployable) {
-        // delete public endpoints for haproxy
-        return verizonHAProxyActions.getDeletePublicEndpointFirewallRulesAction(deployable);
+    public Action getDeletePublicEndpointFirewallRulesAction(ProducedServiceDeployment producedServiceDeployment) {
+        return null;
+//        return Action.single("Delete Firewall Rules for Public Endpoints", () -> {
+//            vmService.deleteFirewallRules(producedServiceDeployment);
+//        }, producedServiceDeployment);
     }
 }

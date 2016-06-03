@@ -47,14 +47,13 @@ public class GatewayVMDeployment extends VMDeployment {
         selinux.setVersion("= 0.9.0");
         ChefAttribute selinuxAttribute = new ChefAttribute("selinux",
                 "{" +
-                "\"state\": \"enforcing\", " +
                 "\"booleans\": {\"haproxy_connect_any\": 1 }" +
                 "}");
         selinuxAttribute.setEnvironmentAttribute(false);
         selinux.addChefAttribute(selinuxAttribute);
 
         Recipe haproxy = new Recipe("haproxy");
-        haproxy.setVersion("= 1.6.7");
+        haproxy.setVersion("= 1.6.6");
         ChefAttribute attribute = new ChefAttribute("haproxy",
                 "{" +
                 "\"members\":[], " +

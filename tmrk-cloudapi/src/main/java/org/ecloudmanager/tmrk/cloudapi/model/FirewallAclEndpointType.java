@@ -180,4 +180,9 @@ public class FirewallAclEndpointType {
         this.trustedNetworkGroup = value;
     }
 
+    @Override
+    public String toString() {
+        String ip = ipAddress == null || ipAddress.getValue() == null ? "" : ipAddress.getValue().getName();
+        return "FirewallAclEndpointType[type:" + type.toString() + "; ip:" + ip +"]";
+    }
 }

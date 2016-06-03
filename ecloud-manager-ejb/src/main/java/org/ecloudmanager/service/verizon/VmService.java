@@ -29,7 +29,9 @@ import org.apache.logging.log4j.Logger;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.core.Endpoint;
+import org.ecloudmanager.deployment.ps.HAProxyDeployer;
 import org.ecloudmanager.deployment.ps.ProducedServiceDeployment;
+import org.ecloudmanager.deployment.vm.GatewayVMDeployment;
 import org.ecloudmanager.deployment.vm.VMDeployer;
 import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
@@ -399,6 +401,35 @@ public class VmService extends ServiceSupport {
         );
     }
 
+//    public void deleteFirewallRules(ProducedServiceDeployment producedServiceDeployment) {
+//        ApplicationDeployment ad = (ApplicationDeployment) producedServiceDeployment.getTop();
+//        // TODO - here we use the same port from endpoint both for frontend and backend. They should be different.
+//        // Delete firewall rule for haproxy frontend if there's a public endpoint
+//        producedServiceDeployment.children(Endpoint.class).forEach(endpoint -> {
+//            int port = Integer.parseInt(endpoint.getConfigValue("port"));
+//            String publicEndpointName = producedServiceDeployment.getName() + ":" + endpoint.getName();
+//            if (ad.getPublicEndpoints().contains(publicEndpointName)) {
+//                GatewayVMDeployment gatewayVmDeployment = HAProxyDeployer.getGatewayVmDeployment(producedServiceDeployment);
+//                // TODO - delete firewall rule
+//            }
+//        });
+//    }
+//
+//    public void createFirewallRules(ProducedServiceDeployment producedServiceDeployment) {
+//        ApplicationDeployment ad = (ApplicationDeployment) producedServiceDeployment.getTop();
+//        // TODO - here we use the same port from endpoint both for frontend and backend. They should be different.
+//        // Create firewall rule for haproxy frontend if there's a public endpoint
+//        producedServiceDeployment.children(Endpoint.class).forEach(e -> {
+//            int port = Integer.parseInt(e.getConfigValue("port"));
+//            String publicEndpointName = producedServiceDeployment.getName() + ":" + e.getName();
+//            if (ad.getPublicEndpoints().contains(publicEndpointName)) {
+//                log.info("Creating firewall rule for public endpoint " + publicEndpointName);
+//                GatewayVMDeployment gatewayVmDeployment = HAProxyDeployer.getGatewayVmDeployment(producedServiceDeployment);
+//                FirewallAclType result = createFirewallRule(getEnv(gatewayVmDeployment), firewallAclEndpointTypeAny(), firewallAclEndpointType(gatewayVmDeployment), port);
+//            }
+//        });
+//    }
+
     public void createFirewallRules(VMDeployment deployment) {
         ApplicationDeployment ad = (ApplicationDeployment) deployment.getTop();
         if (deployment.getTop() == deployment.getParent()) {
@@ -416,8 +447,7 @@ public class VmService extends ServiceSupport {
             deployment.getVirtualMachineTemplate().getEndpoints().forEach(e -> {
                 if (e.getPort() != null) {
                     int port = e.getPort();
-
-//                    FirewallAclType result = createFirewallRule(getEnv(deployment), haProxyFirewallAclEndpointType(psd), firewallAclEndpointType(deployment), port);
+                    FirewallAclType result = createFirewallRule(getEnv(deployment), haProxyFirewallAclEndpointType(psd), firewallAclEndpointType(deployment), port);
 //                    String href = result.getHref();
                 }
             });
@@ -439,6 +469,8 @@ public class VmService extends ServiceSupport {
     }
 
     public FirewallAclType createFirewallRule(String envId, FirewallAclEndpointType source, FirewallAclEndpointType dest, long port) {
+        log.info("Create firewall rule from " + source + " to " + dest + ", port " + port);
+
         CreateFirewallAclType firewallAcl = objectFactory.createCreateFirewallAclType();
 
         firewallAcl.setPermission(AclPermissionTypeEnum.ALLOW);
@@ -456,10 +488,15 @@ public class VmService extends ServiceSupport {
         try {
             result = firewallRuleService.createFirewallRuleForEnvironment(envId, request);
         } catch (Throwable t) {
-            t.printStackTrace();
+            log.error("Failed to create firewall rule", t);
+            throw t;
         }
-        return result;
 
+        if (result != null) {
+            log.info("Firewall rule was created successfully: " + result.getHref());
+        }
+
+        return result;
     }
 
     private FirewallAclEndpointType firewallAclEndpointType(VMDeployment deployment) {
@@ -502,7 +539,8 @@ public class VmService extends ServiceSupport {
     }
 
     private FirewallAclEndpointType haProxyFirewallAclEndpointType(ProducedServiceDeployment deployment) {
-        return firewallAclEndpointTypeAny(); //FIXME
+        GatewayVMDeployment gatewayVmDeployment = HAProxyDeployer.getGatewayVmDeployment(deployment);
+        return firewallAclEndpointType(gatewayVmDeployment);
     }
 
     public void assignIp(String vmId, String network, String ipAddress) {
@@ -528,6 +566,7 @@ public class VmService extends ServiceSupport {
         dnt.getNetwork().add(dn);
         assignedIp.setNetworks(objectFactory.createAssignedIpAddressesTypeNetworks(dnt));
         TaskType task = virtualMachineService.editVirtulMachineAssignedIp(vmId, assignedIp);
+        task.setName("assign ip address " + ipAddress + " to " + vmId);
         waitUntilTaskNotFinished(task);
     }
 }
