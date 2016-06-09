@@ -173,6 +173,7 @@
                                                      converter="stringListConverter"/>
                                     <p:commandButton value="Configure Frontend..."
                                                      oncomplete="PF('dlg_configure_frontend').show()"
+                                                     update="@widgetVar(dlg_configure_frontend)"
                                                      disabled="#{empty producedServiceTemplateController.value}"/>
                                 </p:panel>
 
@@ -198,8 +199,8 @@
                 </h:panelGroup>
             </p:dialog>
 
-            <p:dialog header="Configure Frontend" widgetVar="dlg_configure_frontend" modal="true" closeOnEscape="true" style="width: 900px" rendered="#{producedServiceTemplateController.value ne null}">
-                <h:panelGroup>
+            <p:dialog header="Configure Frontend" widgetVar="dlg_configure_frontend" modal="true" closeOnEscape="true" style="width: 900px">
+                <h:panelGroup rendered="#{producedServiceTemplateController.value ne null}">
                     <h:form>
                         <h3>Configure HAProxy Frontend</h3>
                         <p:remoteCommand name="onload" update="preview" autoRun="true" />
