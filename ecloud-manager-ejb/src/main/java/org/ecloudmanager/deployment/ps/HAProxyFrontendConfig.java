@@ -31,6 +31,8 @@ public class HAProxyFrontendConfig {
 
     private String name;
 
+    private String defaultBackend;
+    private List<BackendWeight> backendWeights = new ArrayList<>();
     private List<String> config = new ArrayList<>();
 
     public HAProxyFrontendConfig() {
@@ -39,6 +41,8 @@ public class HAProxyFrontendConfig {
     public HAProxyFrontendConfig(HAProxyFrontendConfig cfg) {
         name = cfg.getName();
         config.addAll(cfg.getConfig());
+        backendWeights.addAll(cfg.getBackendWeights());
+        defaultBackend = cfg.getDefaultBackend();
     }
 
     public List<String> getConfig() {
@@ -57,4 +61,19 @@ public class HAProxyFrontendConfig {
         this.name = name;
     }
 
+    public String getDefaultBackend() {
+        return defaultBackend;
+    }
+
+    public void setDefaultBackend(String defaultBackend) {
+        this.defaultBackend = defaultBackend;
+    }
+
+    public List<BackendWeight> getBackendWeights() {
+        return backendWeights;
+    }
+
+    public void setBackendWeights(List<BackendWeight> backendWeights) {
+        this.backendWeights = backendWeights;
+    }
 }

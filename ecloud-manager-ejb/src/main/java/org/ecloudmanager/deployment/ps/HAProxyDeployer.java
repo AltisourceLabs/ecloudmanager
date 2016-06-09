@@ -24,6 +24,7 @@
 
 package org.ecloudmanager.deployment.ps;
 
+import org.apache.commons.lang3.StringUtils;
 import org.ecloudmanager.deployment.core.AbstractDeployer;
 import org.ecloudmanager.deployment.core.ConstraintField;
 import org.ecloudmanager.deployment.core.EndpointTemplate;
@@ -127,14 +128,37 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
 
     @NotNull
     private List<String> getFrontendConfigWithBind(ProducedServiceDeployment serviceDeployment) {
-        List<String> config = new ArrayList<>();
+        HAProxyFrontendConfig frontendConfig = serviceDeployment.getHaProxyFrontendConfig();
+
+        List<String> config = generateHAProxyFrontendConfig(frontendConfig);
 
         String port = serviceDeployment.getConfigValue(PORT);
         String ip = serviceDeployment.getConfigValue(BIND_IP);
 
-
         config.add("bind " + ip + ":" + port);
-        config.addAll(serviceDeployment.getHaProxyFrontendConfig().getConfig());
+
+        return config;
+    }
+
+    @NotNull
+    public static List<String> generateHAProxyFrontendConfig(HAProxyFrontendConfig frontendConfig) {
+        List<String> config = new ArrayList<>();
+
+        // A/B testing ACLs
+        int totalWeight = 100;
+        for (BackendWeight backendWeight : frontendConfig.getBackendWeights()) {
+            String backend = backendWeight.getBackendName();
+            Integer weight = backendWeight.getWeight();
+            config.add("acl use-" + backend + " rand(" + totalWeight + ") lt " + weight);
+            config.add("use_backend " + backend + " if use-" + backend);
+            totalWeight -= weight;
+        }
+
+        if (!StringUtils.isEmpty(frontendConfig.getDefaultBackend())) {
+            config.add("default_backend " + frontendConfig.getDefaultBackend());
+        }
+
+        config.addAll(frontendConfig.getConfig());
         return config;
     }
 

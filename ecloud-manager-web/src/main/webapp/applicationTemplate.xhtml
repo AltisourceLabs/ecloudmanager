@@ -121,6 +121,13 @@
                       width="600" id="dlg_edit_service">
                 <h:panelGroup>
                     <h:form style="width: 95%;height: 95%">
+                        <p:confirmDialog id="confirm" global="true" showEffect="fade" hideEffect="fade">
+                            <p:commandButton id="yes" value="Yes" type="button" styleClass="ui-confirmdialog-yes"
+                                             icon="ui-icon-check"/>
+                            <p:commandButton id="no" value="No" type="button" styleClass="ui-confirmdialog-no"
+                                             icon="ui-icon-close"/>
+                        </p:confirmDialog>
+
                         <p:outputPanel id="attrDetail" rendered="#{not empty producedServiceTemplateController.value}">
                             <p:panelGrid id="panel_attr_details" columns="2" style="margin-bottom:10px"
                                          styleClass="ui-panelgrid-blank" cellpadding="5">
@@ -129,36 +136,46 @@
                                 <p:inputText id="op_key"
                                              value="#{producedServiceTemplateController.value.name}">
                                 </p:inputText>
-                                <p:outputLabel value="HAProxy Frontend configuration:"/>
-                                <p:inputTextarea rows="6" cols="33"
-                                                 value="#{producedServiceTemplateController.value.haProxyFrontendConfig.config}"
-                                                 converter="stringListConverter"/>
-                                <p:outputLabel value="Component Groups:"/>
-                                <p:dataTable id="cg" var="cg"
-                                             value="#{producedServiceTemplateController.value.componentGroups}"
-                                             resizableColumns="true" liveResize="true">
 
-                                    <p:column width="30%" headerText="Name" sortBy="#{cg.name}">
-                                        <h:outputText value="#{cg.name}"/>
-                                    </p:column>
-                                    <p:column width="40%" headerText="VM">
-                                        <h:outputText value="#{cg.virtualMachineTemplate}"/>
-                                    </p:column>
-                                    <p:column width="60">
-                                        <p:commandButton title="Edit" icon="ui-icon-pencil"
-                                                         action="#{producedServiceTemplateController.startEditComponentGroup(cg)}"
-                                        />
-                                        <p:commandButton title="Delete" icon="ui-icon-close"
-                                                         update="out"
-                                                         action="#{producedServiceTemplateController.deleteComponentGroup(cg)}">
-                                            <p:confirm header="Confirmation" message="Are you sure?"
-                                                       icon="ui-icon-alert"/>
-                                        </p:commandButton>
-                                    </p:column>
-                                </p:dataTable>
-                                <p:outputLabel value=""/>
-                                <p:commandButton value="New" icon="ui-icon-plus"
+                                <p:outputLabel value="Component Groups:"/>
+                                <p:panel>
+                                    <p:dataTable id="cg" var="cg"
+                                                 value="#{producedServiceTemplateController.value.componentGroups}"
+                                                 resizableColumns="true" liveResize="true">
+
+                                        <p:column width="30%" headerText="Name" sortBy="#{cg.name}">
+                                            <h:outputText value="#{cg.name}"/>
+                                        </p:column>
+                                        <p:column width="40%" headerText="VM">
+                                            <h:outputText value="#{cg.virtualMachineTemplate}"/>
+                                        </p:column>
+                                        <p:column width="60">
+                                            <p:commandButton title="Edit" icon="ui-icon-pencil"
+                                                             action="#{producedServiceTemplateController.startEditComponentGroup(cg)}"
+                                            />
+                                            <p:commandButton title="Delete" icon="ui-icon-close"
+                                                             update="cg"
+                                                             action="#{producedServiceTemplateController.deleteComponentGroup(cg)}">
+                                                <p:confirm header="Confirmation" message="Are you sure?"
+                                                           icon="ui-icon-alert"/>
+                                            </p:commandButton>
+                                        </p:column>
+                                    </p:dataTable>
+                                    <p:commandButton value="New" icon="ui-icon-plus"
                                                  action="#{producedServiceTemplateController.newComponentGroup()}"/>
+                                </p:panel>
+
+                                <p:outputLabel value="HAProxy Frontend configuration:"/>
+                                <p:panel>
+                                    <p:inputTextarea id="frontend_config_preview" rows="6" style="width: 100%; box-sizing: border-box;" readonly="true"
+                                                     widgetVar="v_frontend_config_preview"
+                                                     value="#{producedServiceTemplateController.generateHaproxyFrontendConfig()}"
+                                                     converter="stringListConverter"/>
+                                    <p:commandButton value="Configure Frontend..."
+                                                     oncomplete="PF('dlg_configure_frontend').show()"
+                                                     disabled="#{empty producedServiceTemplateController.value}"/>
+                                </p:panel>
+
                                 <p:outputLabel value="Endpoint:"/>
                                 <p:panel>
                                     <components:endpoint value="#{producedServiceTemplateController.value.endpoint}"
@@ -177,6 +194,50 @@
                                 />
                             </p:panelGrid>
                         </p:outputPanel>
+                    </h:form>
+                </h:panelGroup>
+            </p:dialog>
+
+            <p:dialog header="Configure Frontend" widgetVar="dlg_configure_frontend" modal="true" closeOnEscape="true" style="width: 900px" rendered="#{producedServiceTemplateController.value ne null}">
+                <h:panelGroup>
+                    <h:form>
+                        <h3>Configure HAProxy Frontend</h3>
+                        <p:remoteCommand name="onload" update="preview" autoRun="true" />
+                        <h:panelGrid columns="2" cellpadding="5" columnClasses="colLabel, colValue">
+                            <h:outputText value="Default Backend:"/>
+                            <p:selectOneMenu value="#{producedServiceTemplateController.value.haProxyFrontendConfig.defaultBackend}">
+                                <p:ajax update="preview"/>
+                                <f:selectItems value="#{producedServiceTemplateController.value.componentGroups}" var="group" itemLabel="#{group.name}" itemValue="#{group.name}"/>
+                            </p:selectOneMenu>
+                            <h:outputText value="Enable A/B Testing:"/>
+                            <p:selectBooleanButton
+                                    onIcon="fa fa-toggle-on" onLabel="On"
+                                    offLabel="Off" offIcon="fa fa-toggle-off"
+                                    value="#{producedServiceTemplateController.abTestingEnabled}"
+                            >
+                                <p:ajax update="preview, weights"/>
+                            </p:selectBooleanButton>
+                            <h:outputText value="Component Group Weights:"/>
+                            <p:dataTable id="weights" var="backendWeight" value="#{producedServiceTemplateController.value.haProxyFrontendConfig.backendWeights}">
+                                <p:column width="80%" headerText="Component Group">
+                                    <h:outputText value="#{backendWeight.backendName}"/>
+                                </p:column>
+                                <p:column headerText="Weight, %">
+                                    <h:inputText value="#{backendWeight.weight}">
+                                        <p:ajax update="@widgetVar(v_preview)"/>
+                                    </h:inputText>
+                                </p:column>
+                            </p:dataTable>
+                            <h:outputText value="Custom Configuration:"/>
+                            <p:inputTextarea rows="6" converter="stringListConverter" value="#{producedServiceTemplateController.value.haProxyFrontendConfig.config}">
+                                <p:ajax update="preview"/>
+                            </p:inputTextarea>
+                            <h:outputText value="Preview Configuration:"/>
+                            <p:inputTextarea id="preview" widgetVar="v_preview" rows="6" readonly="true" converter="stringListConverter" value="#{producedServiceTemplateController.generateHaproxyFrontendConfig()}"/>
+                        </h:panelGrid>
+                        <h:panelGroup>
+                            <p:commandButton value="Done" update="@widgetVar(v_frontend_config_preview)" oncomplete="PF('dlg_configure_frontend').hide()"/>
+                        </h:panelGroup>
                     </h:form>
                 </h:panelGroup>
             </p:dialog>

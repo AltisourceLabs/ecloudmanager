@@ -24,6 +24,8 @@
 
 package org.ecloudmanager.web.faces;
 
+import org.ecloudmanager.deployment.ps.BackendWeight;
+import org.ecloudmanager.deployment.ps.HAProxyDeployer;
 import org.ecloudmanager.deployment.ps.ProducedServiceTemplate;
 import org.ecloudmanager.deployment.ps.cg.ComponentGroupTemplate;
 import org.ecloudmanager.jeecore.web.faces.Controller;
@@ -33,6 +35,8 @@ import org.primefaces.context.RequestContext;
 import org.primefaces.event.CloseEvent;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.List;
 
 @Controller
 public class ProducedServiceTemplateController extends FacesSupport implements Serializable {
@@ -61,7 +65,7 @@ public class ProducedServiceTemplateController extends FacesSupport implements S
     }
 
     public void deleteComponentGroup(ComponentGroupTemplate componentGroupTemplate) {
-
+        value.getComponentGroups().remove(componentGroupTemplate);
     }
 
     public void newComponentGroup() {
@@ -100,4 +104,27 @@ public class ProducedServiceTemplateController extends FacesSupport implements S
 
     }
 
+    public boolean getAbTestingEnabled() {
+        return value.getHaProxyFrontendConfig().getBackendWeights().size() > 0;
+    }
+
+    public void setAbTestingEnabled(boolean abTestingEnabled) {
+        List<BackendWeight> weights = value.getHaProxyFrontendConfig().getBackendWeights();
+        if (!abTestingEnabled) {
+            weights.clear();
+        } else if (weights.isEmpty()) {
+            List<ComponentGroupTemplate> componentGroups = value.getComponentGroups();
+            componentGroups.forEach((componentGroup) -> {
+                weights.add(new BackendWeight(componentGroup.getName(), 100/componentGroups.size()));
+            });
+            if (weights.size() > 0) {
+                int sum = weights.stream().mapToInt(BackendWeight::getWeight).sum();
+                weights.get(0).setWeight(weights.get(0).getWeight() + 100 - sum);
+            }
+        }
+    }
+
+    public List<String> generateHaproxyFrontendConfig() {
+        return value == null ? Collections.emptyList() : HAProxyDeployer.generateHAProxyFrontendConfig(value.getHaProxyFrontendConfig());
+    }
 }
