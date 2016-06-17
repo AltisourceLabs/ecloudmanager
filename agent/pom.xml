@@ -24,6 +24,7 @@
         <module>swagger</module>
         <module>model</module>
         <module>client</module>
+        <module>inflector</module>
     </modules>
     <build>
         <pluginManagement>
