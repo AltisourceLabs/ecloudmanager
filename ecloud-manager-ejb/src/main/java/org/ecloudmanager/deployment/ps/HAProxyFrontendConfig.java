@@ -31,7 +31,9 @@ public class HAProxyFrontendConfig {
 
     private String name;
 
+    private HAProxyMode mode = HAProxyMode.HTTP;
     private String defaultBackend;
+    private boolean stickyBackends;
     private List<BackendWeight> backendWeights = new ArrayList<>();
     private List<String> config = new ArrayList<>();
 
@@ -43,6 +45,8 @@ public class HAProxyFrontendConfig {
         config.addAll(cfg.getConfig());
         backendWeights.addAll(cfg.getBackendWeights());
         defaultBackend = cfg.getDefaultBackend();
+        stickyBackends = cfg.getStickyBackends();
+        mode = cfg.getMode();
     }
 
     public List<String> getConfig() {
@@ -75,5 +79,21 @@ public class HAProxyFrontendConfig {
 
     public void setBackendWeights(List<BackendWeight> backendWeights) {
         this.backendWeights = backendWeights;
+    }
+
+    public boolean getStickyBackends() {
+        return stickyBackends;
+    }
+
+    public void setStickyBackends(boolean stickyBackends) {
+        this.stickyBackends = stickyBackends;
+    }
+
+    public HAProxyMode getMode() {
+        return mode;
+    }
+
+    public void setMode(HAProxyMode mode) {
+        this.mode = mode;
     }
 }

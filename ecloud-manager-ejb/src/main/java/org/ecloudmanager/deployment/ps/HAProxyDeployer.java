@@ -32,6 +32,7 @@ import org.ecloudmanager.deployment.gateway.GatewayDeployer;
 import org.ecloudmanager.deployment.gateway.GatewayDeployment;
 import org.ecloudmanager.deployment.gateway.GatewaySuggestionsProvider;
 import org.ecloudmanager.deployment.ps.cg.ComponentGroupDeployment;
+import org.ecloudmanager.deployment.ps.cg.HAProxyBackendConfig;
 import org.ecloudmanager.deployment.vm.GatewayVMDeployment;
 import org.ecloudmanager.deployment.vm.VMDeployer;
 import org.ecloudmanager.deployment.vm.VMDeployment;
@@ -95,7 +96,8 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
         HAProxyConfigurator configurator = getConfigurator(serviceDeployment);
         configurator.saveFrontend(serviceDeployment.getName(), config);
         for (ComponentGroupDeployment componentGroupDeployment : serviceDeployment.getComponentGroups()) {
-            configurator.saveBackend(componentGroupDeployment.getName(), componentGroupDeployment.getHaProxyBackendConfig().getConfig());
+            List<String> backendConfig = generateHAProxyBackendConfig(componentGroupDeployment.getName(), componentGroupDeployment.getHaProxyBackendConfig());
+            configurator.saveBackend(componentGroupDeployment.getName(), backendConfig);
 
             componentGroupDeployment.stream(VMDeployment.class).forEach(vmDeployment -> {
                 String serverName = vmDeployment.getConfigValue(VMDeployer.VM_NAME);
@@ -108,7 +110,7 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
                         serverName,
                         ip,
                         port,
-                        componentGroupDeployment.getHaProxyBackendConfig().getServerOptions()
+                        generateHAProxyServerOptions(serverName, componentGroupDeployment.getHaProxyBackendConfig())
                     );
             });
         }
@@ -130,7 +132,7 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
     private List<String> getFrontendConfigWithBind(ProducedServiceDeployment serviceDeployment) {
         HAProxyFrontendConfig frontendConfig = serviceDeployment.getHaProxyFrontendConfig();
 
-        List<String> config = generateHAProxyFrontendConfig(frontendConfig);
+        List<String> config = generateHAProxyFrontendConfig(serviceDeployment.getName(), frontendConfig);
 
         String port = serviceDeployment.getConfigValue(PORT);
         String ip = serviceDeployment.getConfigValue(BIND_IP);
@@ -140,12 +142,20 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
         return config;
     }
 
-    @NotNull
-    public static List<String> generateHAProxyFrontendConfig(HAProxyFrontendConfig frontendConfig) {
+    public static List<String> generateHAProxyFrontendConfig(String frontendName, HAProxyFrontendConfig frontendConfig) {
         List<String> config = new ArrayList<>();
 
         // A/B testing ACLs
         int totalWeight = 100;
+
+        config.add("mode " + frontendConfig.getMode());
+
+        if (frontendConfig.getStickyBackends() && frontendConfig.getMode() == HAProxyMode.HTTP) {
+            config.add("acl cook-present req.cook(" + frontendName + "-BACKENDID) -m found");
+            config.add("use_backend %[req.cook(" + frontendName + "-BACKENDID)] if cook-present");
+            config.add("http-response add-header Set-Cookie " + frontendName + "-BACKENDID=%b");
+        }
+
         for (BackendWeight backendWeight : frontendConfig.getBackendWeights()) {
             String backend = backendWeight.getBackendName();
             Integer weight = backendWeight.getWeight();
@@ -159,6 +169,27 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
         }
 
         config.addAll(frontendConfig.getConfig());
+        return config;
+    }
+
+    public static String generateHAProxyServerOptions(String serverName, HAProxyBackendConfig backendConfig) {
+        StringBuilder options = new StringBuilder(backendConfig.getServerOptions());
+        if (backendConfig.getStickyServers() && backendConfig.getMode() == HAProxyMode.HTTP) {
+            options.append(" cookie " + serverName);
+        }
+        return options.toString();
+    }
+
+    public static List<String> generateHAProxyBackendConfig(String name, HAProxyBackendConfig backendConfig) {
+        List<String> config = new ArrayList<>();
+
+        config.add("mode " + backendConfig.getMode());
+
+        if (backendConfig.getStickyServers() && backendConfig.getMode() == HAProxyMode.HTTP) {
+            config.add("cookie " + name + "-SRVID insert indirect nocache");
+        }
+
+        config.addAll(backendConfig.getConfig());
         return config;
     }
 

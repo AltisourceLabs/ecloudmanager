@@ -125,6 +125,6 @@ public class ProducedServiceTemplateController extends FacesSupport implements S
     }
 
     public List<String> generateHaproxyFrontendConfig() {
-        return value == null ? Collections.emptyList() : HAProxyDeployer.generateHAProxyFrontendConfig(value.getHaProxyFrontendConfig());
+        return value == null ? Collections.emptyList() : HAProxyDeployer.generateHAProxyFrontendConfig(value.getName(), value.getHaProxyFrontendConfig());
     }
 }

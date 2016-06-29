@@ -24,6 +24,8 @@
 
 package org.ecloudmanager.deployment.ps.cg;
 
+import org.ecloudmanager.deployment.ps.HAProxyMode;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +34,8 @@ public class HAProxyBackendConfig {
     private String name;
 
     private List<String> config = new ArrayList<>();
+    private HAProxyMode mode = HAProxyMode.HTTP;
+    private boolean stickyServers;
     private String serverOptions;
 
     public HAProxyBackendConfig() {
@@ -41,6 +45,8 @@ public class HAProxyBackendConfig {
         name = cfg.getName();
         config.addAll(cfg.getConfig());
         serverOptions = cfg.getServerOptions();
+        stickyServers = cfg.getStickyServers();
+        mode = cfg.getMode();
     }
 
     public List<String> getConfig() {
@@ -65,5 +71,21 @@ public class HAProxyBackendConfig {
 
     public void setServerOptions(String serverOptions) {
         this.serverOptions = serverOptions;
+    }
+
+    public boolean getStickyServers() {
+        return stickyServers;
+    }
+
+    public void setStickyServers(boolean stickyServers) {
+        this.stickyServers = stickyServers;
+    }
+
+    public HAProxyMode getMode() {
+        return mode;
+    }
+
+    public void setMode(HAProxyMode mode) {
+        this.mode = mode;
     }
 }

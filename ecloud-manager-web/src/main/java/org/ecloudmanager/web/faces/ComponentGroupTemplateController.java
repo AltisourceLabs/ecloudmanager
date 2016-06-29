@@ -24,6 +24,7 @@
 
 package org.ecloudmanager.web.faces;
 
+import org.ecloudmanager.deployment.ps.HAProxyDeployer;
 import org.ecloudmanager.deployment.ps.cg.ComponentGroupTemplate;
 import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
 import org.ecloudmanager.jeecore.web.faces.Controller;
@@ -33,6 +34,7 @@ import org.ecloudmanager.repository.template.VirtualMachineTemplateRepository;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
 
 @Controller
@@ -65,5 +67,8 @@ public class ComponentGroupTemplateController extends FacesSupport implements Se
         this.value = value;
     }
 
+    public List<String> generateHaproxyBackendConfig() {
+        return value == null ? Collections.emptyList() : HAProxyDeployer.generateHAProxyBackendConfig(value.getName(), value.getHaProxyBackendConfig());
+    }
 
 }
