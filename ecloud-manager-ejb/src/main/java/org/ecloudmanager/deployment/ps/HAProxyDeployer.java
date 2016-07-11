@@ -39,6 +39,9 @@ import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployer;
 import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureHAProxyDeployer;
 import org.ecloudmanager.repository.deployment.GatewayRepository;
+import org.ecloudmanager.service.deployment.geolite.AclOperator;
+import org.ecloudmanager.service.deployment.geolite.GeolocationExpr;
+import org.ecloudmanager.service.deployment.geolite.GeolocationRecordType;
 import org.ecloudmanager.service.execution.Action;
 import org.ecloudmanager.service.provisioning.HAProxyConfigurator;
 import org.jetbrains.annotations.NotNull;
@@ -145,10 +148,90 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
     public static List<String> generateHAProxyFrontendConfig(String frontendName, HAProxyFrontendConfig frontendConfig) {
         List<String> config = new ArrayList<>();
 
+        config.add("mode " + frontendConfig.getMode());
+
+        if (!StringUtils.isEmpty(frontendConfig.getDefaultBackend())) {
+            config.add("default_backend " + frontendConfig.getDefaultBackend());
+        }
+
+        generateGeoRules(frontendName, frontendConfig, config);
+        generateABTestingRules(frontendName, frontendConfig, config);
+
+        config.addAll(frontendConfig.getConfig());
+        return config;
+    }
+
+    private static void generateGeoRules(String frontendName, HAProxyFrontendConfig frontendConfig, List<String> config) {
+        String ipStr = frontendConfig.getUseXff() ? "req.hdr_ip(X-Forwarded-For,-1)" : "src";
+        String country = "%[" + ipStr + ",map_ip(/etc/haproxy/geolite/countrymap.txt)]";
+        String city = "%[" + ipStr + ",map_ip(/etc/haproxy/geolite/citymap.txt)]";
+
+        boolean http = frontendConfig.getMode() == HAProxyMode.HTTP;
+        if (http) {
+            config.add("http-request set-header X-Country " + country);
+            boolean hasCities = frontendConfig.getGeolocationRules().stream()
+                    .flatMap(geolocationRule -> geolocationRule.getLocations().stream())
+                    .map(GeolocationExpr::getRecord)
+                    .anyMatch(geolocationRecord -> geolocationRecord.getType() == GeolocationRecordType.CITY);
+            if (hasCities) {
+                config.add("http-request set-header X-City " + city);
+            }
+        }
+
+        StringBuilder countryGeoids = new StringBuilder();
+        StringBuilder cityGeoids = new StringBuilder();
+
+        frontendConfig.getGeolocationRules().stream()
+                .flatMap(geolocationRule -> geolocationRule.getLocations().stream())
+                .map(GeolocationExpr::getRecord)
+                .distinct()
+                .forEach(geolocationRecord -> {
+                    String location;
+                    boolean isCountry = geolocationRecord.getType() == GeolocationRecordType.COUNTRY;
+                    if (http) {
+                        location = isCountry ? "req.hdr(X-Country)" :  "req.hdr(X-City)";
+                    } else {
+                        location = isCountry ? country : city;
+                    }
+                    config.add("acl geo" + geolocationRecord.getGeoid() + " " + location + " -m str " + geolocationRecord.getGeoid());
+
+                    if (isCountry) {
+                        countryGeoids.append(geolocationRecord.getGeoid()).append(" ");
+                    } else {
+                        cityGeoids.append(geolocationRecord.getGeoid()).append(" ");
+                    }
+                });
+
+        if (countryGeoids.length() > 0) {
+            config.add("# country geoids: " + countryGeoids.toString().trim());
+        }
+        if (cityGeoids.length() > 0) {
+            config.add("# city geoids: " + cityGeoids.toString().trim());
+        }
+
+        frontendConfig.getGeolocationRules().forEach(geolocationRule -> {
+            String rejectStr = http ? "http-request deny if " : "tcp-request content reject if ";
+            String ruleStart = geolocationRule.getBackendName() == null ?
+                    rejectStr : "use_backend " + geolocationRule.getBackendName() + " if ";
+            StringBuilder builder = new StringBuilder();
+            geolocationRule.getLocations().forEach(geolocationExpr -> {
+                if (builder.length() != 0 && geolocationExpr.getOperator() != AclOperator.AND) {
+                    builder.append(geolocationExpr.getOperator().name().toLowerCase()).append(" ");
+                }
+                if (geolocationExpr.getNegate()) {
+                    builder.append("!");
+                }
+
+                builder.append("geo").append(geolocationExpr.getRecord().getGeoid()).append(" ");
+            });
+            builder.insert(0, ruleStart);
+            config.add(builder.toString());
+        });
+    }
+
+    private static void generateABTestingRules(String frontendName, HAProxyFrontendConfig frontendConfig, List<String> config) {
         // A/B testing ACLs
         int totalWeight = 100;
-
-        config.add("mode " + frontendConfig.getMode());
 
         if (frontendConfig.getStickyBackends() && frontendConfig.getMode() == HAProxyMode.HTTP) {
             config.add("acl cook-present req.cook(" + frontendName + "-BACKENDID) -m found");
@@ -163,13 +246,6 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
             config.add("use_backend " + backend + " if use-" + backend);
             totalWeight -= weight;
         }
-
-        if (!StringUtils.isEmpty(frontendConfig.getDefaultBackend())) {
-            config.add("default_backend " + frontendConfig.getDefaultBackend());
-        }
-
-        config.addAll(frontendConfig.getConfig());
-        return config;
     }
 
     public static String generateHAProxyServerOptions(String serverName, HAProxyBackendConfig backendConfig) {

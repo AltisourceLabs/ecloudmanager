@@ -359,3 +359,12 @@ form > button.ui-button {
     width: 100%;
     max-height: 60px;
 }
+
+.noPaddingPanel, .noPaddingPanel > .ui-panel-content {
+    padding: 0 !important;
+}
+
+.hideColumnNames table thead tr th {
+    padding-top: 0;
+    padding-bottom: 0;
+}

@@ -24,6 +24,8 @@
 
 package org.ecloudmanager.deployment.ps;
 
+import org.ecloudmanager.service.deployment.geolite.GeolocationRule;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,6 +37,8 @@ public class HAProxyFrontendConfig {
     private String defaultBackend;
     private boolean stickyBackends;
     private List<BackendWeight> backendWeights = new ArrayList<>();
+    private List<GeolocationRule> geolocationRules = new ArrayList<>();
+    private boolean useXff;
     private List<String> config = new ArrayList<>();
 
     public HAProxyFrontendConfig() {
@@ -44,9 +48,11 @@ public class HAProxyFrontendConfig {
         name = cfg.getName();
         config.addAll(cfg.getConfig());
         backendWeights.addAll(cfg.getBackendWeights());
+        geolocationRules.addAll(cfg.getGeolocationRules());
         defaultBackend = cfg.getDefaultBackend();
         stickyBackends = cfg.getStickyBackends();
         mode = cfg.getMode();
+        useXff = cfg.getUseXff();
     }
 
     public List<String> getConfig() {
@@ -95,5 +101,21 @@ public class HAProxyFrontendConfig {
 
     public void setMode(HAProxyMode mode) {
         this.mode = mode;
+    }
+
+    public List<GeolocationRule> getGeolocationRules() {
+        return geolocationRules;
+    }
+
+    public void setGeolocationRules(List<GeolocationRule> geolocationRules) {
+        this.geolocationRules = geolocationRules;
+    }
+
+    public boolean getUseXff() {
+        return useXff;
+    }
+
+    public void setUseXff(boolean useXff) {
+        this.useXff = useXff;
     }
 }

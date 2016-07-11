@@ -68,13 +68,18 @@ public class GatewayVMDeployment extends VMDeployment {
 
         Recipe confd = new Recipe("rf_infra-confd");
         confd.setVersion("= 0.1.0");
-        ChefAttribute confdAttrs = new ChefAttribute("rf_infra-confd", "{\"etcd_nodes\":[\"{{" + ETCD_NODE + "}}\"], \"etcd_path\":\"{{" + ETCD_PATH + "}}\"}");
+        String reloadCommand = "/usr/local/bin/optimize_maps.sh; haproxy -f /etc/haproxy/haproxy.cfg -f /var/lib/haproxy/haproxy-confd.cfg -p /var/run/haproxy.pid -D -sf $(cat /var/run/haproxy.pid)";
+        ChefAttribute confdAttrs = new ChefAttribute("rf_infra-confd", "{\"etcd_nodes\":[\"{{" + ETCD_NODE + "}}\"], \"etcd_path\":\"{{" + ETCD_PATH + "}}\", \"haproxy_reload_cmd\":\"" + reloadCommand + "\"}");
         confdAttrs.setEnvironmentAttribute(false);
         confd.addChefAttribute(confdAttrs);
+
+        Recipe haproxyGeo = new Recipe("ecloudmanager-haproxy-geo");
+        haproxyGeo.setVersion("= 0.1.0");
 
         gatewayRunlist.add(selinux);
         gatewayRunlist.add(haproxy);
         gatewayRunlist.add(confd);
+        gatewayRunlist.add(haproxyGeo);
     }
 
     GatewayVMDeployment() {}
