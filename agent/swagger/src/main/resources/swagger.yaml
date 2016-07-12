@@ -116,6 +116,14 @@
         - application/xml
         - application/json
         parameters:
+        - name: accessKey
+          in: header
+          required: true
+          type: string
+        - name: secretKey
+          in: header
+          required: true
+          type: string
         - name: vm
           in: body
           description: VM to deploy
@@ -139,6 +147,14 @@
         - application/xml
         - application/json
         parameters:
+        - name: accessKey
+          in: header
+          required: true
+          type: string
+        - name: secretKey
+          in: header
+          required: true
+          type: string
         - name: vmId
           in: path
           description: ID of VM to return
@@ -162,6 +178,14 @@
         - application/xml
         - application/json
         parameters:
+        - name: accessKey
+          in: header
+          required: true
+          type: string
+        - name: secretKey
+          in: header
+          required: true
+          type: string
         - name: vmId
           in: path
           description: ID of VM to update
@@ -181,29 +205,43 @@
             description: Invalid ID
           404:
             description: VM not found
-      delete:
+    /infrastructure/{property}:
+      get:
         tags:
-        - vm
-        summary: Delete VM
-        operationId: deleteVM
+        - infrastructure
+        summary: Get infrastructure property
+        operationId: getInfrastructureProperty
         produces:
         - application/xml
         - application/json
         parameters:
-        - name: vmId
-          in: path
-          description: ID of VM to delete
+        - name: accessKey
+          in: header
           required: true
           type: string
+        - name: secretKey
+          in: header
+          required: true
+          type: string
+        - name: property
+          in: path
+          description: Property to return
+          required: true
+          type: string
+        - name: parameters
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/InfrastructurePropertyRequest'
         responses:
-          202:
-            description: Accepted, task id
+          200:
+            description: Successful
             schema:
-              type: string
+              $ref: '#/definitions/InfrastructurePropertyResponce'
           400:
-            description: Invalid ID
+            description: Invalid property constraints
           404:
-            description: VM not found
+            description: Property not found
     /vm/{vmId}/firewall:
       get:
         tags:
@@ -214,6 +252,14 @@
         - application/xml
         - application/json
         parameters:
+        - name: accessKey
+          in: header
+          required: true
+          type: string
+        - name: secretKey
+          in: header
+          required: true
+          type: string
         - name: vmId
           in: path
           description: ID of VM to return
@@ -237,6 +283,14 @@
         - application/xml
         - application/json
         parameters:
+        - name: accessKey
+          in: header
+          required: true
+          type: string
+        - name: secretKey
+          in: header
+          required: true
+          type: string
         - name: vmId
           in: path
           description: ID of VM to update firewall rules
@@ -269,6 +323,14 @@
         - application/xml
         - application/json
         parameters:
+        - name: accessKey
+          in: header
+          required: true
+          type: string
+        - name: secretKey
+          in: header
+          required: true
+          type: string
         - name: vmId
           in: path
           description: ID of VM for file upload
@@ -293,6 +355,14 @@
         - application/xml
         - application/json
         parameters:
+        - name: accessKey
+          in: header
+          required: true
+          type: string
+        - name: secretKey
+          in: header
+          required: true
+          type: string
         - name: vmId
           in: path
           description: ID of VM for command execution
@@ -316,6 +386,18 @@
       name: api_key
       in: header
   definitions:
+    InfrastructurePropertyRequest:
+      properties:
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+    InfrastructurePropertyResponce:
+      properties:
+        properties:
+          type: object
+          additionalProperties:
+            type: string
     VM:
       properties:
         properties:

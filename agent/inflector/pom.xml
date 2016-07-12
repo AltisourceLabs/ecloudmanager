@@ -10,6 +10,7 @@
 
     <artifactId>inflector</artifactId>
     <name>agent inflector</name>
+    <packaging>war</packaging>
     <build>
         <defaultGoal>install</defaultGoal>
         <directory>target</directory>

@@ -23,7 +23,7 @@
   ~ SOFTWARE.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <name>ecloud-manager</name>
     <modelVersion>4.0.0</modelVersion>
@@ -41,7 +41,8 @@
     </licenses>
 
     <modules>
-	    <module>tmrk-cloudapi</module>
+        <module>agent</module>
+        <module>tmrk-cloudapi</module>
         <module>ecloud-manager-ejb</module>
         <module>ecloud-manager-web</module>
         <module>ecloud-manager-ear</module>
@@ -55,7 +56,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- JBoss dependency versions -->
-        
+
         <version.wildfly.maven.plugin>1.0.2.Final</version.wildfly.maven.plugin>
 
         <!-- Define the version of the JBoss BOMs we want to import to specify tested stacks. -->
@@ -86,7 +87,7 @@
                 <version>${project.version}</version>
                 <type>ejb</type>
             </dependency>
-            
+
             <!-- Define the version of the WAR so that we don't need to repeat 
                 ourselves in every module -->
             <dependency>
@@ -121,11 +122,11 @@
                 <scope>import</scope>
             </dependency>
 
-			<dependency>
-				<groupId>org.apache.commons</groupId>
-				<artifactId>commons-lang3</artifactId>
-				<version>3.3.2</version>
-			</dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>3.3.2</version>
+            </dependency>
             <dependency>
                 <groupId>org.jetbrains</groupId>
                 <artifactId>annotations</artifactId>
