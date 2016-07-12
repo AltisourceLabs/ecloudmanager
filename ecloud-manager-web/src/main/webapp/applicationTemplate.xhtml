@@ -340,7 +340,7 @@
                                     <p:selectOneButton value="#{producedServiceTemplateController.value.haProxyFrontendConfig.useXff}">
                                         <p:ajax update="preview"/>
                                         <f:selectItem itemLabel="Source IP" itemValue="#{false}"/>
-                                        <f:selectItem itemLabel="X-Forwarded-For Header" itemValue="#{true}"/>
+                                        <f:selectItem itemLabel="X-Forwarded-For/Forwarded Header" itemValue="#{true}"/>
                                     </p:selectOneButton>
                                 </p:outputPanel>
                                 <p:dataTable var="geoRule" widgetVar="v_geo_rules_tbl" value="#{producedServiceTemplateController.value.haProxyFrontendConfig.geolocationRules}">

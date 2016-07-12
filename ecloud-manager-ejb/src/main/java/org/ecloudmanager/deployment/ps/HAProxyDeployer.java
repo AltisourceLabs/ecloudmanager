@@ -162,19 +162,28 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
     }
 
     private static void generateGeoRules(String frontendName, HAProxyFrontendConfig frontendConfig, List<String> config) {
-        String ipStr = frontendConfig.getUseXff() ? "req.hdr_ip(X-Forwarded-For,-1)" : "src";
-        String country = "%[" + ipStr + ",map_ip(/etc/haproxy/geolite/countrymap.txt)]";
-        String city = "%[" + ipStr + ",map_ip(/etc/haproxy/geolite/citymap.txt)]";
-
         boolean http = frontendConfig.getMode() == HAProxyMode.HTTP;
-        if (http) {
-            config.add("http-request set-header X-Country " + country);
-            boolean hasCities = frontendConfig.getGeolocationRules().stream()
-                    .flatMap(geolocationRule -> geolocationRule.getLocations().stream())
-                    .map(GeolocationExpr::getRecord)
-                    .anyMatch(geolocationRecord -> geolocationRecord.getType() == GeolocationRecordType.CITY);
+        boolean hasCities = frontendConfig.getGeolocationRules().stream()
+                .flatMap(geolocationRule -> geolocationRule.getLocations().stream())
+                .map(GeolocationExpr::getRecord)
+                .anyMatch(geolocationRecord -> geolocationRecord.getType() == GeolocationRecordType.CITY);
+
+        if (http && frontendConfig.getUseXff()) {
+            config.add("acl h_xff_exists req.hdr(X-Forwarded-For) -m found");
+            config.add("acl h_forwarded_exists req.hdr(Forwarded) -m found");
+            config.add("http-request set-header X-Country %[req.hdr_ip(X-Forwarded-For,-1),map_ip(/etc/haproxy/geolite/countrymap.txt)] if h_xff_exists");
+            config.add("http-request set-header X-Country %[req.hdr_ip(Forwarded,-1),map_ip(/etc/haproxy/geolite/countrymap.txt)] if h_forwarded_exists");
+            config.add("http-request set-header X-Country %[src,map_ip(/etc/haproxy/geolite/countrymap.txt)] if !h_xff_exists !h_forwarded_exists");
+
             if (hasCities) {
-                config.add("http-request set-header X-City " + city);
+                config.add("http-request set-header X-City %[req.hdr_ip(X-Forwarded-For,-1),map_ip(/etc/haproxy/geolite/citymap.txt)] if h_xff_exists");
+                config.add("http-request set-header X-City %[req.hdr_ip(Forwarded,-1),map_ip(/etc/haproxy/geolite/citymap.txt)] if h_forwarded_exists");
+                config.add("http-request set-header X-City %[src,map_ip(/etc/haproxy/geolite/citymap.txt)] if !h_xff_exists !h_forwarded_exists");
+            }
+        } else if (http) {
+            config.add("http-request set-header X-Country %[src,map_ip(/etc/haproxy/geolite/countrymap.txt)]");
+            if (hasCities) {
+                config.add("http-request set-header X-City %[src,map_ip(/etc/haproxy/geolite/citymap.txt)]");
             }
         }
 
@@ -191,7 +200,7 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
                     if (http) {
                         location = isCountry ? "req.hdr(X-Country)" :  "req.hdr(X-City)";
                     } else {
-                        location = isCountry ? country : city;
+                        location = isCountry ? "src,map_ip(/etc/haproxy/geolite/countrymap.txt)" : "src,map_ip(/etc/haproxy/geolite/citymap.txt)";
                     }
                     config.add("acl geo" + geolocationRecord.getGeoid() + " " + location + " -m str " + geolocationRecord.getGeoid());
 
