@@ -1,0 +1,553 @@
+<!--
+  ~ The MIT License (MIT)
+  ~
+  ~ Copyright (c) 2016 Altisource Labs
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:components="http://java.sun.com/jsf/composite/components"
+                template="/WEB-INF/templates/default.xhtml">
+    <ui:define name="content">
+        <p:outputPanel id="out">
+            <h:panelGroup>
+                <h:form id="edit" styleClass="contentForm">
+                    <p>Name: <p:inputText value="#{applicationDeploymentEditorController.deployment.name}"/></p>
+                    <p>Entries:</p>
+                    <p:dataTable id="children" var="srv"
+                                 value="#{applicationDeploymentEditorController.deployment.children}"
+                                 resizableColumns="true" liveResize="true" styleClass="childrenTable">
+
+                        <p:column width="30%" headerText="Name" sortBy="#{srv.name}">
+                            <h:outputText value="#{srv}"/>
+                        </p:column>
+                        <p:column headerText="Endpoints">
+                            <h:outputText value="#{srv.endpoints}"/>
+                        </p:column>
+                        <p:column headerText="Required">
+                            <h:outputText value="#{srv.requiredEndpoints}"/>
+                        </p:column>
+
+                        <p:column width="60">
+                            <p:commandButton title="Edit" icon="ui-icon-pencil"
+                                             action="#{applicationDeploymentEditorController.startEditChild(srv)}"
+                            />
+                            <p:commandButton title="Delete" icon="ui-icon-close"
+                                             update="@(.childrenTable)"
+                                             action="#{applicationDeploymentEditorController.deleteChild(srv)}"
+                            >
+                            </p:commandButton>
+                        </p:column>
+                    </p:dataTable>
+                    <p:menuButton value="New...">
+                        <p:menuitem value="ProducedService"
+                                    action="#{applicationDeploymentEditorController.newProducedService}">
+                        </p:menuitem>
+                        <p:menuitem value="ExternalService"
+                                    action="#{applicationDeploymentEditorController.newExternalService}">
+                        </p:menuitem>
+                        <p:menuitem value="VM"
+                                    action="#{applicationDeploymentEditorController.newVmRef}">
+                        </p:menuitem>
+                    </p:menuButton>
+                    <p>Connections:</p>
+                    <p:dataTable id="links" var="link"
+                                 value="#{applicationDeploymentEditorController.deployment.links}"
+                                 resizableColumns="true" liveResize="true">
+
+                        <p:column width="30%" headerText="Destination" sortBy="#{link.consumer}">
+                            <h:outputText value="#{link.consumer}"/>
+                        </p:column>
+                        <p:column headerText="Source">
+                            <p:selectOneMenu value="#{link.supplier}">
+                                <f:selectItem itemLabel="None" itemValue=""/>
+                                <f:selectItems
+                                        value="#{applicationDeploymentEditorController.availableEndpoints}"
+                                        var="endpoint"
+                                        itemLabel="#{endpoint}" itemValue="#{endpoint}"/>
+                            </p:selectOneMenu>
+                        </p:column>
+                    </p:dataTable>
+                    <p>Public endpoints:</p>
+                    <p:dataTable var="ep" value="#{applicationDeploymentEditorController.deployment.publicEndpoints}"
+                                 id="public_endpoints">
+                        <p:column id="column_endpoint" headerText="Endpoint">
+                            <h:outputText value="#{ep}"/>
+                        </p:column>
+                        <p:column id="column_ep_action" width="30">
+                            <p:commandButton id="delete_endpoint" title="Delete" icon="ui-icon-close"
+                                             update="public_endpoints"
+                                             action="#{applicationDeploymentEditorController.deletePublicEndpoint(ep)}"/>
+                        </p:column>
+                    </p:dataTable>
+                    <p:spacer/>
+                    <p:selectOneMenu id="addPublicEndpoint" value="#{applicationDeploymentEditorController.publicEndpointToAdd}"
+                                     styleClass="selectEndpoint">
+                        <f:selectItem itemLabel="Select endpoint to add" itemValue=""/>
+                        <f:selectItems value="#{applicationDeploymentEditorController.availableEndpoints}"/>
+                    </p:selectOneMenu>
+                    <p:commandButton id="add_public_endpoint" value="Add"
+                                     update="public_endpoints, addPublicEndpoint"
+                                     action="#{applicationDeploymentEditorController.addPublicEndpoint()}"/>
+
+                    <p>
+                        <p:commandButton value="save" update="out" action="#{applicationDeploymentEditorController.save()}"/>
+                    </p>
+                </h:form>
+            </h:panelGroup>
+
+            <p:dialog header="Edit Service" widgetVar="dlg_edit_service" modal="true" closeOnEscape="true" height="600"
+                      width="600" id="dlg_edit_service">
+                <h:panelGroup>
+                    <h:form style="width: 95%;height: 95%">
+                        <p:confirmDialog id="confirm" global="true" showEffect="fade" hideEffect="fade">
+                            <p:commandButton id="yes" value="Yes" type="button" styleClass="ui-confirmdialog-yes"
+                                             icon="ui-icon-check"/>
+                            <p:commandButton id="no" value="No" type="button" styleClass="ui-confirmdialog-no"
+                                             icon="ui-icon-close"/>
+                        </p:confirmDialog>
+
+                        <p:outputPanel id="attrDetail" rendered="#{not empty producedServiceDeploymentController.value}">
+                            <p:panelGrid id="panel_attr_details" columns="2" style="margin-bottom:10px"
+                                         styleClass="ui-panelgrid-blank" cellpadding="5">
+
+                                <p:outputLabel id="label_op_name" for="op_key" value="Name:"/>
+                                <p:inputText id="op_key"
+                                             value="#{producedServiceDeploymentController.value.name}">
+                                </p:inputText>
+
+                                <p:outputLabel value="Component Groups:"/>
+                                <p:panel>
+                                    <p:dataTable id="cg" var="cg"
+                                                 value="#{producedServiceDeploymentController.value.componentGroups}"
+                                                 resizableColumns="true" liveResize="true">
+
+                                        <p:column width="30%" headerText="Name" sortBy="#{cg.name}">
+                                            <h:outputText value="#{cg.name}"/>
+                                        </p:column>
+                                        <p:column width="40%" headerText="VM">
+                                            <h:outputText value="#{cg.virtualMachineTemplate}"/>
+                                        </p:column>
+                                        <p:column width="60">
+                                            <p:commandButton title="Edit" icon="ui-icon-pencil"
+                                                             action="#{producedServiceDeploymentController.startEditComponentGroup(cg)}"
+                                            />
+                                            <p:commandButton title="Delete" icon="ui-icon-close"
+                                                             update="cg"
+                                                             action="#{producedServiceDeploymentController.deleteComponentGroup(cg)}">
+                                                <p:confirm header="Confirmation" message="Are you sure?"
+                                                           icon="ui-icon-alert"/>
+                                            </p:commandButton>
+                                        </p:column>
+                                    </p:dataTable>
+                                    <p:commandButton value="New" icon="ui-icon-plus"
+                                                 action="#{producedServiceDeploymentController.newComponentGroup()}"/>
+                                </p:panel>
+
+                                <p:outputLabel value="HAProxy Frontend Configuration:"/>
+                                <p:panel>
+                                    <p:inputTextarea id="frontend_config_preview" rows="6" style="width: 100%; box-sizing: border-box; max-height: 100px;" readonly="true"
+                                                     widgetVar="v_frontend_config_preview"
+                                                     value="#{producedServiceDeploymentController.generateHaproxyFrontendConfig()}"
+                                                     converter="stringListConverter"/>
+                                    <p:commandButton value="Configure Frontend..."
+                                                     oncomplete="PF('dlg_configure_frontend').show()"
+                                                     update="@widgetVar(dlg_configure_frontend)"
+                                                     disabled="#{empty producedServiceDeploymentController.value}"/>
+                                </p:panel>
+
+                                <p:outputLabel value="Endpoint:"/>
+                                <p:panel>
+                                    <components:endpoint value="#{producedServiceDeploymentController.value.endpoint}"
+                                                         id="endpoint"/>
+                                </p:panel>
+                            </p:panelGrid>
+                            <p:panelGrid id="attr_buttons" columns="2" style="margin-bottom:10px"
+                                         styleClass="ui-panelgrid-blank" cellpadding="5">
+                                <p:commandButton id="attr_button_save" value="save"
+                                                 action="#{applicationDeploymentEditorController.saveChild(producedServiceDeploymentController.value)}"
+                                                 update="out"
+                                />
+                                <p:commandButton id="attr_button_cancel" value="cancel" immediate="true"
+                                                 action="#{applicationDeploymentEditorController.cancelChildEditing(producedServiceDeploymentController.value)}"
+                                                 update="out"
+                                />
+                            </p:panelGrid>
+                        </p:outputPanel>
+                    </h:form>
+                </h:panelGroup>
+            </p:dialog>
+            <p:dialog header="#{geolocationRuleController.edit ? 'Edit' : 'Add'} Geolocation Rule" widgetVar="dlg_add_geo_rule" modal="true" closeOnEscape="true" style="width: 900px;">
+                <p:ajax event="close" listener="#{geolocationRuleController.handleClose}" />
+                <h:panelGroup rendered="#{geolocationRuleController.selected ne null}">
+                    <h:form>
+                        <h3>#{geolocationRuleController.edit ? 'Edit' : 'Add'} Geolocation Rule</h3>
+                        <h:panelGrid columns="2" cellpadding="5" columnClasses="colLabel, colValue">
+                            <h:outputText value="Backend:"/>
+                            <p:selectOneMenu value="#{geolocationRuleController.selected.backendName}">
+                                <f:selectItem itemLabel="REJECT REQUEST" itemValue="#{null}"/>
+                                <f:selectItems value="#{producedServiceDeploymentController.value.componentGroups}" var="group" itemLabel="#{group.name}" itemValue="#{group.name}"/>
+                            </p:selectOneMenu>
+                            <h:outputText value="Locations:"/>
+                            <p:panel>
+                                <p:panel styleClass="noPaddingPanel" style="margin-bottom: 5px">
+                                    <p:dataTable id="selectedLocations"
+                                                 widgetVar="v_selectedLocations"
+                                                 value="#{geolocationRuleController.selected.locations}"
+                                                 var="rule"
+                                                 emptyMessage="Select Locations From the Table Below"
+                                                 rowIndexVar="rowIndex"
+                                                 scrollable="true"
+                                                 scrollHeight="150"
+                                    >
+                                        <f:facet name="header">
+                                            <h:outputText value="Selected Locations"/>
+                                        </f:facet>
+                                        <p:column width="25">
+                                            <h:outputText value="#{rule.operator}" rendered="#{rowIndex > 0}"/>
+                                        </p:column>
+                                        <p:column headerText="Location">
+                                            <h:outputText value="#{rule.record.label}" style="#{rule.negate ? 'text-decoration: line-through' : ''}"/>
+                                        </p:column>
+                                        <p:column width="25">
+                                            <p:commandButton title="Delete" icon="fa fa-times" action="#{geolocationRuleController.removeGeoExpr(rule)}" update="selectedLocations"/>
+                                        </p:column>
+                                    </p:dataTable>
+                                </p:panel>
+                                <p:dataTable id="geolocationTable"
+                                             widgetVar="v_geolocationTable"
+                                             value="#{geolocationRuleController.geolocationRecords}"
+                                             selection="#{geolocationRuleController.selectedGeolocationRecords}"
+                                             var="geoRecord"
+                                             rowKey="#{geoRecord.geoid}"
+                                             rows="10"
+                                             paginator="true"
+                                             emptyMessage="No locations found with given criteria"
+                                             filteredValue="#{geolocationRuleController.filteredLocations}"
+
+                                >
+                                    <f:facet name="header">
+                                        <p:outputPanel style="text-align: center; margin-bottom: 2px">
+                                            <h:outputText value="Select Locations From: "/>
+                                            <p:selectOneButton value="#{geolocationRuleController.showCities}">
+                                                <p:ajax listener="#{geolocationRuleController.showCitiesChanged()}" oncomplete="PF('v_geolocationTable').clearFilters()" update="geolocationTable"/>
+                                                <f:selectItem itemLabel="Countries" itemValue="#{false}" />
+                                                <f:selectItem itemLabel="Countries and Cities" itemValue="#{true}" />
+                                            </p:selectOneButton>
+                                        </p:outputPanel>
+                                        <p:outputPanel style="text-align: center;">
+                                            <h:outputText value="Use Operator: "/>
+                                            <p:selectOneButton value="#{geolocationRuleController.operator}" disabled="#{geolocationRuleController.selected.locations.size() lt 1}">
+                                                <f:selectItem itemLabel="AND" itemValue="AND" />
+                                                <f:selectItem itemLabel="OR" itemValue="OR" />
+                                            </p:selectOneButton>
+                                        </p:outputPanel>
+                                    </f:facet>
+                                    <p:column filterBy="#{geoRecord.country}" filterMatchMode="contains" headerText="Country">
+                                        <h:outputText value="#{geoRecord.country}" />
+                                    </p:column>
+                                    <p:column filterBy="#{geoRecord.subdivision}" filterMatchMode="contains" headerText="Subdivision">
+                                        <h:outputText value="#{geoRecord.subdivision}" />
+                                    </p:column>
+                                    <p:column filterBy="#{geoRecord.city}" filterMatchMode="contains" headerText="City">
+                                        <h:outputText value="#{geoRecord.city}" />
+                                    </p:column>
+                                    <p:column headerText="Select" width="60">
+                                        <p:commandButton title="Add Location"
+                                                         icon="fa fa-check-circle "
+                                                         action="#{geolocationRuleController.addLocation(false, geoRecord)}"
+                                                         update="geolocationTable, @widgetVar(v_selectedLocations)"/>
+                                        <p:commandButton title="Add Negated Location (Everywhere Except the Selected Locations)"
+                                                         icon="fa fa-exclamation-circle"
+                                                         action="#{geolocationRuleController.addLocation(true, geoRecord)}"
+                                                         update="geolocationTable, @widgetVar(v_selectedLocations)"/>
+                                    </p:column>
+                                </p:dataTable>
+                            </p:panel>
+                        </h:panelGrid>
+
+                        <h:panelGroup rendered="#{geolocationRuleController.edit}">
+                            <p:commandButton value="Done"
+                                             update="@widgetVar(v_preview), @widgetVar(v_geo_rules_tbl)"
+                                             action="#{geolocationRuleController.save}"
+                                             oncomplete="PF('dlg_add_geo_rule').hide();"
+                            />
+                            <p:commandButton value="Cancel"
+                                             update="@widgetVar(v_preview), @widgetVar(v_geo_rules_tbl)"
+                                             action="#{geolocationRuleController.cancel}"
+                                             oncomplete="PF('dlg_add_geo_rule').hide();"
+                            />
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{!geolocationRuleController.edit}">
+                            <p:commandButton value="Add"
+                                             update="@widgetVar(v_preview), @widgetVar(v_geo_rules_tbl)"
+                                             action="#{geolocationRuleController.add}"
+                                             oncomplete="PF('dlg_add_geo_rule').hide();"
+                            />
+                            <p:commandButton value="Cancel"
+                                             update="@widgetVar(v_preview), @widgetVar(v_geo_rules_tbl)"
+                                             action="#{geolocationRuleController.cancel}"
+                                             oncomplete="PF('dlg_add_geo_rule').hide();"
+                            />
+                        </h:panelGroup>
+                    </h:form>
+                </h:panelGroup>
+            </p:dialog>
+
+
+            <p:dialog header="Configure Frontend" widgetVar="dlg_configure_frontend" modal="true" closeOnEscape="true" style="width: 900px">
+                <h:panelGroup rendered="#{producedServiceDeploymentController.value ne null}">
+                    <h:form>
+                        <h3>Configure HAProxy Frontend</h3>
+                        <p:remoteCommand name="onload" update="preview" autoRun="true" />
+                        <h:panelGrid columns="2" cellpadding="5" columnClasses="colLabel, colValue">
+                            <h:outputText value="Frontend Mode:"/>
+                            <p:selectOneMenu value="#{producedServiceDeploymentController.value.haProxyFrontendConfig.mode}" converter="haproxyModeConverter">
+                                <p:ajax update="preview, stickyBackends"/>
+                                <f:selectItems value="#{producedServiceDeploymentController.value.haProxyFrontendConfig.mode.values()}" var="mode" itemLabel="#{mode.toString()}" itemValue="#{mode}"/>
+                            </p:selectOneMenu>
+                            <h:outputText value="Default Backend:"/>
+                            <p:selectOneMenu value="#{producedServiceDeploymentController.value.haProxyFrontendConfig.defaultBackend}">
+                                <p:ajax update="preview"/>
+                                <f:selectItems value="#{producedServiceDeploymentController.value.componentGroups}" var="group" itemLabel="#{group.name}" itemValue="#{group.name}"/>
+                            </p:selectOneMenu>
+
+                            <h:outputText value="Geolocation Rules (ip-based):"/>
+                            <p:panel>
+                                <p:outputPanel style="margin-bottom: 5px">
+                                    <h:outputText value="IP Detection Method: "/>
+                                    <p:selectOneButton value="#{producedServiceDeploymentController.value.haProxyFrontendConfig.useXff}">
+                                        <p:ajax update="preview"/>
+                                        <f:selectItem itemLabel="Source IP" itemValue="#{false}"/>
+                                        <f:selectItem itemLabel="X-Forwarded-For/Forwarded Header" itemValue="#{true}"/>
+                                    </p:selectOneButton>
+                                </p:outputPanel>
+                                <p:dataTable var="geoRule" widgetVar="v_geo_rules_tbl" value="#{producedServiceDeploymentController.value.haProxyFrontendConfig.geolocationRules}">
+                                    <p:column width="50%" headerText="Component Group">
+                                        <h:outputText value="#{geoRule.backendName == null ? 'REJECT REQUEST' : geoRule.backendName}"/>
+                                    </p:column>
+                                    <p:column width="50%" headerText="Locations">
+                                        <p:dataTable value="#{geoRule.locations}" var="rule" rowIndexVar="rowIndex" styleClass="hideColumnNames">
+                                            <p:column width="25">
+                                                <h:outputText value="#{rowIndex > 0 ? rule.operator : ''}"/>
+                                            </p:column>
+                                            <p:column>
+                                                <h:outputText value="#{rule.record.label}" style="#{rule.negate ? 'text-decoration: line-through' : ''}"/>
+                                            </p:column>
+                                        </p:dataTable>
+                                    </p:column>
+                                    <p:column width="60">
+                                        <p:commandButton title="Edit" icon="ui-icon-pencil"
+                                                         update="@widgetVar(dlg_add_geo_rule)"
+                                                         action="#{geolocationRuleController.startEdit(geoRule)}"
+                                                         oncomplete="PF('dlg_add_geo_rule').show();"/>
+                                        <p:commandButton title="Delete" icon="ui-icon-close"
+                                                         update="@widgetVar(v_geo_rules_tbl), @widgetVar(v_preview)"
+                                                         action="#{geolocationRuleController.delete(geoRule)}">
+                                            <p:confirm header="Confirmation" message="Are you sure?" icon="ui-icon-alert"/>
+                                        </p:commandButton>
+                                    </p:column>
+                                </p:dataTable>
+                                <p:commandButton value="Add Rule" icon="ui-icon-plus"
+                                                 oncomplete="PF('dlg_add_geo_rule').show()"
+                                                 update="@widgetVar(dlg_add_geo_rule)"
+                                                 style="margin-top: 2px"
+                                />
+                            </p:panel>
+
+                            <h:outputText value="Enable A/B Testing:"/>
+                            <p:selectBooleanButton
+                                    onIcon="fa fa-toggle-on" onLabel="On"
+                                    offLabel="Off" offIcon="fa fa-toggle-off"
+                                    value="#{producedServiceDeploymentController.abTestingEnabled}"
+                            >
+                                <p:ajax update="preview, weights"/>
+                            </p:selectBooleanButton>
+
+                            <h:outputText value="Sticky Backends (cookie-based):"/>
+                            <p:selectBooleanCheckbox id="stickyBackends" disabled="#{producedServiceDeploymentController.value.haProxyFrontendConfig.mode != 'HTTP'}" itemLabel="" value="#{producedServiceDeploymentController.value.haProxyFrontendConfig.stickyBackends}">
+                                <p:ajax update="preview"/>
+                            </p:selectBooleanCheckbox>
+
+                            <h:outputText value="Component Group Weights:"/>
+                            <p:dataTable id="weights" var="backendWeight" value="#{producedServiceDeploymentController.value.haProxyFrontendConfig.backendWeights}">
+                                <p:column width="80%" headerText="Component Group">
+                                    <h:outputText value="#{backendWeight.backendName}"/>
+                                </p:column>
+                                <p:column headerText="Weight, %">
+                                    <h:inputText value="#{backendWeight.weight}">
+                                        <p:ajax update="@widgetVar(v_preview)"/>
+                                    </h:inputText>
+                                </p:column>
+                            </p:dataTable>
+                            <h:outputText value="Custom Configuration:"/>
+                            <p:inputTextarea rows="6" converter="stringListConverter" value="#{producedServiceDeploymentController.value.haProxyFrontendConfig.config}">
+                                <p:ajax update="preview"/>
+                            </p:inputTextarea>
+                            <h:outputText value="Preview Configuration:"/>
+                            <p:inputTextarea id="preview" widgetVar="v_preview" rows="6" readonly="true" converter="stringListConverter" value="#{producedServiceDeploymentController.generateHaproxyFrontendConfig()}"/>
+                        </h:panelGrid>
+                        <h:panelGroup>
+                            <p:commandButton value="Done" update="@widgetVar(v_frontend_config_preview)" oncomplete="PF('dlg_configure_frontend').hide()"/>
+                        </h:panelGroup>
+                    </h:form>
+                </h:panelGroup>
+            </p:dialog>
+
+            <p:dialog header="Edit Component Group " widgetVar="dlg_edit_cg" modal="true" closeOnEscape="true"
+                      style="width: 900px" id="dlg_edit_cg">
+                <h:panelGroup>
+                    <h:form>
+                        <h:panelGrid columns="2" cellpadding="5" columnClasses="colLabel, colValue">
+                            <h:outputText value="Name:"/>
+                            <p:inputText value="#{componentGroupDeploymentController.value.name}">
+                                <p:ajax update="previewBackend"/>
+                            </p:inputText>
+                        </h:panelGrid>
+                        <h3>HAProxy Backend Configuration:</h3>
+                        <h:panelGrid columns="2" cellpadding="5" columnClasses="colLabel, colValue">
+                            <h:outputText value="Backend Mode:"/>
+                            <p:selectOneMenu value="#{componentGroupDeploymentController.value.haProxyBackendConfig.mode}" converter="haproxyModeConverter">
+                                <p:ajax update="previewBackend, stickyServers"/>
+                                <f:selectItems value="#{componentGroupDeploymentController.value.haProxyBackendConfig.mode.values()}" var="mode" itemLabel="#{mode.toString()}" itemValue="#{mode}"/>
+                            </p:selectOneMenu>
+
+                            <h:outputText value="Sticky Servers (cookie-based):"/>
+                            <p:selectBooleanCheckbox id="stickyServers" disabled="#{componentGroupDeploymentController.value.haProxyBackendConfig.mode != 'HTTP'}" itemLabel="" value="#{componentGroupDeploymentController.value.haProxyBackendConfig.stickyServers}">
+                                <p:ajax update="previewBackend"/>
+                            </p:selectBooleanCheckbox>
+
+                            <h:outputText value="Custom Configuration:"/>
+                            <p:inputTextarea rows="6" converter="stringListConverter" value="#{componentGroupDeploymentController.value.haProxyBackendConfig.config}">
+                                <p:ajax update="previewBackend"/>
+                            </p:inputTextarea>
+                            <h:outputText value="Preview Configuration:"/>
+                            <p:inputTextarea id="previewBackend" widgetVar="v_preview_backends" rows="6" readonly="true" converter="stringListConverter" value="#{componentGroupDeploymentController.generateHaproxyBackendConfig()}"/>
+
+
+                            <h:outputText value="Backend Server Options:"/>
+                            <p:inputText value="#{componentGroupDeploymentController.value.haProxyBackendConfig.serverOptions}"/>
+
+                            <h:outputText value="VM:"/>
+                            <p:selectOneMenu value="#{componentGroupDeploymentController.value.virtualMachineTemplate}"
+                                             converter="vmTemplateConverter">
+                                <f:selectItem itemLabel="None" itemValue=""/>
+                                <f:selectItems value="#{componentGroupDeploymentController.virtualMachineTemplates}"
+                                               var="templ"
+                                               itemLabel="#{templ.name}" itemValue="#{templ}"/>
+                            </p:selectOneMenu>
+                        </h:panelGrid>
+
+                        <h:panelGroup>
+                            <p:commandButton value="Save"
+                                             action="#{producedServiceDeploymentController.saveComponentGroup(componentGroupDeploymentController.value)}"
+                                             update="out"
+                            />
+                            <p:commandButton value="Cancel" immediate="true"
+                                             action="#{producedServiceDeploymentController.cancelComponentGroupEditing(componentGroupDeploymentController.value)}"
+                                             update="out"
+                            />
+                        </h:panelGroup>
+                    </h:form>
+                </h:panelGroup>
+
+            </p:dialog>
+            <p:dialog header="Edit VM Template reference" widgetVar="dlg_edit_vm_ref" modal="true" closeOnEscape="true"
+                      height="600" width="600" id="dlg_edit_vm_ref">
+                <h:panelGroup>
+                    <h:form style="width: 95%;height: 95%">
+                        <p:panelGrid id="panel_ref_details" columns="2" style="margin-bottom:10px"
+                                     styleClass="ui-panelgrid-blank" cellpadding="5">
+
+                            <p:outputLabel id="label_ref_name" for="ref_name" value="Name:"/>
+                            <p:inputText id="ref_name"
+                                         value="#{topLevelVMDeploymentController.value.name}">
+                            </p:inputText>
+                            <p:outputLabel value="Description:"/>
+                            <p:inputTextarea rows="6" cols="33"
+                                             value="#{topLevelVMDeploymentController.value.description}"/>
+                            <p:outputLabel value="VM:"/>
+                            <p:selectOneMenu
+                                    value="#{topLevelVMDeploymentController.value.virtualMachineTemplate}"
+                                    converter="vmTemplateConverter">
+                                <f:selectItem itemLabel="None" itemValue=""/>
+                                <f:selectItems
+                                        value="#{topLevelVMDeploymentController.virtualMachineTemplates}"
+                                        var="templ"
+                                        itemLabel="#{templ.name}" itemValue="#{templ}"/>
+                            </p:selectOneMenu>
+                        </p:panelGrid>
+                        <p:panelGrid id="ref_buttons" columns="2" style="margin-bottom:10px"
+                                     styleClass="ui-panelgrid-blank" cellpadding="5">
+                            <p:commandButton id="ref_button_save" value="save"
+                                             action="#{applicationDeploymentEditorController.saveChild(topLevelVMDeploymentController.value)}"
+                                             update="out"
+                            />
+                            <p:commandButton id="ref_button_cancel" value="cancel" immediate="true"
+                                             action="#{applicationDeploymentEditorController.cancelChildEditing(topLevelVMDeploymentController.value)}"
+                                             update="out"
+                            />
+                        </p:panelGrid>
+
+                    </h:form>
+                </h:panelGroup>
+            </p:dialog>
+            <p:dialog header="Edit External Service" widgetVar="dlg_edit_ext_service" modal="true" closeOnEscape="true"
+                      height="600"
+                      width="600" id="dlg_edit_ext_service">
+                <h:panelGroup>
+                    <h:form style="width: 95%;height: 95%">
+                        <p:outputPanel id="esDetail" rendered="#{not empty externalServiceDeploymentController.value}">
+                            <p:panelGrid id="panel_es_details" columns="2" style="margin-bottom:10px"
+                                         styleClass="ui-panelgrid-blank" cellpadding="5">
+
+                                <p:outputLabel id="label_es_name" for="es_key" value="Name:"/>
+                                <p:inputText id="es_key"
+                                             value="#{externalServiceDeploymentController.value.name}">
+                                </p:inputText>
+                                <p:outputLabel value="Description:"/>
+                                <p:inputTextarea rows="6" cols="33"
+                                                 value="#{externalServiceDeploymentController.value.description}"/>
+                            </p:panelGrid>
+                            <p:panelGrid id="es_buttons" columns="2" style="margin-bottom:10px"
+                                         styleClass="ui-panelgrid-blank" cellpadding="5">
+                                <p:commandButton id="es_button_save" value="save"
+                                                 action="#{applicationDeploymentEditorController.saveChild(externalServiceDeploymentController.value)}"
+                                                 update="out"
+                                />
+                                <p:commandButton id="es_button_cancel" value="cancel" immediate="true"
+                                                 action="#{applicationDeploymentEditorController.cancelChildEditing(externalServiceDeploymentController.value)}"
+                                                 update="out"
+                                />
+                            </p:panelGrid>
+                        </p:outputPanel>
+                    </h:form>
+                </h:panelGroup>
+            </p:dialog>
+
+            <p:messages id="messages" showDetail="true" autoUpdate="true" closable="true"/>
+
+        </p:outputPanel>
+    </ui:define>
+</ui:composition>

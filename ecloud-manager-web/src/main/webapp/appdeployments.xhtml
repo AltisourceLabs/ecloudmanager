@@ -46,10 +46,13 @@
                             <h:outputText value="#{appDeployment.children()}"/>
                         </p:column>
                         <p:column width="90">
-                            <p:button outcome="appdeployment" icon="ui-icon-pencil">
+                            <p:button title="Edit Blueprint" outcome="editApplicationDeployment" icon="fa fa-pencil">
                                 <f:param name="deployment" value="#{appDeployment.id.toString()}"/>
                             </p:button>
-                            <p:commandButton title="Delete" icon="ui-icon-close"
+                            <p:button title="Edit Constraints" outcome="appdeployment" icon="fa fa-th-list">
+                                <f:param name="deployment" value="#{appDeployment.id.toString()}"/>
+                            </p:button>
+                            <p:commandButton title="Delete" icon="fa fa-times"
                                              update="out"
                                              action="#{applicationDeploymentsController.delete(appDeployment)}">
                                 <p:confirm header="Confirmation" message="Are you sure?" icon="ui-icon-alert"/>
@@ -60,7 +63,7 @@
                         </p:column>
 
                     </p:dataTable>
-
+                    <p:button outcome="editApplicationDeployment" icon="ui-icon-plus" value="New"/>
                     <p:growl id="messages" sticky="true" showDetail="true"/>
                 </h:form>
             </h:panelGroup>
