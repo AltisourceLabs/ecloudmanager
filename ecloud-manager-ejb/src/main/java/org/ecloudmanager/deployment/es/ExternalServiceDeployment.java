@@ -37,7 +37,7 @@ public class ExternalServiceDeployment extends Deployable {
 
     private String description;
 
-    ExternalServiceDeployment() {
+    public ExternalServiceDeployment() {
     }
 
     @Override

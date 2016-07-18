@@ -24,7 +24,7 @@
 
 package org.ecloudmanager.deployment.es;
 
-import org.ecloudmanager.deployment.core.EndpointTemplate;
+import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.core.Template;
 import org.jetbrains.annotations.NotNull;
 
@@ -58,7 +58,7 @@ public class ExternalServiceTemplate implements Template<ExternalServiceDeployme
 
     @NotNull
     @Override
-    public List<EndpointTemplate> getEndpoints() {
+    public List<Endpoint> getEndpoints() {
         return Collections.emptyList();
     }
 

@@ -1,7 +1,7 @@
 /*
- * MIT License
+ * The MIT License (MIT)
  *
- * Copyright (c) 2016  Altisource
+ * Copyright (c) 2016 Altisource Labs
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,32 +22,27 @@
  * SOFTWARE.
  */
 
-package org.ecloudmanager.deployment.core;
+package org.ecloudmanager.web.faces;
 
-public class Endpoint extends DeploymentObject {
-    private Integer port;
-    private boolean constant;
+import org.ecloudmanager.deployment.es.ExternalServiceDeployment;
+import org.ecloudmanager.jeecore.web.faces.Controller;
+import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 
-    public Endpoint() {
+import java.io.Serializable;
+
+@Controller
+public class ExternalServiceDeploymentController extends FacesSupport implements Serializable {
+
+
+    public static String DIALOG_EDIT = "dlg_edit_ext_service";
+    private ExternalServiceDeployment value;
+
+    public ExternalServiceDeployment getValue() {
+        return value;
     }
 
-    public Endpoint(String name) {
-        setName(name);
+    public void setValue(ExternalServiceDeployment value) {
+        this.value = value;
     }
 
-    public Integer getPort() {
-        return port;
-    }
-
-    public void setPort(Integer port) {
-        this.port = port;
-    }
-
-    public boolean isConstant() {
-        return constant;
-    }
-
-    public void setConstant(boolean constant) {
-        this.constant = constant;
-    }
 }

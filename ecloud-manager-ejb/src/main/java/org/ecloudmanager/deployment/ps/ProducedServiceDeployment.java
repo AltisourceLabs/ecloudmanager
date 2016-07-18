@@ -39,7 +39,7 @@ public class ProducedServiceDeployment extends Deployable {
 
     private HAProxyFrontendConfig haProxyFrontendConfig = new HAProxyFrontendConfig();
 
-    ProducedServiceDeployment() {
+    public ProducedServiceDeployment() {
         setId(new ObjectId());
     }
 

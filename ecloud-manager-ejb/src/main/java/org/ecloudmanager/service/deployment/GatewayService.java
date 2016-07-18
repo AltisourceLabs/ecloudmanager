@@ -25,7 +25,6 @@
 package org.ecloudmanager.service.deployment;
 
 import org.apache.logging.log4j.Logger;
-import org.ecloudmanager.deployment.core.EndpointTemplate;
 import org.ecloudmanager.deployment.gateway.GatewayDeployment;
 import org.ecloudmanager.deployment.vm.GatewayVMDeployment;
 import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
@@ -51,7 +50,6 @@ public class GatewayService extends ServiceSupport {
         vmDeployment.setInfrastructure(infra);
         vmDeployment.getRunlist().stream()
                 .flatMap(recipe -> recipe.getEndpoints().stream())
-                .map(EndpointTemplate::toDeployment)
                 .forEach(vmDeployment::addChild);
 
         gatewayDeployment.addChild(vmDeployment);

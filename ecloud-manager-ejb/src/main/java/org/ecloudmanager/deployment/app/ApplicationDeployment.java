@@ -27,11 +27,13 @@ package org.ecloudmanager.deployment.app;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.Deployer;
+import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.jetbrains.annotations.NotNull;
 import org.mongodb.morphia.annotations.Entity;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @JsonIgnoreProperties({"id", "version", "new"})
 @Entity("deployments")
@@ -39,7 +41,7 @@ public class ApplicationDeployment extends Deployable {
     private static final long serialVersionUID = -8557535271917698832L;
     private List<Link> links = new ArrayList<>();
     private List<String> publicEndpoints = new ArrayList<>();
-    protected ApplicationDeployment() {
+    public ApplicationDeployment() {
     }
 
     @NotNull
@@ -64,4 +66,40 @@ public class ApplicationDeployment extends Deployable {
     public void setPublicEndpoints(List<String> publicEndpoints) {
         this.publicEndpoints = publicEndpoints;
     }
+
+    private Link addLink(String consumer) {
+        Optional<Link> existing = links.stream().filter(l -> (l.getConsumer().equals(consumer))).findAny();
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+        Link newLink = new Link();
+        newLink.setConsumer(consumer);
+        links.add(newLink);
+        return newLink;
+    }
+
+    private void deleteLink(String consumer) {
+        links.stream().filter(l -> (l.getConsumer().equals(consumer))).forEach(l -> links.remove(l));
+    }
+
+    @Override
+    public void addChild(DeploymentObject child) {
+        super.addChild(child);
+        if (child instanceof Deployable) {
+            List<String> endpoints = ((Deployable)child).getRequiredEndpointsIncludingTemplateName();
+            endpoints.forEach(this::addLink);
+        }
+    }
+
+    public boolean removeChild(DeploymentObject child) {
+        if (children().remove(child) && child instanceof Deployable) {
+            Deployable deployable = (Deployable) child;
+            List<String> oldEndpoints = deployable.getRequiredEndpointsIncludingTemplateName();
+            oldEndpoints.forEach(this::deleteLink);
+            deployable.getEndpointsIncludingTemplateName().forEach(publicEndpoints::remove);
+            return true;
+        }
+        return false;
+    }
+
 }

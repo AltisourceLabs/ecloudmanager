@@ -27,7 +27,7 @@ public class AWSCreateFirewallRulesAction extends SingleAction {
     public List<Action> getDependencies(Action fullAction) {
         List<Action> result = new ArrayList<>();
         VMDeployment deployment = (VMDeployment) getDeployable();
-        List<Endpoint> required = deployment.getRequiredEndpoints();
+        List<Endpoint> required = deployment.getLinkedRequiredEndpoints();
         required.forEach(e -> {
             DeploymentObject d = e.getParent();
             if (d instanceof VMDeployment) {

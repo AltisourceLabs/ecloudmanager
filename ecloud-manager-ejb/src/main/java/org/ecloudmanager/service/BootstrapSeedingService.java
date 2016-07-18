@@ -26,7 +26,7 @@ package org.ecloudmanager.service;
 
 import org.apache.logging.log4j.Logger;
 import org.ecloudmanager.deployment.app.ApplicationTemplate;
-import org.ecloudmanager.deployment.core.EndpointTemplate;
+import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.es.ExternalServiceTemplate;
 import org.ecloudmanager.deployment.ps.HAProxyFrontendConfig;
 import org.ecloudmanager.deployment.ps.ProducedServiceTemplate;
@@ -83,23 +83,23 @@ public class BootstrapSeedingService {
         Recipe tomcat = new Recipe("tomcat");
         recipeService.save(tomcat);
         Recipe iam_app = new Recipe("iam-app");
-        iam_app.addEndpoint(new EndpointTemplate("IAM_APP"));
+        iam_app.addEndpoint(new Endpoint("IAM_APP"));
         iam_app.addEnvironmentOverrideAttribute("iam_public_hostname", "\"{{SHIB:fqdn}}\"");
         iam_app.addEnvironmentOverrideAttribute("tomcat", "{\n" +
             "      \"home\": \"{{tomcat_home}}\"\n" +
             "    }");
         recipeService.save(iam_app);
         Recipe iam_web = new Recipe("iam-web");
-        iam_web.addEndpoint(new EndpointTemplate("SHIB"));
+        iam_web.addEndpoint(new Endpoint("SHIB"));
 
         Recipe iam_opendj = new Recipe("iam-opendj");
-        iam_opendj.addEndpoint(new EndpointTemplate("OPEN_DJ"));
+        iam_opendj.addEndpoint(new Endpoint("OPEN_DJ"));
         recipeService.save(iam_opendj);
         Recipe iam_mysql = new Recipe("iam-mysql");
-        iam_mysql.addEndpoint(new EndpointTemplate("IAM_MYSQL"));
+        iam_mysql.addEndpoint(new Endpoint("IAM_MYSQL"));
         recipeService.save(iam_mysql);
         Recipe rf_search_app = new Recipe("rf-search-app");
-        rf_search_app.addEndpoint(new EndpointTemplate("RF_SEARCH"));
+        rf_search_app.addEndpoint(new Endpoint("RF_SEARCH"));
         recipeService.save(rf_search_app);
 /*        "realsearch": {
             "ha_installation": true,

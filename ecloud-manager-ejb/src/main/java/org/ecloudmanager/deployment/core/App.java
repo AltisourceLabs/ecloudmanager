@@ -31,7 +31,7 @@ import java.util.List;
 
 public interface App {
     @NotNull
-    List<EndpointTemplate> getEndpoints();
+    List<Endpoint> getEndpoints();
 
     @NotNull
     List<String> getRequiredEndpoints();

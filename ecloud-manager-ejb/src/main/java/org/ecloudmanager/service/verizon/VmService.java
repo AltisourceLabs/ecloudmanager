@@ -453,7 +453,7 @@ public class VmService extends ServiceSupport {
             });
         }
 
-        List<Endpoint> required = deployment.getRequiredEndpoints();
+        List<Endpoint> required = deployment.getLinkedRequiredEndpoints();
         required.forEach(e -> {
             int port = Integer.parseInt(e.getConfigValue("port"));
             DeploymentObject d = e.getParent();

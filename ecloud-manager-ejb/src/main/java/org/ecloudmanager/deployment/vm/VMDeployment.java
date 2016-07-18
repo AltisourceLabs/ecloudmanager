@@ -48,7 +48,7 @@ public class VMDeployment extends Deployable {
     @Transient
     private VMDeployer deployer;
 
-    VMDeployment() {
+    public VMDeployment() {
         setId(new ObjectId());
     }
 
@@ -109,7 +109,7 @@ public class VMDeployment extends Deployable {
         return Arrays.asList("deployer", "parent", "children", "fields", "values");
     }
 
-    public List<Endpoint> getRequiredEndpoints() {
+    public List<Endpoint> getLinkedRequiredEndpoints() {
         List<Endpoint> result = new ArrayList<>();
         ApplicationDeployment ad = (ApplicationDeployment) getTop();
         List<Link> links = ad.getLinks();

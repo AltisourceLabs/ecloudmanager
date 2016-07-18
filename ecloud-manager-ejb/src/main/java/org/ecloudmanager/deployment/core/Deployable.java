@@ -26,6 +26,9 @@ package org.ecloudmanager.deployment.core;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Stream;
 
 public abstract class Deployable extends DeploymentObject {
@@ -44,5 +47,25 @@ public abstract class Deployable extends DeploymentObject {
         return children(Deployable.class).stream()
             .flatMap(Deployable::getRequired)
             .filter(d -> (!d.equals(this) && !children().contains(d))).distinct();
+    }
+
+    public List<Endpoint> getEndpoints() {
+        return Collections.emptyList();
+    }
+
+    public List<String> getRequiredEndpoints() {
+        return Collections.emptyList();
+    }
+
+    public List<String> getRequiredEndpointsIncludingTemplateName() {
+        List<String> result = new ArrayList<>();
+        getRequiredEndpoints().forEach(e -> result.add(getName() + ":" + e));
+        return result;
+    }
+
+    public List<String> getEndpointsIncludingTemplateName() {
+        List<String> result = new ArrayList<>();
+        getEndpoints().forEach(e -> result.add(getName() + ":" + e.getName()));
+        return result;
     }
 }

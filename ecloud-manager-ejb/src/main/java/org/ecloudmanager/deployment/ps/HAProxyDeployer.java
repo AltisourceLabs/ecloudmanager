@@ -27,7 +27,7 @@ package org.ecloudmanager.deployment.ps;
 import org.apache.commons.lang3.StringUtils;
 import org.ecloudmanager.deployment.core.AbstractDeployer;
 import org.ecloudmanager.deployment.core.ConstraintField;
-import org.ecloudmanager.deployment.core.EndpointTemplate;
+import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.gateway.GatewayDeployer;
 import org.ecloudmanager.deployment.gateway.GatewayDeployment;
 import org.ecloudmanager.deployment.gateway.GatewaySuggestionsProvider;
@@ -105,7 +105,7 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
             componentGroupDeployment.stream(VMDeployment.class).forEach(vmDeployment -> {
                 String serverName = vmDeployment.getConfigValue(VMDeployer.VM_NAME);
                 String ip = InfrastructureDeployer.getIP(vmDeployment);
-                @NotNull List<EndpointTemplate> endpoints = vmDeployment.getVirtualMachineTemplate().getEndpoints();
+                @NotNull List<Endpoint> endpoints = vmDeployment.getVirtualMachineTemplate().getEndpoints();
                 // TODO - the user shuould be able to select an endpoint for the backend server when there's more then one in a runlist
                 String port = endpoints.get(0).getPort().toString();
                 configurator.saveServer(

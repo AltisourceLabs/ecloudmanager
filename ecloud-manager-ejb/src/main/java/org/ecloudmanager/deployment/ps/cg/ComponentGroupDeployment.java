@@ -53,7 +53,7 @@ public class ComponentGroupDeployment extends Deployable {
 
     private VirtualMachineTemplate virtualMachineTemplate;
 
-    ComponentGroupDeployment() {
+    public ComponentGroupDeployment() {
         setId(new ObjectId());
     }
 

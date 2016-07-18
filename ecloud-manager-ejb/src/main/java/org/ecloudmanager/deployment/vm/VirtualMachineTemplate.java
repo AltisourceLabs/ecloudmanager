@@ -25,15 +25,15 @@
 package org.ecloudmanager.deployment.vm;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import org.ecloudmanager.deployment.core.EndpointTemplate;
+import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.core.Template;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.jeecore.domain.MongoObject;
 import org.ecloudmanager.util.ClonerProducer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.mongodb.morphia.annotations.Embedded;
 import org.mongodb.morphia.annotations.Entity;
-import org.mongodb.morphia.annotations.Reference;
 
 import java.io.Serializable;
 import java.util.*;
@@ -50,10 +50,8 @@ public class VirtualMachineTemplate extends MongoObject implements Serializable,
     private int processorCount = 1;
     private int memory = 1;
     private int storage = 20;
-    @Reference(idOnly = true, ignoreMissing = true)
+    @Embedded
     private List<Recipe> runlist = new LinkedList<>();
-    @Reference(idOnly = true, ignoreMissing = true)
-    private VirtualMachineTemplate from;
 
     public VirtualMachineTemplate() {
     }
@@ -129,27 +127,19 @@ public class VirtualMachineTemplate extends MongoObject implements Serializable,
         }
     }
 
-    public VirtualMachineTemplate getFrom() {
-        return from;
-    }
-
-    public void setFrom(VirtualMachineTemplate from) {
-        this.from = from;
-    }
-
     public String toString() {
         return name;
     }
 
-    @Override
-    protected Collection<String> getExcludeFieldNames() {
-        return Arrays.asList("storage", "from", "runlist", "children");
-    }
+//    @Override
+//    protected Collection<String> getExcludeFieldNames() {
+//        return Arrays.asList("storage", "from", "runlist", "children");
+//    }
 
     @NotNull
     @Override
-    public List<EndpointTemplate> getEndpoints() {
-        Set<EndpointTemplate> result = new LinkedHashSet<>();
+    public List<Endpoint> getEndpoints() {
+        Set<Endpoint> result = new LinkedHashSet<>();
         for (Recipe r : getRunlist()) {
             result.addAll(r.getEndpoints());
         }
@@ -165,7 +155,7 @@ public class VirtualMachineTemplate extends MongoObject implements Serializable,
     }
 
 //    void initDependencies() {
-//        List<EndpointTemplate> produced = getEndpoints();
+//        List<Endpoint> produced = getEndpoints();
 //        for (Recipe r : getRunlist()) {
 //            for (String s : r.getRequiredEndpoints()) {
 //                if (produced.contains(s)) {
