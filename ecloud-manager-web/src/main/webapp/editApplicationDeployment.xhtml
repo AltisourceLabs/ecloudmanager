@@ -36,7 +36,7 @@
                     <p>Name: <p:inputText value="#{applicationDeploymentEditorController.deployment.name}"/></p>
                     <p>Entries:</p>
                     <p:dataTable id="children" var="srv"
-                                 value="#{applicationDeploymentEditorController.deployment.children}"
+                                 value="#{applicationDeploymentEditorController.deployment.children()}"
                                  resizableColumns="true" liveResize="true" styleClass="childrenTable">
 
                         <p:column width="30%" headerText="Name" sortBy="#{srv.name}">

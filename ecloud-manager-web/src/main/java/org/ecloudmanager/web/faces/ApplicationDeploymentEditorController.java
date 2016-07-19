@@ -28,11 +28,8 @@ import org.apache.logging.log4j.Logger;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.es.ExternalServiceDeployment;
-import org.ecloudmanager.deployment.es.ExternalServiceTemplate;
 import org.ecloudmanager.deployment.ps.ProducedServiceDeployment;
-import org.ecloudmanager.deployment.ps.ProducedServiceTemplate;
 import org.ecloudmanager.deployment.vm.VMDeployment;
-import org.ecloudmanager.deployment.vm.VMTemplateReference;
 import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
@@ -55,9 +52,9 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
     private static Map<Class, String> dialogs = new HashMap<>();
 
     static {
-        dialogs.put(ProducedServiceTemplate.class, ProducedServiceTemplateController.DIALOG_EDIT);
-        dialogs.put(ExternalServiceTemplate.class, ExternalServiceTemplateController.DIALOG_EDIT);
-        dialogs.put(VMTemplateReference.class, VirtualMachineTemplateReferenceController.DIALOG_EDIT);
+        dialogs.put(ProducedServiceDeployment.class, ProducedServiceDeploymentController.DIALOG_EDIT);
+        dialogs.put(ExternalServiceDeployment.class, ExternalServiceDeploymentController.DIALOG_EDIT);
+        dialogs.put(VMDeployment.class, TopLevelVMDeploymentController.DIALOG_EDIT);
     }
 
     private boolean newChild = false;
