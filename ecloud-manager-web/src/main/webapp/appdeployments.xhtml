@@ -45,8 +45,8 @@
                         <p:column width="60%">
                             <h:outputText value="#{appDeployment.children()}"/>
                         </p:column>
-                        <p:column width="90">
-                            <p:button title="Edit Blueprint" outcome="editApplicationDeployment" icon="fa fa-pencil">
+                        <p:column width="115">
+                            <p:button title="Edit Blueprint" outcome="editApplicationDeployment" icon="fa fa-cubes">
                                 <f:param name="deployment" value="#{appDeployment.id.toString()}"/>
                             </p:button>
                             <p:button title="Edit Constraints" outcome="appdeployment" icon="fa fa-th-list">
@@ -57,7 +57,7 @@
                                              action="#{applicationDeploymentsController.delete(appDeployment)}">
                                 <p:confirm header="Confirmation" message="Are you sure?" icon="ui-icon-alert"/>
                             </p:commandButton>
-                            <p:commandButton title="Download" icon="ui-icon-arrowstop-1-s"
+                            <p:commandButton title="Download" icon="fa fa-download"
                                              ajax="false"
                                              action="#{applicationDeploymentsController.download(appDeployment)}" />
                         </p:column>
