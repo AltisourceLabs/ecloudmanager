@@ -28,12 +28,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.Deployer;
 import org.ecloudmanager.deployment.core.DeploymentObject;
+import org.ecloudmanager.deployment.vm.infrastructure.Infrastructure;
 import org.jetbrains.annotations.NotNull;
 import org.mongodb.morphia.annotations.Entity;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @JsonIgnoreProperties({"id", "version", "new"})
 @Entity("deployments")
@@ -41,6 +43,8 @@ public class ApplicationDeployment extends Deployable {
     private static final long serialVersionUID = -8557535271917698832L;
     private List<Link> links = new ArrayList<>();
     private List<String> publicEndpoints = new ArrayList<>();
+    private Infrastructure infrastructure;
+
     public ApplicationDeployment() {
     }
 
@@ -48,6 +52,14 @@ public class ApplicationDeployment extends Deployable {
     @Override
     public Deployer<ApplicationDeployment> getDeployer() {
         return new ApplicationDeployer();
+    }
+
+    public Infrastructure getInfrastructure() {
+        return infrastructure;
+    }
+
+    public void setInfrastructure(Infrastructure infrastructure) {
+        this.infrastructure = infrastructure;
     }
 
     public List<Link> getLinks() {
@@ -79,7 +91,20 @@ public class ApplicationDeployment extends Deployable {
     }
 
     private void deleteLink(String consumer) {
-        links.stream().filter(l -> (l.getConsumer().equals(consumer))).forEach(l -> links.remove(l));
+        List<Link> linksToRemove = links.stream().filter(l -> (l.getConsumer().equals(consumer))).collect(Collectors.toList());
+        linksToRemove.forEach(l -> links.remove(l));
+    }
+
+    public void updateLinks() {
+        List<String> endpoints = new ArrayList<>();
+        children().forEach(c -> {
+            if (c instanceof Deployable) {
+                endpoints.addAll(((Deployable) c).getRequiredEndpointsIncludingTemplateName());
+            }
+        });
+        List<Link> newLinks = endpoints.stream().map(this::addLink).collect(Collectors.toList());
+        links.clear();
+        links.addAll(newLinks);
     }
 
     @Override

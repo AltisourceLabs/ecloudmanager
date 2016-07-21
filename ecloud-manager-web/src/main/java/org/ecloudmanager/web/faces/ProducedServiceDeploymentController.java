@@ -28,6 +28,7 @@ import org.ecloudmanager.deployment.ps.BackendWeight;
 import org.ecloudmanager.deployment.ps.HAProxyDeployer;
 import org.ecloudmanager.deployment.ps.ProducedServiceDeployment;
 import org.ecloudmanager.deployment.ps.cg.ComponentGroupDeployment;
+import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.omnifaces.util.Beans;
@@ -65,12 +66,13 @@ public class ProducedServiceDeploymentController extends FacesSupport implements
     }
 
     public void deleteComponentGroup(ComponentGroupDeployment componentGroupDeployment) {
-        value.getComponentGroups().remove(componentGroupDeployment);
+        value.children().remove(componentGroupDeployment);
     }
 
     public void newComponentGroup() {
         newChild = true;
-        startEditComponentGroup(new ComponentGroupDeployment());
+        ComponentGroupDeployment componentGroupDeployment = new ComponentGroupDeployment();
+        startEditComponentGroup(componentGroupDeployment);
     }
 
     public void save() {
@@ -85,9 +87,17 @@ public class ProducedServiceDeploymentController extends FacesSupport implements
 
     public void saveComponentGroup(ComponentGroupDeployment cg) {
         if (newChild) {
-            value.getComponentGroups().add(cg);
+            value.addChild(cg);
             newChild = false;
         }
+        // Create the first vm if it is missing
+        if (cg.getVirtualMachineTemplate() != null && cg.children(VMDeployment.class).size() == 0) {
+            cg.addVm();
+        }
+        // Propagate infrastructure and vm template to vm deployments
+        cg.children(VMDeployment.class).forEach(vmDeployment -> {
+            vmDeployment.setVirtualMachineTemplate(cg.getVirtualMachineTemplate());
+        });
         RequestContext ctx = RequestContext.getCurrentInstance();
         ctx.execute("PF('" + ComponentGroupDeploymentController.DIALOG_EDIT + "').hide()");
         ctx.update(DIALOG_EDIT);

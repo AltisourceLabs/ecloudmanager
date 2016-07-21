@@ -162,6 +162,10 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
     }
 
     private static void generateGeoRules(String frontendName, HAProxyFrontendConfig frontendConfig, List<String> config) {
+        if (frontendConfig.getGeolocationRules().size() == 0) {
+            return;
+        }
+
         boolean http = frontendConfig.getMode() == HAProxyMode.HTTP;
         boolean hasCities = frontendConfig.getGeolocationRules().stream()
                 .flatMap(geolocationRule -> geolocationRule.getLocations().stream())

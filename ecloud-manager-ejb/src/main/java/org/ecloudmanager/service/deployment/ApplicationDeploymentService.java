@@ -34,8 +34,6 @@ import org.ecloudmanager.deployment.app.ApplicationTemplate;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
-import org.ecloudmanager.deployment.ps.cg.ComponentGroupDeployment;
-import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.infrastructure.Infrastructure;
 import org.ecloudmanager.jeecore.service.ServiceSupport;
 import org.ecloudmanager.repository.deployment.DeploymentAttemptRepository;
@@ -65,9 +63,7 @@ public class ApplicationDeploymentService extends ServiceSupport {
         log.info("Creating deployment for application " + app.getName() + ", " + infrastructure);
         Infrastructure infra = Infrastructure.valueOf(infrastructure);
         ApplicationDeployment ad = app.toDeployment();
-
-        ad.stream(ComponentGroupDeployment.class).forEach(x -> x.setInfrastructure(infra));
-        ad.stream(VMDeployment.class).forEach(x -> x.setInfrastructure(infra));
+        ad.setInfrastructure(infra);
         ad.specifyConstraints();
         return ad;
     }

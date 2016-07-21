@@ -44,7 +44,7 @@ public class VMDeployment extends Deployable {
     private static final long serialVersionUID = 4504079285011312598L;
 
     private VirtualMachineTemplate virtualMachineTemplate;
-    private Infrastructure infrastructure;
+
     @Transient
     private VMDeployer deployer;
 
@@ -64,18 +64,14 @@ public class VMDeployment extends Deployable {
 
     @NotNull
     public Infrastructure getInfrastructure() {
-        return infrastructure;
-    }
-
-    public void setInfrastructure(Infrastructure infrastructure) {
-        this.infrastructure = infrastructure;
+        return ((ApplicationDeployment)getTop()).getInfrastructure();
     }
 
     public VirtualMachineTemplate getVirtualMachineTemplate() {
         return virtualMachineTemplate;
     }
 
-    void setVirtualMachineTemplate(VirtualMachineTemplate virtualMachineTemplate) {
+    public void setVirtualMachineTemplate(VirtualMachineTemplate virtualMachineTemplate) {
         this.virtualMachineTemplate = virtualMachineTemplate;
     }
 
@@ -133,5 +129,15 @@ public class VMDeployment extends Deployable {
             }
         });
         return result;
+    }
+
+    @Override
+    public List<Endpoint> getEndpoints() {
+        return virtualMachineTemplate.getEndpoints();
+    }
+
+    @Override
+    public List<String> getRequiredEndpoints() {
+        return virtualMachineTemplate.getRequiredEndpoints();
     }
 }

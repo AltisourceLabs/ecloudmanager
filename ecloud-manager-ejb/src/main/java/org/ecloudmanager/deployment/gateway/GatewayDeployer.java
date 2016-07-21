@@ -24,6 +24,7 @@
 
 package org.ecloudmanager.deployment.gateway;
 
+import org.ecloudmanager.deployment.app.ApplicationDeployer;
 import org.ecloudmanager.deployment.core.AbstractDeployer;
 import org.ecloudmanager.deployment.core.ConstraintField;
 import org.ecloudmanager.deployment.core.ConstraintValue;
@@ -70,6 +71,8 @@ public class GatewayDeployer extends AbstractDeployer<GatewayDeployment> {
 
     @Override
     public void specifyConstraints(GatewayDeployment deployment) {
+        new ApplicationDeployer().specifyConstraints(deployment);
+
         @NotNull DeploymentObject etcdConfig = getEtcdConfig(deployment);
         etcdConfig.addField(ConstraintField.builder()
                 .name(ETCD_ADDRESS)

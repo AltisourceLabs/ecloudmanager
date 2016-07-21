@@ -74,8 +74,12 @@ public class BootstrapSeedingService {
     @PostConstruct
     public void init() {
         if (virtualMachineTemplateRepository.getAll().isEmpty()) {
-            log.info("Database is empty, creating example data");
-            populateDatabaseWithExampleData();
+            // It is causing problems here as populateDatabaseWithExampleData() fails at the following place:
+            // at org.ecloudmanager.service.template.VerizonConfigurationService.getCurrentConfiguration(VerizonConfigurationService.java:62)
+            // Now this call need user identity, so the user should be logged in before populateDatabaseWithExampleData() is called...
+            // Commenting out this for now.
+            // log.info("Database is empty, creating example data");
+            // populateDatabaseWithExampleData();
         }
     }
 

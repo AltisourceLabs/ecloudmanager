@@ -44,15 +44,15 @@ public class GatewayService extends ServiceSupport {
         Infrastructure infra = Infrastructure.valueOf(infrastructure);
         GatewayDeployment gatewayDeployment = new GatewayDeployment();
         gatewayDeployment.setName(name);
+        gatewayDeployment.setInfrastructure(infra);
 
         GatewayVMDeployment vmDeployment = new GatewayVMDeployment(virtualMachineTemplate);
         vmDeployment.setName(gatewayDeployment.getName());
-        vmDeployment.setInfrastructure(infra);
+        gatewayDeployment.addChild(vmDeployment);
         vmDeployment.getRunlist().stream()
                 .flatMap(recipe -> recipe.getEndpoints().stream())
                 .forEach(vmDeployment::addChild);
 
-        gatewayDeployment.addChild(vmDeployment);
         gatewayDeployment.getPublicEndpoints().add(gatewayDeployment.getName() + ":" + GatewayVMDeployment.HAPROXY_STATS);
 
         gatewayDeployment.specifyConstraints();

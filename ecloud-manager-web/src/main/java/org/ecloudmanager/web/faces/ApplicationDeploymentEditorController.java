@@ -27,9 +27,12 @@ package org.ecloudmanager.web.faces;
 import org.apache.logging.log4j.Logger;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.core.Deployable;
+import org.ecloudmanager.deployment.core.DeploymentObject;
+import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.es.ExternalServiceDeployment;
 import org.ecloudmanager.deployment.ps.ProducedServiceDeployment;
 import org.ecloudmanager.deployment.vm.VMDeployment;
+import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironment;
 import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
@@ -45,6 +48,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
 public class ApplicationDeploymentEditorController extends FacesSupport implements Serializable {
@@ -85,6 +89,7 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
 
 
     public void save() {
+        deployment.specifyConstraints();
         if (newTemplate) {
             applicationDeploymentService.save(deployment);
             newTemplate = false;
@@ -123,7 +128,9 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
 
     public void newProducedService() {
         newChild = true;
-        startEditChild(new ProducedServiceDeployment());
+        ProducedServiceDeployment producedServiceDeployment = new ProducedServiceDeployment();
+        producedServiceDeployment.children().add(new Endpoint());
+        startEditChild(producedServiceDeployment);
     }
 
     public void newExternalService() {
@@ -158,6 +165,8 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
         if (newChild) {
             deployment.addChild(c);
             newChild = false;
+        } else {
+            deployment.updateLinks();
         }
         hideDialog(c.getClass());
     }
@@ -184,5 +193,11 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
             deployment.getPublicEndpoints().add(publicEndpointToAdd);
             publicEndpointToAdd = null;
         }
+    }
+
+    public List<DeploymentObject> editableChildren() {
+        return deployment.children().stream()
+                .filter(c -> !(c instanceof ChefEnvironment))
+                .collect(Collectors.toList());
     }
 }

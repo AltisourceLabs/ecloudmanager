@@ -50,10 +50,7 @@ public class VmTemplateController extends FacesSupport implements Serializable {
     @Inject
     private transient RecipeRepository recipeRepository;
 
-    private List<Recipe> recipes;
     private Recipe recipeToAdd = null;
-
-    private List<VirtualMachineTemplate> vmtemplates;
 
     public VirtualMachineTemplate getValue() {
         return value;
@@ -67,17 +64,10 @@ public class VmTemplateController extends FacesSupport implements Serializable {
     @PostConstruct
     public void init() {
         this.value = new VirtualMachineTemplate();
-        refresh();
     }
-
-    private void refresh() {
-        vmtemplates = vmtemplateRepo.getAll();
-        recipes = recipeRepository.getAll();
-    }
-
 
     public List<VirtualMachineTemplate> getTemplates() {
-        return vmtemplates;
+        return vmtemplateRepo.getAll();
     }
 
     public void deleteRecipe(Recipe recipe) {
@@ -85,7 +75,7 @@ public class VmTemplateController extends FacesSupport implements Serializable {
     }
 
     public List<Recipe> getRecipes() {
-        return recipes;
+        return recipeRepository.getAll();
     }
 
     public void setRecipeToAdd(Recipe recipeToAdd) {
