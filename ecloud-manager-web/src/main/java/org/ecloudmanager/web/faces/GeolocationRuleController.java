@@ -39,7 +39,7 @@ public class GeolocationRuleController extends EntityEditorController<Geolocatio
     @Inject
     private transient GeolocationService geolocationService;
     @Inject
-    ProducedServiceTemplateController producedServiceTemplateController;
+    ProducedServiceDeploymentController producedServiceDeploymentController;
 
     private GeolocationRecord geolocationRecord;
 
@@ -61,7 +61,7 @@ public class GeolocationRuleController extends EntityEditorController<Geolocatio
     }
 
     private List<GeolocationRule> getRules() {
-        return producedServiceTemplateController.getValue().getHaProxyFrontendConfig().getGeolocationRules();
+        return producedServiceDeploymentController.getValue().getHaProxyFrontendConfig().getGeolocationRules();
     }
 
     @Override

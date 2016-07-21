@@ -25,7 +25,7 @@
 package org.ecloudmanager.deployment.vm;
 
 import org.ecloudmanager.deployment.core.App;
-import org.ecloudmanager.deployment.core.EndpointTemplate;
+import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.core.Template;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -88,7 +88,7 @@ public class VMTemplateReference implements Template<VMDeployment>, App {
 
     @NotNull
     @Override
-    public List<EndpointTemplate> getEndpoints() {
+    public List<Endpoint> getEndpoints() {
         return virtualMachineTemplate.getEndpoints();
     }
 

@@ -1,7 +1,7 @@
 /*
- * MIT License
+ * The MIT License (MIT)
  *
- * Copyright (c) 2016  Altisource
+ * Copyright (c) 2016 Altisource Labs
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,73 +24,51 @@
 
 package org.ecloudmanager.web.faces;
 
+import org.ecloudmanager.deployment.ps.HAProxyDeployer;
+import org.ecloudmanager.deployment.ps.cg.ComponentGroupDeployment;
 import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
-import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
-import org.ecloudmanager.repository.template.RecipeRepository;
 import org.ecloudmanager.repository.template.VirtualMachineTemplateRepository;
-import org.ecloudmanager.service.template.VirtualMachineTemplateService;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
 
 @Controller
-public class VmTemplateController extends FacesSupport implements Serializable {
-
-    private VirtualMachineTemplate value;
-    private static final long serialVersionUID = -3780788515526080540L;
+public class ComponentGroupDeploymentController extends FacesSupport implements Serializable {
+    public static String DIALOG_EDIT = "dlg_edit_cg";
+    private ComponentGroupDeployment value;
 
     @Inject
-    private transient VirtualMachineTemplateRepository vmtemplateRepo;
-    @Inject
-    private transient VirtualMachineTemplateService vmtemplateService;
-    @Inject
-    private transient RecipeRepository recipeRepository;
+    private transient VirtualMachineTemplateRepository virtualMachineTemplateRepository;
+    private List<VirtualMachineTemplate> virtualMachineTemplates;
 
-    private Recipe recipeToAdd = null;
+    @PostConstruct
+    private void init() {
+        refresh();
+    }
 
-    public VirtualMachineTemplate getValue() {
+    void refresh() {
+        virtualMachineTemplates = virtualMachineTemplateRepository.getAll();
+    }
+
+    public List<VirtualMachineTemplate> getVirtualMachineTemplates() {
+        return virtualMachineTemplates;
+    }
+
+    public ComponentGroupDeployment getValue() {
         return value;
     }
 
-    public void setValue(VirtualMachineTemplate value) {
+    public void setValue(ComponentGroupDeployment value) {
         this.value = value;
     }
 
-
-    @PostConstruct
-    public void init() {
-        this.value = new VirtualMachineTemplate();
-    }
-
-    public List<VirtualMachineTemplate> getTemplates() {
-        return vmtemplateRepo.getAll();
-    }
-
-    public void deleteRecipe(Recipe recipe) {
-        value.getRunlist().remove(recipe);
-    }
-
-    public List<Recipe> getRecipes() {
-        return recipeRepository.getAll();
-    }
-
-    public void setRecipeToAdd(Recipe recipeToAdd) {
-        this.recipeToAdd = recipeToAdd;
-    }
-
-    public Object getRecipeToAdd() {
-        return recipeToAdd;
-    }
-
-    public void addRecipe() {
-        if (recipeToAdd != null) {
-            value.addRecipe(recipeToAdd);
-            recipeToAdd = null;
-        }
+    public List<String> generateHaproxyBackendConfig() {
+        return value == null ? Collections.emptyList() : HAProxyDeployer.generateHAProxyBackendConfig(value.getName(), value.getHaProxyBackendConfig());
     }
 
 }

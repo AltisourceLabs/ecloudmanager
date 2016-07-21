@@ -28,7 +28,7 @@ import org.bson.types.ObjectId;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.app.ApplicationTemplate;
 import org.ecloudmanager.deployment.core.DeploymentObject;
-import org.ecloudmanager.deployment.core.EndpointTemplate;
+import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.vm.infrastructure.Infrastructure;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
@@ -129,7 +129,7 @@ public class ApplicationTest {
         String LS = System.getProperty("line.separator");
         Recipe iam_app = new Recipe("rf-iam-app");
         iam_app.setVersion("= 2.9.0");
-        iam_app.addEndpoint(new EndpointTemplate("IAM_APP"));
+        iam_app.addEndpoint(new Endpoint("IAM_APP"));
 
         iam_app.addEnvironmentOverrideAttribute("iam_public_hostname", "${SHIB:fqdn}");
         iam_app.addEnvironmentOverrideAttribute("iam_app_host", "${:fqdn}");

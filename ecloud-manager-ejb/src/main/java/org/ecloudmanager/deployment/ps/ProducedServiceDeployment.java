@@ -28,9 +28,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.bson.types.ObjectId;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.Deployer;
+import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.ps.cg.ComponentGroupDeployment;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -39,10 +41,23 @@ public class ProducedServiceDeployment extends Deployable {
 
     private HAProxyFrontendConfig haProxyFrontendConfig = new HAProxyFrontendConfig();
 
-    ProducedServiceDeployment() {
+    public ProducedServiceDeployment() {
         setId(new ObjectId());
     }
 
+    public Endpoint getEndpoint() {
+        return children(Endpoint.class).get(0);
+    }
+
+    @Override
+    public List<Endpoint> getEndpoints() {
+        return Collections.singletonList(getEndpoint());
+    }
+
+    @Override
+    public List<String> getRequiredEndpoints() {
+        return children(ComponentGroupDeployment.class).stream().flatMap(t -> t.getRequiredEndpointsIncludingTemplateName().stream()).collect(Collectors.toList());
+    }
 
     public HAProxyFrontendConfig getHaProxyFrontendConfig() {
         return haProxyFrontendConfig;

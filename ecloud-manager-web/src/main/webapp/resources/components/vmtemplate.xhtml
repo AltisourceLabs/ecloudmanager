@@ -56,13 +56,6 @@
         <p>Storage (GB): <p:inputText id="input_storage"
                                       value="#{cc.attrs.value.storage}"/>
         </p>
-
-        <p>Extends: <p:selectOneMenu id="menu_extends" value="#{cc.attrs.value.from}"
-                                     converter="vmTemplateConverter">
-            <f:selectItem itemLabel="None" itemValue=""/>
-            <f:selectItems value="#{vmTemplateController.templates}" var="templ"
-                           itemLabel="#{templ.name}" itemValue="#{templ}"/>
-        </p:selectOneMenu></p>
     </p:panelGrid>
     <p:dataTable var="recipe" value="#{cc.attrs.value.runlist}"
                  draggableRows="true" id="recipes">

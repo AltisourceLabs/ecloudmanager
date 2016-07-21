@@ -1,7 +1,7 @@
 /*
- * MIT License
+ * The MIT License (MIT)
  *
- * Copyright (c) 2016  Altisource
+ * Copyright (c) 2016 Altisource Labs
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,32 +22,35 @@
  * SOFTWARE.
  */
 
-package org.ecloudmanager.deployment.core;
+package org.ecloudmanager.web.faces.convert;
 
-public class Endpoint extends DeploymentObject {
-    private Integer port;
-    private boolean constant;
+import org.ecloudmanager.deployment.vm.infrastructure.Infrastructure;
 
-    public Endpoint() {
+import javax.faces.component.UIComponent;
+import javax.faces.context.FacesContext;
+import javax.faces.convert.Converter;
+import javax.faces.convert.FacesConverter;
+
+@FacesConverter("infrastructureConverter")
+public class InfrastructureConverter implements Converter {
+
+    @Override
+    public Object getAsObject(FacesContext context, UIComponent component, String value) {
+        if (value.isEmpty()) {
+            return null;
+        }
+        return Infrastructure.valueOf(value);
     }
 
-    public Endpoint(String name) {
-        setName(name);
-    }
+    @Override
+    public String getAsString(FacesContext context, UIComponent component, Object value) {
+        if (value == null) {
+            return "";
+        }
+        if (value instanceof Infrastructure) {
+            return ((Infrastructure) value).name();
+        }
 
-    public Integer getPort() {
-        return port;
-    }
-
-    public void setPort(Integer port) {
-        this.port = port;
-    }
-
-    public boolean isConstant() {
-        return constant;
-    }
-
-    public void setConstant(boolean constant) {
-        this.constant = constant;
+        return null;
     }
 }

@@ -25,7 +25,7 @@
 package org.ecloudmanager.deployment.vm.provisioning;
 
 import org.ecloudmanager.deployment.core.App;
-import org.ecloudmanager.deployment.core.EndpointTemplate;
+import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.jeecore.domain.DomainObject;
 import org.ecloudmanager.jeecore.domain.Persistable;
 import org.jetbrains.annotations.NotNull;
@@ -45,7 +45,7 @@ public class Recipe extends DomainObject implements App, Persistable<String> {
     private String version = "= 0.1.0";
     @Transient
     private String oldId = null;
-    private List<EndpointTemplate> endpoints = new ArrayList<>();
+    private List<Endpoint> endpoints = new ArrayList<>();
 
     public Recipe() {
     }
@@ -70,7 +70,7 @@ public class Recipe extends DomainObject implements App, Persistable<String> {
         this.attributes = attributes;
     }
 
-    public void addEndpoint(EndpointTemplate endpoint) {
+    public void addEndpoint(Endpoint endpoint) {
         endpoints.add(endpoint);
     }
 
@@ -96,11 +96,11 @@ public class Recipe extends DomainObject implements App, Persistable<String> {
     }
 
     @NotNull
-    public List<EndpointTemplate> getEndpoints() {
+    public List<Endpoint> getEndpoints() {
         return endpoints;
     }
 
-    public void setEndpoints(List<EndpointTemplate> endpoints) {
+    public void setEndpoints(List<Endpoint> endpoints) {
         this.endpoints = endpoints;
     }
 

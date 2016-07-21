@@ -26,7 +26,6 @@ package org.ecloudmanager.deployment.vm;
 
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.Endpoint;
-import org.ecloudmanager.deployment.core.EndpointTemplate;
 import org.ecloudmanager.deployment.vm.provisioning.ChefAttribute;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 
@@ -61,7 +60,7 @@ public class GatewayVMDeployment extends VMDeployment {
                 "}");
         attribute.setEnvironmentAttribute(false);
         haproxy.addChefAttribute(attribute);
-        EndpointTemplate haproxyStats = new EndpointTemplate(HAPROXY_STATS);
+        Endpoint haproxyStats = new Endpoint(HAPROXY_STATS);
         haproxyStats.setPort(22002);
         haproxyStats.setConstant(true);
         haproxy.addEndpoint(haproxyStats);
@@ -94,7 +93,7 @@ public class GatewayVMDeployment extends VMDeployment {
     }
 
     @Override
-    public List<Endpoint> getRequiredEndpoints() {
+    public List<Endpoint> getLinkedRequiredEndpoints() {
         return Collections.emptyList();
     }
 

@@ -24,7 +24,7 @@
 
 package org.ecloudmanager.deployment.ps;
 
-import org.ecloudmanager.deployment.core.EndpointTemplate;
+import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.core.Template;
 import org.ecloudmanager.deployment.ps.cg.ComponentGroupTemplate;
 import org.jetbrains.annotations.NotNull;
@@ -46,7 +46,7 @@ public class ProducedServiceTemplate implements Serializable, Template<ProducedS
     private HAProxyFrontendConfig haProxyFrontendConfig = new HAProxyFrontendConfig();
 
     private List<ComponentGroupTemplate> componentGroups = new ArrayList<>();
-    private EndpointTemplate endpoint = new EndpointTemplate();
+    private Endpoint endpoint = new Endpoint();
 
     public ProducedServiceTemplate() {
     }
@@ -55,11 +55,11 @@ public class ProducedServiceTemplate implements Serializable, Template<ProducedS
         this.name = name;
     }
 
-    public EndpointTemplate getEndpoint() {
+    public Endpoint getEndpoint() {
         return endpoint;
     }
 
-    public void setEndpoint(EndpointTemplate endpoint) {
+    public void setEndpoint(Endpoint endpoint) {
         this.endpoint = endpoint;
     }
 
@@ -86,7 +86,7 @@ public class ProducedServiceTemplate implements Serializable, Template<ProducedS
 
     @NotNull
     @Override
-    public List<EndpointTemplate> getEndpoints() {
+    public List<Endpoint> getEndpoints() {
         return Collections.singletonList(endpoint);
     }
 

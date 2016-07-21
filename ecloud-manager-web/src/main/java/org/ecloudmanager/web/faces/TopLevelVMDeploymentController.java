@@ -1,7 +1,7 @@
 /*
- * MIT License
+ * The MIT License (MIT)
  *
- * Copyright (c) 2016  Altisource
+ * Copyright (c) 2016 Altisource Labs
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,37 +24,44 @@
 
 package org.ecloudmanager.web.faces;
 
-import org.ecloudmanager.deployment.core.Endpoint;
+import org.ecloudmanager.deployment.vm.VMDeployment;
+import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
+import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
-import org.primefaces.context.RequestContext;
-import org.primefaces.event.CloseEvent;
+import org.ecloudmanager.repository.template.VirtualMachineTemplateRepository;
 
-import javax.faces.bean.ManagedBean;
-import javax.faces.bean.SessionScoped;
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 import java.io.Serializable;
+import java.util.List;
 
-@SessionScoped
-@ManagedBean
-public class EndpointController extends FacesSupport implements Serializable {
-    private Endpoint value;
+@Controller
+public class TopLevelVMDeploymentController extends FacesSupport implements Serializable {
+    public static String DIALOG_EDIT = "dlg_edit_vm_ref";
+    @Inject
+    private transient VirtualMachineTemplateRepository virtualMachineTemplateRepository;
+    private List<VirtualMachineTemplate> virtualMachineTemplates;
+    private VMDeployment value;
 
-    public Endpoint getValue() {
+    @PostConstruct
+    private void init() {
+        refresh();
+    }
+
+    void refresh() {
+        virtualMachineTemplates = virtualMachineTemplateRepository.getAll();
+    }
+
+    public List<VirtualMachineTemplate> getVirtualMachineTemplates() {
+        return virtualMachineTemplates;
+    }
+
+    public VMDeployment getValue() {
         return value;
     }
 
-    public void setValue(Endpoint value) {
+    public void setValue(VMDeployment value) {
         this.value = value;
     }
 
-    public void handleClose(CloseEvent event) {
-
-    }
-
-    public void saveEditedEndpoint() {
-        RequestContext.getCurrentInstance().closeDialog(value);
-    }
-
-    public void cancelEditing() {
-        RequestContext.getCurrentInstance().closeDialog(null);
-    }
 }

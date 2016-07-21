@@ -44,11 +44,11 @@ public class VMDeployment extends Deployable {
     private static final long serialVersionUID = 4504079285011312598L;
 
     private VirtualMachineTemplate virtualMachineTemplate;
-    private Infrastructure infrastructure;
+
     @Transient
     private VMDeployer deployer;
 
-    VMDeployment() {
+    public VMDeployment() {
         setId(new ObjectId());
     }
 
@@ -64,18 +64,14 @@ public class VMDeployment extends Deployable {
 
     @NotNull
     public Infrastructure getInfrastructure() {
-        return infrastructure;
-    }
-
-    public void setInfrastructure(Infrastructure infrastructure) {
-        this.infrastructure = infrastructure;
+        return ((ApplicationDeployment)getTop()).getInfrastructure();
     }
 
     public VirtualMachineTemplate getVirtualMachineTemplate() {
         return virtualMachineTemplate;
     }
 
-    void setVirtualMachineTemplate(VirtualMachineTemplate virtualMachineTemplate) {
+    public void setVirtualMachineTemplate(VirtualMachineTemplate virtualMachineTemplate) {
         this.virtualMachineTemplate = virtualMachineTemplate;
     }
 
@@ -109,7 +105,7 @@ public class VMDeployment extends Deployable {
         return Arrays.asList("deployer", "parent", "children", "fields", "values");
     }
 
-    public List<Endpoint> getRequiredEndpoints() {
+    public List<Endpoint> getLinkedRequiredEndpoints() {
         List<Endpoint> result = new ArrayList<>();
         ApplicationDeployment ad = (ApplicationDeployment) getTop();
         List<Link> links = ad.getLinks();
@@ -133,5 +129,15 @@ public class VMDeployment extends Deployable {
             }
         });
         return result;
+    }
+
+    @Override
+    public List<Endpoint> getEndpoints() {
+        return virtualMachineTemplate.getEndpoints();
+    }
+
+    @Override
+    public List<String> getRequiredEndpoints() {
+        return virtualMachineTemplate.getRequiredEndpoints();
     }
 }

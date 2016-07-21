@@ -25,9 +25,14 @@
 package org.ecloudmanager.deployment.app;
 
 import org.ecloudmanager.deployment.core.AbstractDeployer;
+import org.ecloudmanager.deployment.core.ConstraintField;
+import org.ecloudmanager.deployment.core.ConstraintValue;
+import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.service.execution.Action;
 
 public class ApplicationDeployer extends AbstractDeployer<ApplicationDeployment> {
+    private static String PORT = "port";
+
     @Override
     public Action getBeforeChildrenCreatedAction(ApplicationDeployment deployable) {
         return null;
@@ -60,7 +65,18 @@ public class ApplicationDeployer extends AbstractDeployer<ApplicationDeployment>
 
     @Override
     public void specifyConstraints(ApplicationDeployment deployment) {
-
+        deployment.stream(Endpoint.class).forEach(endpoint -> {
+            ConstraintField.Builder builder = ConstraintField.builder().name(PORT).required(true);
+            if (endpoint.isConstant()) {
+                builder.readOnly(true);
+                endpoint.setValue(PORT, ConstraintValue.value(endpoint.getPort().toString()));
+            } else {
+                if (endpoint.getPort() != null) {
+                    builder.defaultValue(endpoint.getPort().toString());
+                }
+            }
+            endpoint.addField(builder.build());
+        });
     }
 
 }

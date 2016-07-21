@@ -24,7 +24,7 @@
 
 package org.ecloudmanager.deployment.ps.cg;
 
-import org.ecloudmanager.deployment.core.EndpointTemplate;
+import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.core.Template;
 import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
 import org.ecloudmanager.util.ClonerProducer;
@@ -105,7 +105,7 @@ public class ComponentGroupTemplate implements Template<ComponentGroupDeployment
 
     @NotNull
     @Override
-    public List<EndpointTemplate> getEndpoints() {
+    public List<Endpoint> getEndpoints() {
         return Collections.emptyList();
     }
 

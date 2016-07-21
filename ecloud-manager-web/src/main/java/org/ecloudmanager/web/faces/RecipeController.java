@@ -25,7 +25,7 @@
 package org.ecloudmanager.web.faces;
 
 import com.rits.cloning.Cloner;
-import org.ecloudmanager.deployment.core.EndpointTemplate;
+import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.vm.provisioning.ChefAttribute;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
@@ -116,26 +116,26 @@ public class RecipeController extends FacesSupport implements Serializable {
     }
 
     public void addNewEndpoint() {
-        startEditEndpoint(new EndpointTemplate());
+        startEditEndpoint(new Endpoint());
     }
 
-    public void startEditEndpoint(EndpointTemplate entity) {
+    public void startEditEndpoint(Endpoint entity) {
         endpointController.setValue(entity);
         RequestContext.getCurrentInstance().openDialog("editRecipeEndpoint", options, null);
     }
 
-    public void deleteEndpoint(EndpointTemplate endpoint) {
+    public void deleteEndpoint(Endpoint endpoint) {
         if (endpoint != null && value != null) {
             value.getEndpoints().remove(endpoint);
         }
     }
 
     public void onEditEndpointReturn(SelectEvent event) {
-        EndpointTemplate template = (EndpointTemplate) event.getObject();
+        Endpoint template = (Endpoint) event.getObject();
     }
 
     public void onEditNewEndpointReturn(SelectEvent event) {
-        EndpointTemplate template = (EndpointTemplate) event.getObject();
+        Endpoint template = (Endpoint) event.getObject();
         if (template != null) {
             value.addEndpoint(template);
         }

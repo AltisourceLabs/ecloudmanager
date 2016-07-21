@@ -27,11 +27,15 @@ package org.ecloudmanager.deployment.app;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.Deployer;
+import org.ecloudmanager.deployment.core.DeploymentObject;
+import org.ecloudmanager.deployment.vm.infrastructure.Infrastructure;
 import org.jetbrains.annotations.NotNull;
 import org.mongodb.morphia.annotations.Entity;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @JsonIgnoreProperties({"id", "version", "new"})
 @Entity("deployments")
@@ -39,13 +43,23 @@ public class ApplicationDeployment extends Deployable {
     private static final long serialVersionUID = -8557535271917698832L;
     private List<Link> links = new ArrayList<>();
     private List<String> publicEndpoints = new ArrayList<>();
-    protected ApplicationDeployment() {
+    private Infrastructure infrastructure;
+
+    public ApplicationDeployment() {
     }
 
     @NotNull
     @Override
     public Deployer<ApplicationDeployment> getDeployer() {
         return new ApplicationDeployer();
+    }
+
+    public Infrastructure getInfrastructure() {
+        return infrastructure;
+    }
+
+    public void setInfrastructure(Infrastructure infrastructure) {
+        this.infrastructure = infrastructure;
     }
 
     public List<Link> getLinks() {
@@ -64,4 +78,53 @@ public class ApplicationDeployment extends Deployable {
     public void setPublicEndpoints(List<String> publicEndpoints) {
         this.publicEndpoints = publicEndpoints;
     }
+
+    private Link addLink(String consumer) {
+        Optional<Link> existing = links.stream().filter(l -> (l.getConsumer().equals(consumer))).findAny();
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+        Link newLink = new Link();
+        newLink.setConsumer(consumer);
+        links.add(newLink);
+        return newLink;
+    }
+
+    private void deleteLink(String consumer) {
+        List<Link> linksToRemove = links.stream().filter(l -> (l.getConsumer().equals(consumer))).collect(Collectors.toList());
+        linksToRemove.forEach(l -> links.remove(l));
+    }
+
+    public void updateLinks() {
+        List<String> endpoints = new ArrayList<>();
+        children().forEach(c -> {
+            if (c instanceof Deployable) {
+                endpoints.addAll(((Deployable) c).getRequiredEndpointsIncludingTemplateName());
+            }
+        });
+        List<Link> newLinks = endpoints.stream().map(this::addLink).collect(Collectors.toList());
+        links.clear();
+        links.addAll(newLinks);
+    }
+
+    @Override
+    public void addChild(DeploymentObject child) {
+        super.addChild(child);
+        if (child instanceof Deployable) {
+            List<String> endpoints = ((Deployable)child).getRequiredEndpointsIncludingTemplateName();
+            endpoints.forEach(this::addLink);
+        }
+    }
+
+    public boolean removeChild(DeploymentObject child) {
+        if (children().remove(child) && child instanceof Deployable) {
+            Deployable deployable = (Deployable) child;
+            List<String> oldEndpoints = deployable.getRequiredEndpointsIncludingTemplateName();
+            oldEndpoints.forEach(this::deleteLink);
+            deployable.getEndpointsIncludingTemplateName().forEach(publicEndpoints::remove);
+            return true;
+        }
+        return false;
+    }
+
 }

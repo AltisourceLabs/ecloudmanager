@@ -25,6 +25,7 @@
 package org.ecloudmanager.deployment.ps.cg;
 
 import org.bson.types.ObjectId;
+import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.core.Config;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.Deployer;
@@ -37,6 +38,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.mongodb.morphia.annotations.Transient;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -49,11 +52,9 @@ public class ComponentGroupDeployment extends Deployable {
     @Transient
     private Deployer deployer;
 
-    private Infrastructure infrastructure;
-
     private VirtualMachineTemplate virtualMachineTemplate;
 
-    ComponentGroupDeployment() {
+    public ComponentGroupDeployment() {
         setId(new ObjectId());
     }
 
@@ -69,7 +70,7 @@ public class ComponentGroupDeployment extends Deployable {
         return virtualMachineTemplate;
     }
 
-    void setVirtualMachineTemplate(VirtualMachineTemplate virtualMachineTemplate) {
+    public void setVirtualMachineTemplate(VirtualMachineTemplate virtualMachineTemplate) {
         this.virtualMachineTemplate = virtualMachineTemplate;
     }
 
@@ -83,11 +84,7 @@ public class ComponentGroupDeployment extends Deployable {
     }
 
     public Infrastructure getInfrastructure() {
-        return infrastructure;
-    }
-
-    public void setInfrastructure(Infrastructure infrastructure) {
-        this.infrastructure = infrastructure;
+        return ((ApplicationDeployment)getTop()).getInfrastructure();
     }
 
     public void scale() {
@@ -104,10 +101,9 @@ public class ComponentGroupDeployment extends Deployable {
         }
     }
 
-    void addVm() {
+    public void addVm() {
         VMDeployment vmDeployment = virtualMachineTemplate.toDeployment();
         vmDeployment.setName(generateNextVmName());
-        vmDeployment.setInfrastructure(infrastructure);
         addChild(vmDeployment);
     }
 
@@ -158,5 +154,11 @@ public class ComponentGroupDeployment extends Deployable {
         });
     }
 
-
+    @Override
+    public List<String> getRequiredEndpoints() {
+        if (virtualMachineTemplate == null) {
+            return Collections.emptyList();
+        }
+        return virtualMachineTemplate.getRequiredEndpoints();
+    }
 }

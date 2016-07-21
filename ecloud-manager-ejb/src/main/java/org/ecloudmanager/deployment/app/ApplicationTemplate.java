@@ -27,7 +27,7 @@ package org.ecloudmanager.deployment.app;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.common.collect.ImmutableList;
 import org.ecloudmanager.deployment.core.Deployable;
-import org.ecloudmanager.deployment.core.EndpointTemplate;
+import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.core.Template;
 import org.ecloudmanager.jeecore.domain.MongoObject;
 import org.jetbrains.annotations.NotNull;
@@ -151,7 +151,7 @@ public class ApplicationTemplate extends MongoObject implements Template<Applica
         children.forEach(s -> {
             Deployable deployable = s.toDeployment();
             s.getEndpoints().forEach(e -> {
-                deployable.addChild(e.toDeployment());
+                deployable.addChild(e);
             });
             ad.addChild(deployable);
         });
@@ -169,7 +169,7 @@ public class ApplicationTemplate extends MongoObject implements Template<Applica
 
     @NotNull
     @Override
-    public List<EndpointTemplate> getEndpoints() {
+    public List<Endpoint> getEndpoints() {
         return Collections.emptyList();
     }
 
