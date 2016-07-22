@@ -55,6 +55,7 @@ public class MorphiaDatastoreProducer {
     private static final String DB_NAME = "deployment_app";
 
     private static Datastore datastore;
+    private static Morphia morphia;
 
     @Inject
     private Logger log;
@@ -106,19 +107,26 @@ public class MorphiaDatastoreProducer {
     }
 
     @Produces
-    public Datastore datastore() throws UnknownHostException {
-        if (datastore == null) {
-            final Morphia morphia = new Morphia();
+    public Morphia morphia() {
+        if (morphia == null) {
+            morphia = new Morphia();
             morphia.getMapper().getConverters().addConverter(StackTraceElementEntityConverter.class);
             morphia.mapPackageFromClass(ApplicationDeployment.class)
-                .mapPackageFromClass(DeploymentAttempt.class)
-                .mapPackageFromClass(VMDeployment.class)
-                .mapPackageFromClass(Recipe.class)
-                .mapPackageFromClass(ExternalServiceDeployment.class)
-                .mapPackageFromClass(ProducedServiceDeployment.class)
+                    .mapPackageFromClass(DeploymentAttempt.class)
+                    .mapPackageFromClass(VMDeployment.class)
+                    .mapPackageFromClass(Recipe.class)
+                    .mapPackageFromClass(ExternalServiceDeployment.class)
+                    .mapPackageFromClass(ProducedServiceDeployment.class)
             ;
             morphia.map(HaproxyStats.class);
-            datastore = morphia.createDatastore(mongoClient(log), DB_NAME);
+        }
+        return morphia;
+    }
+
+    @Produces
+    public Datastore datastore() throws UnknownHostException {
+        if (datastore == null) {
+            datastore = morphia().createDatastore(mongoClient(log), DB_NAME);
             datastore.ensureIndexes();
             datastore.ensureCaps();
         }

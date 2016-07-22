@@ -83,11 +83,11 @@ public class ApplicationDeploymentsController extends FacesSupport implements Se
         FacesContext fc = FacesContext.getCurrentInstance();
         ExternalContext ec = fc.getExternalContext();
         ec.responseReset();
-        ec.setResponseContentType("text/yaml");
-        ec.setResponseHeader("Content-Disposition", "attachment; filename=\"" + app.getName() + ".yaml" + "\"");
+        ec.setResponseContentType("application/json");
+        ec.setResponseHeader("Content-Disposition", "attachment; filename=\"" + app.getName() + ".json" + "\"");
         OutputStream output = ec.getResponseOutputStream();
-        String yaml = applicationDeploymentService.toYaml(app);
-        output.write(yaml.getBytes());
+        String json = applicationDeploymentService.toFormattedJson(app);
+        output.write(json.getBytes());
         output.close();
         fc.responseComplete();
     }

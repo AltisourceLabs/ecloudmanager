@@ -25,8 +25,10 @@
 package org.ecloudmanager.service.deployment;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
@@ -39,6 +41,7 @@ import org.ecloudmanager.jeecore.service.ServiceSupport;
 import org.ecloudmanager.repository.deployment.DeploymentAttemptRepository;
 import org.ecloudmanager.service.execution.Action;
 import org.ecloudmanager.service.execution.ActionExecutor;
+import org.mongodb.morphia.Morphia;
 import org.picketlink.Identity;
 
 import javax.ejb.Stateless;
@@ -58,6 +61,9 @@ public class ApplicationDeploymentService extends ServiceSupport {
 
     @Inject
     private DeploymentAttemptRepository deploymentAttemptRepository;
+
+    @Inject
+    private Morphia morphia;
 
     public ApplicationDeployment create(ApplicationTemplate app, String infrastructure) {
         log.info("Creating deployment for application " + app.getName() + ", " + infrastructure);
@@ -86,10 +92,12 @@ public class ApplicationDeploymentService extends ServiceSupport {
         fireEntityDeleted(ad);
     }
 
-    public String toYaml(DeploymentObject app) throws JsonProcessingException {
-        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        String str = mapper.writeValueAsString(app);
-        return str;
+    public String toFormattedJson(DeploymentObject app) throws JsonProcessingException {
+        String notFormatted = morphia.toDBObject(app).toString();
+        JsonParser parser = new JsonParser();
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        JsonElement el = parser.parse(notFormatted);
+        return gson.toJson(el);
     }
 
     @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
