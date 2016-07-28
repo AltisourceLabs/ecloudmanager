@@ -29,15 +29,19 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import com.rits.cloning.Cloner;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.app.ApplicationTemplate;
 import org.ecloudmanager.deployment.core.Deployable;
+import org.ecloudmanager.deployment.core.DeploymentConstraint;
 import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
+import org.ecloudmanager.deployment.ps.cg.ComponentGroupDeployment;
 import org.ecloudmanager.deployment.vm.infrastructure.Infrastructure;
 import org.ecloudmanager.jeecore.service.ServiceSupport;
+import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
 import org.ecloudmanager.repository.deployment.DeploymentAttemptRepository;
 import org.ecloudmanager.service.execution.Action;
 import org.ecloudmanager.service.execution.ActionExecutor;
@@ -61,6 +65,8 @@ public class ApplicationDeploymentService extends ServiceSupport {
 
     @Inject
     private DeploymentAttemptRepository deploymentAttemptRepository;
+    @Inject
+    private ApplicationDeploymentRepository applicationDeploymentRepository;
 
     @Inject
     private Morphia morphia;
@@ -135,5 +141,25 @@ public class ApplicationDeploymentService extends ServiceSupport {
         }
 
         return false;
+    }
+
+    public void copyDeployment(ApplicationDeployment source, String name, boolean keepConstraints) {
+        Cloner cloner = new Cloner();
+        ApplicationDeployment newDeployment = cloner.deepClone(source);
+        newDeployment.setId(null);
+        newDeployment.setName(name);
+        newDeployment.stream().forEach(DeploymentObject::fixChildren);
+        if (!keepConstraints) {
+            newDeployment.stream().forEach(DeploymentConstraint::clear);
+            newDeployment.stream(ComponentGroupDeployment.class).forEach(componentGroupDeployment -> {
+                DeploymentObject cfg = componentGroupDeployment.getChildByName(ComponentGroupDeployment.VM_CONFIG);
+                if (cfg != null) {
+                    cfg.children().clear(); // Children will be recreated with specifyConstraints
+                }
+            });
+            newDeployment.specifyConstraints();
+        }
+
+        applicationDeploymentRepository.save(newDeployment);
     }
 }

@@ -46,6 +46,10 @@ public class ApplicationDeploymentsController extends FacesSupport implements Se
 
     private static final long serialVersionUID = 418539347548538918L;
 
+    private String newDeploymentName;
+    private boolean includeConstraints;
+    ApplicationDeployment sourceForCopy;
+
     public Part getFile() {
         return file;
     }
@@ -95,6 +99,32 @@ public class ApplicationDeploymentsController extends FacesSupport implements Se
     public void delete(ApplicationDeployment entity) {
         applicationDeploymentService.remove(entity);
         refresh();
+    }
+
+    public void prepareToCopyDeployment(ApplicationDeployment source) {
+        newDeploymentName = null;
+        sourceForCopy = source;
+    }
+
+    public void copyDeployment() {
+        applicationDeploymentService.copyDeployment(sourceForCopy, newDeploymentName, includeConstraints);
+        refresh();
+    }
+
+    public void setNewDeploymentName(String newDeploymentName) {
+        this.newDeploymentName = newDeploymentName;
+    }
+
+    public String getNewDeploymentName() {
+        return newDeploymentName;
+    }
+
+    public void setIncludeConstraints(boolean includeConstraints) {
+        this.includeConstraints = includeConstraints;
+    }
+
+    public boolean getIncludeConstraints() {
+        return includeConstraints;
     }
 }
 

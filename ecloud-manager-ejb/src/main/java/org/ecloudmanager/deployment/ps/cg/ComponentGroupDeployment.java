@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
 public class ComponentGroupDeployment extends Deployable {
 
     private static final long serialVersionUID = 4963949678744410890L;
-    private static final String VM_CONFIG = "vmConfig";
+    public static final String VM_CONFIG = "vmConfig";
     private HAProxyBackendConfig haProxyBackendConfig = new HAProxyBackendConfig();
     @Transient
     private Deployer deployer;

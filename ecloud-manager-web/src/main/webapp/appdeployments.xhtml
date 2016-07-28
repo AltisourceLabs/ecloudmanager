@@ -45,13 +45,18 @@
                         <p:column width="60%">
                             <h:outputText value="#{appDeployment.children()}"/>
                         </p:column>
-                        <p:column width="115">
+                        <p:column width="142">
                             <p:button title="Edit Blueprint" outcome="editApplicationDeployment" icon="fa fa-cubes">
                                 <f:param name="deployment" value="#{appDeployment.id.toString()}"/>
                             </p:button>
                             <p:button title="Edit Constraints" outcome="appdeployment" icon="fa fa-th-list">
                                 <f:param name="deployment" value="#{appDeployment.id.toString()}"/>
                             </p:button>
+                            <p:commandButton oncomplete="PF('dlg_copy').show();"
+                                             icon="fa fa-files-o" title="Copy Deployment"
+                                             update="out"
+                                             action="#{applicationDeploymentsController.prepareToCopyDeployment(appDeployment)}"
+                            />
                             <p:commandButton title="Delete" icon="fa fa-times"
                                              update="out"
                                              action="#{applicationDeploymentsController.delete(appDeployment)}">
@@ -68,6 +73,33 @@
                 </h:form>
             </h:panelGroup>
 
+            <p:dialog header="Copy Application Deployment" widgetVar="dlg_copy" modal="true" closeOnEscape="true" height="90%"
+                      width="auto" id="dlg_copy">
+                <h:panelGroup>
+                    <h:form id="copy_form" style="width: auto; height: 90%">
+                        <h:panelGroup>
+                            <h3>Copy Application Deployment</h3>
+                        </h:panelGroup>
+
+                        <p:messages id="msgs" for="fields"/>
+
+                        <h:panelGrid columns="2" cellpadding="5" id="fields">
+                            <h:outputText value="New Deployment Name:"/>
+                            <p:inputText value="#{applicationDeploymentsController.newDeploymentName}" required="true"/>
+                            <h:outputText value="Include the Deployment Constraints:"/>
+                            <p:selectBooleanCheckbox value="#{applicationDeploymentsController.includeConstraints}"/>
+                        </h:panelGrid>
+
+                        <p:spacer/>
+
+                        <h:panelGroup>
+                            <p:spacer/>
+                            <p:commandButton id="copy" value="Copy" update="out, @widgetVar(appDeployment)" action="#{applicationDeploymentsController.copyDeployment()}"/>
+                            <p:commandButton id="cancel" value="Cancel" update="out" action="#{gatewaysController.cancel}" immediate="true"/>
+                        </h:panelGroup>
+                    </h:form>
+                </h:panelGroup>
+            </p:dialog>
         </p:outputPanel>
     </ui:define>
 </ui:composition>

@@ -298,6 +298,10 @@ public abstract class DeploymentObject extends DeploymentConstraint {
 
         return parentPath + (parentPath.isEmpty() ? "" : separator) + getName();
     }
+
+    public void fixChildren() {
+        children().forEach(c -> c.setParent(this));
+    }
 //    public List<DeploymentObject> getDependencies() {
 //
 //    }
