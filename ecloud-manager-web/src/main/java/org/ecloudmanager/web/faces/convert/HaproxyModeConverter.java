@@ -32,7 +32,7 @@ import javax.faces.convert.Converter;
 import javax.faces.convert.FacesConverter;
 
 @FacesConverter("haproxyModeConverter")
-public class HAProxyModeConverter implements Converter {
+public class HaproxyModeConverter implements Converter {
 
     @Override
     public Object getAsObject(FacesContext context, UIComponent component, String value) {
