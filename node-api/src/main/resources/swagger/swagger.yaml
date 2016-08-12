@@ -607,14 +607,18 @@
             $ref: '#/definitions/FirewallRule'
     FirewallRule:
       properties:
+        type:
+          type: string
+          enum:
+           - IP
+           - NODE_ID
+           - ANY
         protocol:
           type: string
         port:
           type: string
         from:
-          type: array
-          items: 
-            type: string
+          type: string
     Tasks:
       properties:
         tasks:

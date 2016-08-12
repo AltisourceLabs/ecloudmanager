@@ -10,6 +10,7 @@ import org.ecloudmanager.tmrk.cloudapi.model.*;
 import org.ecloudmanager.tmrk.cloudapi.service.device.VirtualMachineService;
 import org.ecloudmanager.tmrk.cloudapi.util.TmrkUtils;
 
+import javax.xml.bind.JAXBElement;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -148,9 +149,9 @@ public class VerizonNodeAPI implements NodeBaseAPI {
 
         // Create vm
         EnvironmentType env = cache.getByHrefOrName(EnvironmentType.class, envStr);
-        String idFromHref = TmrkUtils.getIdFromHref(env.getHref());
+        String envId = TmrkUtils.getIdFromHref(env.getHref());
         List<ComputePoolReferenceType> computePools = cache
-                .getComputePools(idFromHref).getComputePool();
+                .getComputePools(envId).getComputePool();
         String poolId = TmrkUtils.getIdFromHref(computePools.get(0).getHref());
         ImportVirtualMachineType vm = createTmrkVm(createVm, env, cache);
         VirtualMachineType createdVm;
@@ -172,7 +173,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         NodeUtil.logInfo(details, "VM started with ip " + ip);
         assignIp(vmId, netStr, ip, cache, registry);
         NodeUtil.logInfo(details, "IP " + ip + " assigned to VM " + vmId);
-        return new CreateNodeResponse().details(details.status(ExecutionDetails.StatusEnum.OK)).nodeId(vmId);
+        return new CreateNodeResponse().details(details.status(ExecutionDetails.StatusEnum.OK)).nodeId(envId + ":" + vmId);
     }
 
     private void startupVm(String vmId, CloudServicesRegistry registry) {
@@ -500,9 +501,11 @@ public class VerizonNodeAPI implements NodeBaseAPI {
     public NodeInfo getNode(Credentials credentials, String nodeId) throws Exception {
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
+        String envId = nodeId.split(":")[0];
+        String id = nodeId.split(":")[1];
         CloudCachedEntityService cache = getCache(accessKey, secretKey);
         CloudServicesRegistry registry = new CloudServicesRegistry(accessKey, secretKey);
-        VirtualMachineType vm = registry.getVirtualMachineService().getVirtualMachineById(nodeId);
+        VirtualMachineType vm = registry.getVirtualMachineService().getVirtualMachineById(id);
         NodeInfo.StatusEnum status;
         switch (vm.getStatus().getValue()) {
             case DEPLOYED:
@@ -525,7 +528,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         ExecutionDetails details = new ExecutionDetails();
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
-        String region = nodeId.split(":")[0];
+        String envId = nodeId.split(":")[0];
         String id = nodeId.split(":")[1];
         NodeUtil.logInfo(details, "TODO");
         // TODO
@@ -538,11 +541,13 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         ExecutionDetails details = new ExecutionDetails();
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
+        String envId = nodeId.split(":")[0];
+        String id = nodeId.split(":")[1];
         CloudServicesRegistry registry = new CloudServicesRegistry(accessKey, secretKey);
-        shutdownVM(nodeId, registry);
-        NodeUtil.logInfo(details, "Shutdown vm " + nodeId);
-        deleteVm(nodeId, registry);
-        NodeUtil.logInfo(details, "Delete vm " + nodeId);
+        shutdownVM(id, registry);
+        NodeUtil.logInfo(details, "Shutdown vm " + id);
+        deleteVm(id, registry);
+        NodeUtil.logInfo(details, "Delete vm " + id);
         return details;
     }
 
@@ -583,9 +588,92 @@ public class VerizonNodeAPI implements NodeBaseAPI {
 
     @Override
     public ExecutionDetails updateNodeFirewallRules(Credentials credentials, String nodeId, FirewallUpdate firewallUpdate) throws Exception {
+        String accessKey = ((SecretKey) credentials).getName();
+        String secretKey = ((SecretKey) credentials).getSecret();
+        String envId = nodeId.split(":")[0];
+        String id = nodeId.split(":")[1];
+
+        CloudServicesRegistry registry = new CloudServicesRegistry(accessKey, secretKey);
+        FirewallAclEndpointType dest = firewallAclEndpointType(registry, id);
+        firewallUpdate.getCreate().forEach(r -> {
+            FirewallAclEndpointType source = null;
+            switch (r.getType()) {
+                case IP:
+                    source = new FirewallAclEndpointType();
+                    source.setType(FirewallAclEndpointTypeEnum.IP_ADDRESS);
+                    source.setExternalIpAddress(objectFactory.createFirewallAclEndpointTypeExternalIpAddress(r.getFrom()));
+                    break;
+                case NODE_ID:
+                    source = firewallAclEndpointType(registry, r.getFrom());
+                    break;
+                case ANY:
+                    source = new FirewallAclEndpointType();
+                    source.setType(FirewallAclEndpointTypeEnum.ANY);
+                    break;
+            }
+            createFirewallRule(registry, envId, source, dest, Integer.parseInt(r.getPort()));
+        });
         ExecutionDetails details = new ExecutionDetails();
         return details;
 
+
+    }
+
+    private String getNetwork(CloudServicesRegistry registry, String nodeId) {
+
+        VirtualMachineType selectedVm = registry.getVirtualMachineService().getVirtualMachineById(nodeId);
+
+        HardwareConfigurationType hwconfig = selectedVm.getHardwareConfiguration().getValue();
+        NicsType nics = hwconfig.getNics().getValue();
+        NetworkReferenceType network = nics.getNic().get(0).getNetwork();
+        String networkId = network.getHref().substring(network.getHref().lastIndexOf("/") + 1, network.getHref()
+                .length());
+
+        return networkId;
+    }
+
+    private FirewallAclEndpointType firewallAclEndpointType(CloudServicesRegistry registry, String nodeId) {
+        String ip = getIpAddress(nodeId, registry);
+        String network = getNetwork(registry, nodeId);
+        FirewallAclEndpointType fwaclet = new FirewallAclEndpointType();
+        IpAddressReferenceType v = objectFactory.createIpAddressReferenceType();
+        String href = "/cloudapi/ecloud/ipaddresses/networks/" + network + "/" + ip;
+        v.setHref(href);
+        v.setName(ip);
+        fwaclet.setType(FirewallAclEndpointTypeEnum.IP_ADDRESS);
+        fwaclet.setIpAddress(objectFactory.createFirewallAclEndpointTypeIpAddress(v));
+        return fwaclet;
+    }
+
+    private FirewallAclType createFirewallRule(CloudServicesRegistry registry, String envId, FirewallAclEndpointType source, FirewallAclEndpointType dest, long port) {
+        //log.info("Create firewall rule from " + source + " to " + dest + ", port " + port);
+
+        CreateFirewallAclType firewallAcl = objectFactory.createCreateFirewallAclType();
+
+        firewallAcl.setPermission(AclPermissionTypeEnum.ALLOW);
+        firewallAcl.setProtocol(ProtocolTypeEnum.TCP);
+
+        firewallAcl.setSource(source);
+
+        firewallAcl.setDestination(objectFactory.createFirewallAclTypeDestination(dest));
+        PortRangeType portRange = new PortRangeType();
+        portRange.setStart(port);
+        portRange.setEnd(port);
+        firewallAcl.setPortRange(objectFactory.createPortRange(portRange));
+        FirewallAclType result = null;
+        JAXBElement<CreateFirewallAclType> request = objectFactory.createCreateFirewallAcl(firewallAcl);
+        try {
+            result = registry.getFirewallRuleService().createFirewallRuleForEnvironment(envId, request);
+        } catch (Throwable t) {
+//            log.error("Failed to create firewall rule", t);
+            throw t;
+        }
+
+        if (result != null) {
+//            log.info("Firewall rule was created successfully: " + result.getHref());
+        }
+
+        return result;
     }
 
     private enum Parameter {
@@ -615,18 +703,5 @@ public class VerizonNodeAPI implements NodeBaseAPI {
 
     }
 
-//    private FirewallAclEndpointType firewallAclEndpointType(VMDeployment deployment) {
-//
-//        FirewallAclEndpointType fwaclet = new FirewallAclEndpointType();
-//        IpAddressReferenceType v = objectFactory.createIpAddressReferenceType();
-//        String ip = InfrastructureDeployer.getIP(deployment);
-//        String network = getNetwork(deployment);
-//        String href = "/cloudapi/ecloud/ipaddresses/networks/" + network + "/" + ip;
-//        v.setHref(href);
-//        v.setName(ip);
-//        fwaclet.setType(FirewallAclEndpointTypeEnum.IP_ADDRESS);
-//        fwaclet.setIpAddress(objectFactory.createFirewallAclEndpointTypeIpAddress(v));
-//        return fwaclet;
-//    }
 
 }

@@ -34,18 +34,18 @@ public class CreateFirewallRulesAction extends SingleAction {
                 // TODO move public IP firewall rules creation to ApplicationDeployment?
                 deployment.getEndpoints().forEach(e -> {
                     if (ad.getPublicEndpoints().contains(deployment.getName() + ":" + e.getName())) {
-
-                        rules.add(new FirewallRule().port(e.getConfigValue("port")).protocol("TCP").from(Arrays.asList("0.0.0.0/0")));
+                        rules.add(new FirewallRule().type(FirewallRule.TypeEnum.ANY).port(e.getConfigValue("port")).protocol("TCP"));
                     }
                 });
             } else {
                 // TODO move haproxy IP firewall rules creation to ComponentGroupDeployment?
                 ProducedServiceDeployment producedServiceDeployment = (ProducedServiceDeployment) deployment.getParent().getParent();
-                String haproxyIp = HAProxyDeployer.getHaproxyIp(producedServiceDeployment);
+                String haproxyId = HAProxyDeployer.getHaproxyNodeId(producedServiceDeployment);
+
                 deployment.getEndpoints().forEach(e -> {
                     if (e.getPort() != null) {
                         int port = e.getPort();
-                        rules.add(new FirewallRule().port(Integer.toString(port)).protocol("TCP").from(Arrays.asList(haproxyIp + "/32")));
+                        rules.add(new FirewallRule().type(FirewallRule.TypeEnum.NODE_ID).port(Integer.toString(port)).protocol("TCP").from(haproxyId));
                     }
                 });
             }
@@ -56,7 +56,7 @@ public class CreateFirewallRulesAction extends SingleAction {
                 if (d instanceof VMDeployment) {
                     // FIXME should be moved to 'd' vm creation?
                     VMDeployment supplier = (VMDeployment) d;
-                    FirewallRule rule = new FirewallRule().port(Integer.toString(e.getRight().getPort())).protocol("TCP").from(Arrays.asList(InfrastructureDeployer.getIP(deployment) + "/32"));
+                    FirewallRule rule = new FirewallRule().type(FirewallRule.TypeEnum.NODE_ID).port(Integer.toString(e.getRight().getPort())).protocol("TCP").from(InfrastructureDeployer.getVmId(deployment));
                     try {
                         nodeAPI.updateNodeFirewallRules(credentials, InfrastructureDeployer.getVmId(supplier), new FirewallUpdate().create(Arrays.asList(rule)));
                     } catch (Exception ex) {

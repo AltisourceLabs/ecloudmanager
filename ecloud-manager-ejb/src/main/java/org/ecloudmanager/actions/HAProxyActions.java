@@ -74,7 +74,7 @@ public class HAProxyActions {
                 String apiId = ((ApplicationDeployment) (gatewayVmDeployment.getTop())).getInfrastructure();
 
                 NodeAPI nodeAPI = nodeAPIProvider.getAPI(apiId);
-                FirewallRule rule = new FirewallRule().port(Integer.toString(port)).protocol("TCP").from(Arrays.asList("0.0.0.0/0"));
+                FirewallRule rule = new FirewallRule().type(FirewallRule.TypeEnum.ANY).port(Integer.toString(port)).protocol("TCP");
 
                 try {
                     nodeAPI.updateNodeFirewallRules(nodeAPIProvider.getCredentials(apiId), vmId, new FirewallUpdate().delete(Arrays.asList(rule)));
@@ -97,11 +97,11 @@ public class HAProxyActions {
                 GatewayVMDeployment gatewayVmDeployment = HAProxyDeployer.getGatewayVmDeployment(producedServiceDeployment);
                 String vmId = InfrastructureDeployerImpl.getVmId(gatewayVmDeployment);
                 String apiId = ((ApplicationDeployment) (gatewayVmDeployment.getTop())).getInfrastructure();
-                FirewallRule rule = new FirewallRule().port(Integer.toString(port)).protocol("TCP").from(Arrays.asList("0.0.0.0/0"));
+                FirewallRule rule = new FirewallRule().type(FirewallRule.TypeEnum.ANY).port(Integer.toString(port)).protocol("TCP");
                 NodeAPI nodeAPI = nodeAPIProvider.getAPI(apiId);
 
                 try {
-                    nodeAPI.updateNodeFirewallRules(nodeAPIProvider.getCredentials(apiId), vmId, new FirewallUpdate().delete(Arrays.asList(rule)));
+                    nodeAPI.updateNodeFirewallRules(nodeAPIProvider.getCredentials(apiId), vmId, new FirewallUpdate().create(Arrays.asList(rule)));
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }

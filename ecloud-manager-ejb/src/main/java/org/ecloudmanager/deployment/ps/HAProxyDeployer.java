@@ -71,6 +71,13 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
                 InfrastructureDeployer.getIP(gatewayDeployment.children(GatewayVMDeployment.class).get(0));
     }
 
+    public static String getHaproxyNodeId(ProducedServiceDeployment deployment) {
+        GatewayDeployment gatewayDeployment = getGatewayDeployment(deployment);
+        return gatewayDeployment == null ?
+                null :
+                InfrastructureDeployer.getVmId(gatewayDeployment.children(GatewayVMDeployment.class).get(0));
+    }
+
     public static GatewayVMDeployment getGatewayVmDeployment(ProducedServiceDeployment deployment) {
         GatewayDeployment gatewayDeployment = getGatewayDeployment(deployment);
         return gatewayDeployment == null ?

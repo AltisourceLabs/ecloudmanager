@@ -27,12 +27,25 @@ public class AWSNodeAPI implements NodeBaseAPI {
                 .orElse("");
     }
 
-    private static FirewallRule fromIpPermission(IpPermission permission) {
-        return new FirewallRule().protocol(permission.getIpProtocol()).port(permission.getToPort().toString()).from(permission.getIpRanges());
+    private static List<FirewallRule> fromIpPermission(IpPermission permission) {
+        return permission.getIpRanges().stream().map(range ->
+                new FirewallRule().type(FirewallRule.TypeEnum.IP).protocol(permission.getIpProtocol()).port(permission.getToPort().toString()).from(range)).collect(Collectors.toList());
     }
 
-    private static IpPermission fromFirewallRule(FirewallRule rule) {
-        return new IpPermission().withFromPort(Integer.parseInt(rule.getPort())).withToPort(Integer.parseInt(rule.getPort())).withIpProtocol(rule.getProtocol()).withIpRanges(rule.getFrom());
+    private IpPermission fromFirewallRule(Credentials credentials, FirewallRule rule) throws Exception {
+        String ipRange = "";
+        switch (rule.getType()) {
+            case IP:
+                ipRange = rule.getFrom() + "/32";
+                break;
+            case NODE_ID:
+                ipRange = getNode(credentials, rule.getFrom()).getIp() + "/32";
+                break;
+            case ANY:
+                ipRange = "0.0.0.0/0";
+                break;
+        }
+        return new IpPermission().withFromPort(Integer.parseInt(rule.getPort())).withToPort(Integer.parseInt(rule.getPort())).withIpProtocol(rule.getProtocol()).withIpRanges(ipRange);
     }
 
     private String getCidrIp() {
@@ -235,7 +248,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
         String groupId = getSecurityGroup(ec2, id);
         com.amazonaws.services.ec2.model.SecurityGroup sg = ec2.describeSecurityGroups(new DescribeSecurityGroupsRequest().withGroupIds(groupId)).getSecurityGroups().get(0);
         List<IpPermission> permissions = sg.getIpPermissions();
-        List<FirewallRule> rules = permissions.stream().map(AWSNodeAPI::fromIpPermission).collect(Collectors.toList());
+        List<FirewallRule> rules = permissions.stream().flatMap(p -> fromIpPermission(p).stream()).collect(Collectors.toList());
         return new FirewallInfo().rules(rules);
     }
 
@@ -248,7 +261,14 @@ public class AWSNodeAPI implements NodeBaseAPI {
         String id = nodeId.split(":")[1];
         AmazonEC2 ec2 = AWS.ec2(accessKey, secretKey, region);
         String securityGroupId = getSecurityGroup(ec2, id);
-        List<IpPermission> permissions = firewallUpdate.getCreate().stream().map(AWSNodeAPI::fromFirewallRule).collect(Collectors.toList());
+        List<IpPermission> permissions = firewallUpdate.getCreate().stream().map(p -> {
+            try {
+                return fromFirewallRule(credentials, p);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        }).collect(Collectors.toList());
         if (!permissions.isEmpty()) {
             AuthorizeSecurityGroupIngressRequest req = new AuthorizeSecurityGroupIngressRequest()
                     .withGroupId(securityGroupId).withIpPermissions(permissions);
@@ -256,7 +276,14 @@ public class AWSNodeAPI implements NodeBaseAPI {
             NodeUtil.logInfo(details, "Firewall rules created:");
             NodeUtil.logInfo(details, firewallUpdate.getCreate().toString());
         }
-        List<IpPermission> permissionsToDelete = firewallUpdate.getDelete().stream().map(AWSNodeAPI::fromFirewallRule).collect(Collectors.toList());
+        List<IpPermission> permissionsToDelete = firewallUpdate.getDelete().stream().map(p -> {
+            try {
+                return fromFirewallRule(credentials, p);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        }).collect(Collectors.toList());
         if (!permissionsToDelete.isEmpty()) {
             RevokeSecurityGroupIngressRequest delete = new RevokeSecurityGroupIngressRequest().withGroupId(securityGroupId).withIpPermissions(permissionsToDelete);
             ec2.revokeSecurityGroupIngress(delete);
