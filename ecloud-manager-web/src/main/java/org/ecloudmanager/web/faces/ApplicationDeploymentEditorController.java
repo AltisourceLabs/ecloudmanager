@@ -36,6 +36,7 @@ import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironment;
 import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
+import org.ecloudmanager.service.NodeAPIProvider;
 import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
 import org.omnifaces.cdi.Param;
 import org.omnifaces.util.Beans;
@@ -61,6 +62,9 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
         dialogs.put(VMDeployment.class, TopLevelVMDeploymentController.DIALOG_EDIT);
     }
 
+    @Inject
+    private NodeAPIProvider nodeAPIProvider;
+
     private boolean newChild = false;
     private boolean newTemplate = false;
     private String publicEndpointToAdd;
@@ -79,6 +83,9 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
         return deployment;
     }
 
+    public List<String> getNodeApiIds() {
+        return NodeAPIProvider.getAPIs();
+    }
     @PostConstruct
     public void init() {
         if (deployment == null) {

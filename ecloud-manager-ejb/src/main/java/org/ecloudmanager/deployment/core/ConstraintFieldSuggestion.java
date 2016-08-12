@@ -8,13 +8,16 @@ public class ConstraintFieldSuggestion {
     private final String label;
 
     public ConstraintFieldSuggestion(String label, String value) {
-        this.label = label;
+        this.label = label != null ? label : value;
         this.value = value;
     }
 
     public ConstraintFieldSuggestion(String value) {
-        this.label = value;
-        this.value = value;
+        this(null, value);
+    }
+
+    public static List<ConstraintFieldSuggestion> suggestionsList(List<String> stringList) {
+        return stringList.stream().map(ConstraintFieldSuggestion::new).collect(Collectors.toList());
     }
 
     public String getValue() {
@@ -23,9 +26,5 @@ public class ConstraintFieldSuggestion {
 
     public String getLabel() {
         return label;
-    }
-
-    public static List<ConstraintFieldSuggestion> suggestionsList(List<String> stringList) {
-        return stringList.stream().map(ConstraintFieldSuggestion::new).collect(Collectors.toList());
     }
 }

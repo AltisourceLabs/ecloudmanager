@@ -25,9 +25,11 @@
 package org.ecloudmanager.service.execution;
 
 import org.ecloudmanager.deployment.core.Deployable;
+import org.ecloudmanager.node.model.ExecutionDetails;
 import org.mongodb.morphia.annotations.Transient;
 
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -79,11 +81,11 @@ public abstract class Action {
         return group;
     }
 
-    public static Action single(String description, Runnable runnable) {
-        return new SingleAction(runnable, description);
+    public static Action single(String description, Callable<ExecutionDetails> callable) {
+        return new SingleAction(callable, description);
     }
 
-    public static Action single(String description, Runnable runnable, Deployable deployable) {
+    public static Action single(String description, Callable<ExecutionDetails> runnable, Deployable deployable) {
         return new SingleAction(runnable, description, deployable);
     }
 

@@ -33,7 +33,6 @@ import org.ecloudmanager.deployment.ps.ProducedServiceTemplate;
 import org.ecloudmanager.deployment.ps.cg.ComponentGroupTemplate;
 import org.ecloudmanager.deployment.ps.cg.HAProxyBackendConfig;
 import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
-import org.ecloudmanager.deployment.vm.infrastructure.Infrastructure;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.repository.template.VirtualMachineTemplateRepository;
 import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
@@ -73,14 +72,14 @@ public class BootstrapSeedingService {
 
     @PostConstruct
     public void init() {
-        if (virtualMachineTemplateRepository.getAll().isEmpty()) {
+        //if (virtualMachineTemplateRepository.getAll().isEmpty()) {
             // It is causing problems here as populateDatabaseWithExampleData() fails at the following place:
             // at org.ecloudmanager.service.template.VerizonConfigurationService.getCurrentConfiguration(VerizonConfigurationService.java:62)
             // Now this call need user identity, so the user should be logged in before populateDatabaseWithExampleData() is called...
             // Commenting out this for now.
             // log.info("Database is empty, creating example data");
             // populateDatabaseWithExampleData();
-        }
+        //}
     }
 
     private void populateDatabaseWithExampleData() {
@@ -163,7 +162,7 @@ public class BootstrapSeedingService {
         srv.setHaProxyFrontendConfig(hpfc);
         app.addChild(srv);
         applicationTemplateService.saveApp(app);
-        appDeploymentService.save(appDeploymentService.create(app, Infrastructure.VERIZON.name()));
+        appDeploymentService.save(appDeploymentService.create(app, "VERIZON"));
     }
 
     private VirtualMachineTemplate createTemplate(String name, Recipe... recipes) {

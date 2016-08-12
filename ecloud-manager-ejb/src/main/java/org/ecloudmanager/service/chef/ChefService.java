@@ -79,6 +79,10 @@ public class ChefService {
 
     public void deleteNodeAndClient(VMDeployment vmDeployment) {
         String name = vmDeployment.getConfigValue(VMDeployer.VM_NAME);
+        if (name.isEmpty()) {
+            log.error("Empty VM name.");
+            return;
+        }
 
         ChefApi chefApi = chefApiService.getChefApi(vmDeployment.getChefEnvironment());
         Node node = chefApi.deleteNode(name);

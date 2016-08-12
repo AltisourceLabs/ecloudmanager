@@ -32,7 +32,6 @@ import org.ecloudmanager.deployment.core.Deployer;
 import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
-import org.ecloudmanager.deployment.vm.infrastructure.Infrastructure;
 import org.ecloudmanager.util.ClonerProducer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -46,8 +45,8 @@ import java.util.stream.Collectors;
 
 public class ComponentGroupDeployment extends Deployable {
 
-    private static final long serialVersionUID = 4963949678744410890L;
     public static final String VM_CONFIG = "vmConfig";
+    private static final long serialVersionUID = 4963949678744410890L;
     private HAProxyBackendConfig haProxyBackendConfig = new HAProxyBackendConfig();
     @Transient
     private Deployer deployer;
@@ -83,7 +82,7 @@ public class ComponentGroupDeployment extends Deployable {
         return deployer;
     }
 
-    public Infrastructure getInfrastructure() {
+    public String getInfrastructure() {
         return ((ApplicationDeployment)getTop()).getInfrastructure();
     }
 

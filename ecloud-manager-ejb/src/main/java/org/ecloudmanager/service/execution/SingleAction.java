@@ -29,16 +29,19 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.DeploymentObject;
+import org.ecloudmanager.node.model.ExecutionDetails;
 import org.mongodb.morphia.annotations.Reference;
 import org.mongodb.morphia.annotations.Serialized;
 import org.mongodb.morphia.annotations.Transient;
 
+import java.util.concurrent.Callable;
+
 public class SingleAction extends Action implements Runnable {
 
     @Transient
-    private Runnable runnable;
+    private Callable<ExecutionDetails> callable;
     @Transient
-    private Runnable rollback;
+    private Callable rollback;
     @Serialized
     private Throwable failure;
     @Serialized
@@ -53,23 +56,45 @@ public class SingleAction extends Action implements Runnable {
     protected SingleAction() {
     }
 
-    public SingleAction(Runnable task, String description) {
+    public SingleAction(Callable<ExecutionDetails> task, String description) {
         super();
-        this.runnable = task;
+        this.callable = task;
         this.description = description;
     }
 
-    public SingleAction(Runnable task, String description, Deployable deployable) {
+    public SingleAction(Callable<ExecutionDetails> task, String description, Deployable deployable) {
         super();
-        this.runnable = task;
+        this.callable = task;
         this.description = description;
         this.topDeployable = deployable.getTop();
         this.pathToDeployable = topDeployable.relativePathTo(deployable);
     }
 
-    public SingleAction(Runnable task, Runnable rollback, String description) {
+    public SingleAction(Callable<ExecutionDetails> task, Callable rollback, String description) {
         this(task, description);
         this.rollback = rollback;
+    }
+
+    private static void logDetails(Logger log, ExecutionDetails details) {
+        switch (details.getStatus()) {
+            case OK:
+                log.info(details.getMessage());
+            case FAILED:
+                log.error(details.getMessage());
+        }
+        details.getLog().forEach(e -> {
+            switch (e.getLevel()) {
+                case INFO:
+                    log.info(e.getMessage());
+                    break;
+                case ERROR:
+                    log.error(e.getMessage());
+                    break;
+                case WARNING:
+                    log.warn(e.getMessage());
+                    break;
+            }
+        });
     }
 
     public String getDescription() {
@@ -101,10 +126,22 @@ public class SingleAction extends Action implements Runnable {
                 ThreadContext.put("action", getId());
                 ThreadContext.put("topDeployable", topDeployable.getName());
                 ThreadContext.put("deployable", getDeployable().getName());
-                runnable.run();
-                setStatus(Status.SUCCESSFUL);
+                ExecutionDetails details = callable.call();
+                if (details != null) {
+                    logDetails(log, details);
+                    switch (details.getStatus()) {
+                        case OK:
+                            setStatus(Status.SUCCESSFUL);
+                            break;
+                        case FAILED:
+                            setStatus(Status.FAILED);
+                            break;
+                    }
+                } else {
+                    setStatus(Status.SUCCESSFUL);
+                }
                 ThreadContext.clearAll();
-            } catch (Throwable t) {
+            } catch (Exception t) {
                 failure = t;
                 log.error("Failed to execute action " + getLabel() + ": ", t);
                 setStatus(Status.FAILED);
@@ -114,10 +151,10 @@ public class SingleAction extends Action implements Runnable {
             try {
                 System.out.println("Rollback : " + toString());
                 if (rollback != null) {
-                    rollback.run();
+                    rollback.call();
                 }
                 setStatus(Status.PENDING);
-            } catch (Throwable t) {
+            } catch (Exception t) {
                 rollbackFailure = t;
                 // PENDING ????
                 setStatus(Status.PENDING);
@@ -160,8 +197,8 @@ public class SingleAction extends Action implements Runnable {
         return result;
     }
 
-    public void setRunnable(Runnable runnable) {
-        this.runnable = runnable;
+    public void setCallable(Callable callable) {
+        this.callable = callable;
     }
 
 }

@@ -28,7 +28,6 @@ import org.apache.logging.log4j.Logger;
 import org.ecloudmanager.deployment.gateway.GatewayDeployment;
 import org.ecloudmanager.deployment.vm.GatewayVMDeployment;
 import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
-import org.ecloudmanager.deployment.vm.infrastructure.Infrastructure;
 import org.ecloudmanager.jeecore.service.ServiceSupport;
 
 import javax.ejb.Stateless;
@@ -41,10 +40,10 @@ public class GatewayService extends ServiceSupport {
 
     public GatewayDeployment create(String name, VirtualMachineTemplate virtualMachineTemplate, String infrastructure) {
         log.info("Creating gateway deployment " + name + ", " + virtualMachineTemplate + ", " + infrastructure);
-        Infrastructure infra = Infrastructure.valueOf(infrastructure);
+        //Infrastructure infra = Infrastructure.valueOf(infrastructure);
         GatewayDeployment gatewayDeployment = new GatewayDeployment();
         gatewayDeployment.setName(name);
-        gatewayDeployment.setInfrastructure(infra);
+        gatewayDeployment.setInfrastructure(infrastructure);
 
         GatewayVMDeployment vmDeployment = new GatewayVMDeployment(virtualMachineTemplate);
         vmDeployment.setName(gatewayDeployment.getName());

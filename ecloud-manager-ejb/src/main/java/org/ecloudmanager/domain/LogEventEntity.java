@@ -88,7 +88,7 @@ public class LogEventEntity extends MongoObject implements LogEvent {
     }
 
     public String getUncoloredMessageStr() {
-        return message.replaceAll("\u001B\\[[;\\d]*m", "");
+        return message == null ? null : message.replaceAll("\u001B\\[[;\\d]*m", "");
     }
 
     @Override
@@ -122,13 +122,13 @@ public class LogEventEntity extends MongoObject implements LogEvent {
     }
 
     @Override
-    public boolean isIncludeLocation() {
-        return false;
+    public void setEndOfBatch(boolean endOfBatch) {
+
     }
 
     @Override
-    public void setEndOfBatch(boolean endOfBatch) {
-
+    public boolean isIncludeLocation() {
+        return false;
     }
 
     @Override

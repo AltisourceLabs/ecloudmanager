@@ -29,7 +29,6 @@ import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.app.ApplicationTemplate;
 import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.core.Endpoint;
-import org.ecloudmanager.deployment.vm.infrastructure.Infrastructure;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
 import org.ecloudmanager.repository.template.ApplicationTemplateRepository;
@@ -117,7 +116,7 @@ public class ApplicationTest {
     public final void testAppDeploymentSave() throws Exception {
         ApplicationTemplate app = new ApplicationTemplate();
         ApplicationDeployment applicationDeployment = applicationDeploymentService.create(app,
-            Infrastructure.VERIZON.name());
+                "VERIZON");
         applicationDeploymentService.save(applicationDeployment);
         ObjectId id = applicationDeployment.getId();
         DeploymentObject fromDB = applicationDeploymentRepository.get(id);

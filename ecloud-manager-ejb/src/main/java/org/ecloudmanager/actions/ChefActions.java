@@ -40,19 +40,28 @@ public class ChefActions {
 
     public Action getCreateChefEnvironmentAction(ChefEnvironment chefEnvironment) {
         return Action.single(CREATE_ENVIRONMENT_ACTION,
-            () -> chefService.createEnvironment(chefEnvironment),
+                () -> {
+                    chefService.createEnvironment(chefEnvironment);
+                    return null;
+                },
             chefEnvironment);
     }
 
     public Action getDeleteChefEnvironmentAction(ChefEnvironment chefEnvironment) {
         return Action.single("Delete Chef Environment",
-            () -> chefService.deleteEnvironment(chefEnvironment),
+                () -> {
+                    chefService.deleteEnvironment(chefEnvironment);
+                    return null;
+                },
             chefEnvironment);
     }
 
     public Action getDeleteChefNodeAndClientAction(VMDeployment vmDeployment) {
         return Action.single("Delete Chef Node and Client",
-            () -> chefService.deleteNodeAndClient(vmDeployment),
+                () -> {
+                    chefService.deleteNodeAndClient(vmDeployment);
+                    return null;
+                },
             vmDeployment);
     }
 

@@ -24,7 +24,9 @@
 
 package org.ecloudmanager.deployment.vm;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.ecloudmanager.deployment.core.Deployable;
+import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.vm.provisioning.ChefAttribute;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
@@ -35,11 +37,10 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class GatewayVMDeployment extends VMDeployment {
-    private static List<Recipe> gatewayRunlist = new ArrayList<>();
-
     public static final String HAPROXY_STATS = "haproxyStats";
     public static final String ETCD_NODE = "etcd_node";
     public static final String ETCD_PATH = "etcd_path";
+    private static List<Recipe> gatewayRunlist = new ArrayList<>();
 
     static {
         Recipe selinux = new Recipe("selinux");
@@ -93,13 +94,14 @@ public class GatewayVMDeployment extends VMDeployment {
     }
 
     @Override
-    public List<Endpoint> getLinkedRequiredEndpoints() {
+    public List<Pair<DeploymentObject, Endpoint>> getLinkedRequiredEndpoints() {
         return Collections.emptyList();
     }
 
     @Override
     public List<Recipe> getRunlist() {
-        List<Recipe> runlist = new ArrayList<>(getInfrastructure().getRunlistHolder().getRunlist());
+        List<Recipe> runlist = new ArrayList<>();
+        //List<Recipe> runlist = new ArrayList<>(getInfrastructure().getRunlistHolder().getRunlist());
         runlist.addAll(gatewayRunlist);
         return runlist;
     }

@@ -24,12 +24,17 @@
 
 package org.ecloudmanager.deployment.vm.infrastructure;
 
+import org.ecloudmanager.actions.HAProxyActions;
 import org.ecloudmanager.deployment.core.Deployer;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
 import org.ecloudmanager.deployment.ps.ProducedServiceDeployment;
 import org.ecloudmanager.service.execution.Action;
 
-public abstract class InfrastructureHAProxyDeployer implements Deployer<ProducedServiceDeployment> {
+import javax.enterprise.inject.spi.CDI;
+
+public class InfrastructureHAProxyDeployer implements Deployer<ProducedServiceDeployment> {
+    private HAProxyActions haProxyActions = CDI.current().select(HAProxyActions.class).get();
+
     @Override
     public void specifyConstraints(ProducedServiceDeployment deployment) {
     }
@@ -47,4 +52,17 @@ public abstract class InfrastructureHAProxyDeployer implements Deployer<Produced
     public boolean isRecreateActionRequired(ProducedServiceDeployment before, ProducedServiceDeployment after) {
         return true;
     }
+
+    @Override
+    public Action getCreateAction(ProducedServiceDeployment deployable) {
+        // create public endpoints for haproxy
+        return haProxyActions.getCreatePublicEndpointFirewallRulesAction(deployable);
+    }
+
+    @Override
+    public Action getDeleteAction(ProducedServiceDeployment deployable) {
+        // delete public endpoints for haproxy
+        return haProxyActions.getDeletePublicEndpointFirewallRulesAction(deployable);
+    }
+
 }

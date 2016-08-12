@@ -24,13 +24,15 @@
 
 package org.ecloudmanager.deployment.vm;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.bson.types.ObjectId;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.app.Link;
 import org.ecloudmanager.deployment.core.Deployable;
+import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.core.Endpoint;
-import org.ecloudmanager.deployment.vm.infrastructure.Infrastructure;
 import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployer;
+import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployerImpl;
 import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironment;
 import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironmentDeployer;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
@@ -56,14 +58,14 @@ public class VMDeployment extends Deployable {
     @Override
     public VMDeployer getDeployer() {
         if (deployer == null) {
-            InfrastructureDeployer infrastructureDeployer = getInfrastructure().getDeployer();
+            InfrastructureDeployer infrastructureDeployer = new InfrastructureDeployerImpl(getInfrastructure());
             deployer = new VMDeployer(infrastructureDeployer);
         }
         return deployer;
     }
 
     @NotNull
-    public Infrastructure getInfrastructure() {
+    public String getInfrastructure() {
         return ((ApplicationDeployment)getTop()).getInfrastructure();
     }
 
@@ -95,7 +97,8 @@ public class VMDeployment extends Deployable {
     }
 
     public List<Recipe> getRunlist() {
-        List<Recipe> runlist = new ArrayList<>(getInfrastructure().getRunlistHolder().getRunlist());
+        List<Recipe> runlist = new ArrayList<>();
+//        List<Recipe> runlist = new ArrayList<>(getInfrastructure().getRunlistHolder().getRunlist());
         runlist.addAll(getVirtualMachineTemplate().getRunlist());
         return runlist;
     }
@@ -105,8 +108,8 @@ public class VMDeployment extends Deployable {
         return Arrays.asList("deployer", "parent", "children", "fields", "values");
     }
 
-    public List<Endpoint> getLinkedRequiredEndpoints() {
-        List<Endpoint> result = new ArrayList<>();
+    public List<Pair<DeploymentObject, Endpoint>> getLinkedRequiredEndpoints() {
+        List<Pair<DeploymentObject, Endpoint>> result = new ArrayList<>();
         ApplicationDeployment ad = (ApplicationDeployment) getTop();
         List<Link> links = ad.getLinks();
         getVirtualMachineTemplate().getRequiredEndpoints().forEach(r -> {
@@ -124,8 +127,10 @@ public class VMDeployment extends Deployable {
                 String name = splitted[0];
                 Deployable d = (Deployable) ad.getChildByName(name);
                 String endpointName = splitted[splitted.length - 1];
-                Endpoint e = (Endpoint) d.getChildByName(endpointName);
-                result.add(e);
+                Optional<Endpoint> e = d.getEndpoints().stream().filter(ep -> ep.getName().equals(endpointName)).findFirst();
+                if (e.isPresent()) {
+                    result.add(Pair.of(d, e.get()));
+                }
             }
         });
         return result;

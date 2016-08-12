@@ -26,6 +26,7 @@ package org.ecloudmanager.service.execution;
 
 import org.apache.logging.log4j.LogManager;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 
 public class Main {
@@ -89,7 +90,7 @@ public class Main {
         System.out.println(deploymentPlan);
     }
 
-    private static class Task implements Runnable {
+    private static class Task implements Callable {
         private String name;
         private int s = 1;
         private RuntimeException t;
@@ -103,8 +104,12 @@ public class Main {
             this.t = new RuntimeException(error);
         }
 
+        public String toString() {
+            return "Task: " + name;
+        }
+
         @Override
-        public void run() {
+        public Object call() throws Exception {
             System.out.println("Executing: " + toString());
 //            try {
 //                Thread.sleep(s*1000);
@@ -115,10 +120,7 @@ public class Main {
                 throw t;
             }
 
-        }
-
-        public String toString() {
-            return "Task: " + name;
+            return null;
         }
     }
 }

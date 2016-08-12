@@ -41,11 +41,15 @@
     </licenses>
 
     <modules>
-        <module>agent</module>
+        <module>node-api</module>
+        <module>node-api-aws</module>
         <module>tmrk-cloudapi</module>
+        <module>node-api-verizon</module>
+        <module>node-api-remote</module>
         <module>ecloud-manager-ejb</module>
         <module>ecloud-manager-web</module>
         <module>ecloud-manager-ear</module>
+        <module>agent-rest</module>
     </modules>
 
     <properties>

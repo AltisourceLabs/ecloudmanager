@@ -23,7 +23,7 @@
   ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   ~ SOFTWARE.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
@@ -89,6 +89,27 @@
             <artifactId>tmrk-cloudapi</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.ecloudmanager</groupId>
+            <artifactId>node-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.ecloudmanager</groupId>
+            <artifactId>node-api-aws</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.ecloudmanager</groupId>
+            <artifactId>node-api-verizon</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.ecloudmanager</groupId>
+            <artifactId>node-api-remote</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>com.jcraft</groupId>
             <artifactId>jsch</artifactId>
@@ -293,23 +314,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-ec2</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-s3</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-iam</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-route53</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-entitymanager</artifactId>
             <exclusions>
@@ -335,6 +339,11 @@
             <artifactId>rrd4j</artifactId>
             <version>2.2.1</version>
         </dependency>
+        <!--dependency>
+            <groupId>org.ecloudmanager.agent</groupId>
+            <artifactId>client</artifactId>
+            <version>${project.version}</version>
+        </dependency-->
 
         <!--<dependency>-->
             <!--<groupId>org.mongodb</groupId>-->

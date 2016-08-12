@@ -29,59 +29,15 @@ import org.ecloudmanager.deployment.core.ConstraintFieldSuggestion;
 import org.ecloudmanager.deployment.core.ConstraintValue;
 import org.ecloudmanager.deployment.core.DeploymentConstraint;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class ConstraintInput {
-    private ConstraintValue value;
     private final DeploymentConstraint deploymentConstraint;
-    private Option option;
-
-    public enum Option {
-        REFERENCE, VALUE, DEFAULT
-    }
-
     private final ConstraintField field;
-
-    public boolean isRequired() {
-        return field.isRequired();
-    }
-
-    public boolean isReadOnly() {
-        return field.isReadOnly();
-    }
-
-    public boolean isUseDefaultValue() {
-        return hasDefaultValue() && getValue() == null;
-    }
-
-    public boolean isMultiline() {
-        return false; // Now there's no multiline fields any more
-    }
-
-    public String getName() {
-        return field.getName();
-    }
-
-    public void setUseDefaultValue(boolean useDefaultValue) {
-        if (useDefaultValue) {
-            deploymentConstraint.removeValue(getName());
-            value = null;
-        } else {
-            if (deploymentConstraint.getProvidedValue(getName()) == null) {
-                setValue(getDefaultValue());
-            }
-        }
-    }
-
-    public boolean hasDefaultValue() {
-        String defaultValue = field.getDefaultValue();
-        return defaultValue != null && !defaultValue.isEmpty();
-    }
-
-    public String getDefaultValue() {
-        return field.getDefaultValue();
-    }
+    private ConstraintValue value;
+    private Option option;
 
     public ConstraintInput(DeploymentConstraint deploymentConstraint, ConstraintField field) {
         this.deploymentConstraint = deploymentConstraint;
@@ -96,6 +52,45 @@ public class ConstraintInput {
         }
     }
 
+    public boolean isRequired() {
+        return field.isRequired();
+    }
+
+    public boolean isReadOnly() {
+        return field.isReadOnly();
+    }
+
+    public boolean isUseDefaultValue() {
+        return hasDefaultValue() && getValue() == null;
+    }
+
+    public void setUseDefaultValue(boolean useDefaultValue) {
+        if (useDefaultValue) {
+            deploymentConstraint.removeValue(getName());
+            value = null;
+        } else {
+            if (deploymentConstraint.getProvidedValue(getName()) == null) {
+                setValue(getDefaultValue());
+            }
+        }
+    }
+
+    public boolean isMultiline() {
+        return false; // Now there's no multiline fields any more
+    }
+
+    public String getName() {
+        return field.getName();
+    }
+
+    public boolean hasDefaultValue() {
+        String defaultValue = field.getDefaultValue();
+        return defaultValue != null && !defaultValue.isEmpty();
+    }
+
+    public String getDefaultValue() {
+        return field.getDefaultValue();
+    }
 
     public String getValue() {
         if (value == null) {
@@ -129,7 +124,6 @@ public class ConstraintInput {
         this.value = ConstraintValue.reference(reference);
         deploymentConstraint.setValue(getName(), this.value);
     }
-
 
     public String toString() {
         return field.toString();
@@ -165,8 +159,15 @@ public class ConstraintInput {
     }
 
     public List<ConstraintFieldSuggestion> getSuggestions(String input) {
+        if (field.getSuggestionsProvider() == null) {
+            return Collections.emptyList();
+        }
         return field.getSuggestionsProvider().getSuggestions(deploymentConstraint).stream()
             .filter(s -> s.getLabel().contains(input))
             .collect(Collectors.toList());
+    }
+
+    public enum Option {
+        REFERENCE, VALUE, DEFAULT
     }
 }

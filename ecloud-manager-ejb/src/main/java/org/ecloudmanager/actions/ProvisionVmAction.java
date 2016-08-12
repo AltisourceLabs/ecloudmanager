@@ -20,7 +20,10 @@ public class ProvisionVmAction extends SingleAction {
 
     public ProvisionVmAction(VMDeployment deployable, GlobalProvisioningService globalProvisioningService, boolean update) {
         super(null, update ? VM_PROVISION_UPDATE_ACTION : VM_PROVISION_ACTION, deployable);
-        setRunnable(() -> globalProvisioningService.provisionVm(deployable, !update));
+        setCallable(() -> {
+            globalProvisioningService.provisionVm(deployable, !update);
+            return null;
+        });
     }
 
     @Override

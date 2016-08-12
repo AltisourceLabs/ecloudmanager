@@ -27,19 +27,16 @@
                 xmlns:f="http://java.sun.com/jsf/core"
                 xmlns:h="http://java.sun.com/jsf/html"
                 xmlns:p="http://primefaces.org/ui"
-                xmlns:o="http://omnifaces.org/ui"
                 xmlns:components="http://java.sun.com/jsf/composite/components"
                 template="/WEB-INF/templates/default.xhtml">
     <ui:define name="content">
         <p:outputPanel id="out">
             <h:panelGroup>
                 <h:form id="edit" styleClass="contentForm">
-                    <o:importConstants type="org.ecloudmanager.deployment.vm.infrastructure.Infrastructure" var="Infrastructure" />
                     <p>Name: <p:inputText value="#{applicationDeploymentEditorController.deployment.name}"/></p>
                     <p>Infrastructure:
-                        <p:selectOneMenu value="#{applicationDeploymentEditorController.deployment.infrastructure}" converter="infrastructureConverter">
-                            <f:selectItem itemLabel="AWS" itemValue="#{Infrastructure.AWS}"/>
-                            <f:selectItem itemLabel="Verizon" itemValue="#{Infrastructure.VERIZON}"/>
+                        <p:selectOneMenu value="#{applicationDeploymentEditorController.deployment.infrastructure}">
+                            <f:selectItems value="#{applicationDeploymentEditorController.nodeApiIds}"/>
                         </p:selectOneMenu>
                     </p>
                     <p>Entries:</p>

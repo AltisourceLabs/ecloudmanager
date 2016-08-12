@@ -76,5 +76,5 @@ public abstract class InfrastructureDeployer implements Deployer<VMDeployment> {
         deployment.removeField(VM_IP_ADDRESS);
     }
 
-    protected abstract DeploymentObject getInfrastructureConfig(VMDeployment deployment);
+    public abstract DeploymentObject getInfrastructureConfig(VMDeployment deployment);
 }

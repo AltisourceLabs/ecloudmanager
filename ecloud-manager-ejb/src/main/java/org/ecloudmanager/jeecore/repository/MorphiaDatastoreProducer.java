@@ -29,6 +29,7 @@ import com.mongodb.MongoClient;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
+import org.ecloudmanager.deployment.core.NodeAPISuggestions;
 import org.ecloudmanager.deployment.es.ExternalServiceDeployment;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
 import org.ecloudmanager.deployment.ps.ProducedServiceDeployment;
@@ -117,6 +118,7 @@ public class MorphiaDatastoreProducer {
                     .mapPackageFromClass(Recipe.class)
                     .mapPackageFromClass(ExternalServiceDeployment.class)
                     .mapPackageFromClass(ProducedServiceDeployment.class)
+                    .mapPackageFromClass(NodeAPISuggestions.class)
             ;
             morphia.map(HaproxyStats.class);
         }

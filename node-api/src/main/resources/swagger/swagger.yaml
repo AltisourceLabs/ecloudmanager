@@ -1,0 +1,681 @@
+  swagger: '2.0'
+  info:
+    version: 0.0.0
+    title: Deployment Agent
+  paths:
+    /task:
+      get:
+        tags:
+        - tasks
+        summary: Get list of tasks
+        description: List of tasks on tasks
+        operationId: getTasks
+        produces:
+         
+        - application/json
+        responses:
+          200:
+            description: Successful
+            schema:
+              $ref: '#/definitions/Tasks'
+    /task/{taskId}:
+      get:
+        tags:
+        - tasks
+        summary: Get task information
+        operationId: getTask
+        produces:
+         
+        - application/json
+        parameters:
+        - name: taskId
+          in: path
+          description: ID of task to return
+          required: true
+          type: string
+        responses:
+          200:
+            description: Successful
+            schema:
+              $ref: '#/definitions/TaskInfo'
+          400:
+            description: Invalid ID
+          404:
+            description: Task not found
+        security:
+        - key: []
+      delete:
+        tags:
+        - tasks
+        summary: Delete task
+        operationId: deleteTask
+        produces:
+         
+        - application/json
+        parameters:
+        - name: taskId
+          in: path
+          description: ID of task to delete
+          required: true
+          type: string
+        responses:
+          200:
+            description: Successful
+            schema:
+              $ref: '#/definitions/TaskInfo'
+          400:
+            description: Invalid ID
+          404:
+            description: Task not found
+    /task/{taskId}/log:
+      get:
+        tags:
+        - tasks
+        summary: Get task's log
+        operationId: getLog
+        produces:
+         
+        - application/json
+        parameters:
+        - name: taskId
+          in: path
+          description: ID of task to return
+          required: true
+          type: integer
+        - name: skip
+          in: query
+          description: Number of records to skip
+          required: false
+          type: integer
+        - name: count
+          in: query
+          description: Number of records to return
+          required: false
+          type: integer
+        responses:
+          200:
+            description: Successful
+            schema:
+              $ref: '#/definitions/TaskLog'
+          400:
+            description: Invalid ID
+          404:
+            description: Task not found
+# {
+#  "parameters": {
+#        "name":"dp-agent",
+#        "region":"us-east-1",
+#        "subnet":"subnet-e2c17e95",
+#        "storage":"20",
+#        "image":"ami-c2a818aa",
+#        "instance_type":"t2.micro",
+#        "keypair":"root"
+#}
+#}
+    /nodeParameters:
+      get:
+        tags:
+        - node
+        summary: Get node parameters 
+        operationId: getNodeParameters
+        produces:
+        - application/json
+        parameters:
+        - name: accessKey
+          in: header
+          required: true
+          type: string
+        - name: secretKey
+          in: header
+          required: true
+          type: string
+        responses:
+          200:
+            description: Successful
+            schema:
+              type: array
+              items: 
+                $ref: '#/definitions/NodeParameter'
+
+    /nodeParameters/{parameter}:
+      get:
+        tags:
+        - node
+        summary: Get node parameter values 
+        operationId: getNodeParameterValues
+        consumes:
+        - application/json
+        produces:
+        - application/json
+        parameters:
+        - name: accessKey
+          in: header
+          required: true
+          type: string
+        - name: secretKey
+          in: header
+          required: true
+          type: string
+        - name: parameter
+          in: path
+          description: Parameter name
+          required: true
+          type: string
+        - name: names
+          in: query
+          description: Comma-separated parameter names
+          type: array
+          items:
+            type: string
+          collectionFormat: csv
+          required: false
+        - name: values
+          in: query
+          description: Comma-separated parameter values
+          type: array
+          items:
+            type: string
+          collectionFormat: csv
+          required: false
+        responses:
+          200:
+            description: Successful
+            schema:
+              type: array
+              items: 
+                $ref: '#/definitions/ParameterValue'
+    /node:
+      post:
+        tags:
+        - node
+        summary: "Create new node"
+        description: "Submit task to create new node"
+        operationId: createNode
+        consumes:
+        - application/json
+        produces:
+        - application/json
+        parameters:
+        - name: accessKey
+          in: header
+          required: true
+          type: string
+        - name: secretKey
+          in: header
+          required: true
+          type: string
+        - name: node
+          in: body
+          description: Node to deploy
+          required: true
+          schema:
+            $ref: '#/definitions/Node'
+        responses:
+          200:
+            description: Response
+            schema:
+              $ref: '#/definitions/CreateNodeResponse'
+    /node/{nodeId}:
+      get:
+        tags:
+        - node
+        summary: Get node information
+        operationId: getNode
+        produces:
+        - application/json
+        parameters:
+        - name: accessKey
+          in: header
+          required: true
+          type: string
+        - name: secretKey
+          in: header
+          required: true
+          type: string
+        - name: nodeId
+          in: path
+          description: ID of node to return
+          required: true
+          type: string
+        responses:
+          200:
+            description: Successful
+            schema:
+              $ref: '#/definitions/NodeInfo'
+          400:
+            description: Invalid ID
+          404:
+            description: Node not found
+        security:
+        - key: []
+        - secret: []
+      put:
+        tags:
+        - node
+        summary: Update node
+        operationId: updateNode
+        produces:
+         
+        - application/json
+        parameters:
+        - name: accessKey
+          in: header
+          required: true
+          type: string
+        - name: secretKey
+          in: header
+          required: true
+          type: string
+        - name: nodeId
+          in: path
+          description: ID of Node to update
+          required: true
+          type: string
+        - name: nodeInfo
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Node'
+        responses:
+          200:
+            description: Execution details
+            schema:
+              $ref: '#/definitions/ExecutionDetails'
+      delete:
+        tags:
+        - node
+        summary: Delete node
+        operationId: deleteNode
+        produces:
+        - application/json
+        parameters:
+        - name: accessKey
+          in: header
+          required: true
+          type: string
+        - name: secretKey
+          in: header
+          required: true
+          type: string
+        - name: nodeId
+          in: path
+          description: ID of node to update
+          required: true
+          type: string
+        responses:
+          200:
+            description: Execution details
+            schema:
+              $ref: '#/definitions/ExecutionDetails'
+    /node/{nodeId}/firewall:
+      get:
+        tags:
+        - node
+        summary: Get node firewall rules information
+        operationId: getNodeFirewallRules
+        produces:
+        - application/json
+        parameters:
+        - name: accessKey
+          in: header
+          required: true
+          type: string
+        - name: secretKey
+          in: header
+          required: true
+          type: string
+        - name: nodeId
+          in: path
+          description: ID of node to return
+          required: true
+          type: string
+        responses:
+          200:
+            description: Successful
+            schema:
+              $ref: '#/definitions/FirewallInfo'
+          400:
+            description: Invalid ID
+          404:
+            description: node not found
+      put:
+        tags:
+        - node
+        summary: Update node firewall rules
+        operationId: updateNodeFirewallRules
+        produces:
+        - application/json
+        parameters:
+        - name: accessKey
+          in: header
+          required: true
+          type: string
+        - name: secretKey
+          in: header
+          required: true
+          type: string
+        - name: nodeId
+          in: path
+          description: ID of node to update firewall rules
+          required: true
+          type: string
+        - name: firewallUpdate
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/FirewallUpdate'
+        responses:
+          200:
+            description: Execution details
+            schema:
+              $ref: '#/definitions/ExecutionDetails'
+    /node/{nodeId}/upload:
+      put:
+        tags:
+        - ssh
+        summary: Upload file to node
+        operationId: uploadFile
+        consumes:
+        - multipart/form-data
+        produces:
+        - application/json
+        parameters:
+        - name: accessKey
+          in: header
+          required: true
+          type: string
+        - name: secretKey
+          in: header
+          required: true
+          type: string
+        - name: username
+          in: formData
+          required: true
+          type: string
+        - name: privateKey
+          in: formData
+          required: true
+          type: string
+        - name: privateKeyPassphrase
+          in: formData
+          required: false
+          type: string
+        - name: jumpHost1
+          in: formData
+          required: false
+          type: string
+        - name: jumpHost1Username
+          in: formData
+          required: false
+          type: string
+        - name: jumpHost1PrivateKey
+          in: formData
+          required: false
+          type: string
+        - name: jumpHost1PrivateKeyPassphrase
+          in: formData
+          required: false
+          type: string
+        - name: jumpHost2
+          in: formData
+          required: false
+          type: string
+        - name: jumpHost2Username
+          in: formData
+          required: false
+          type: string
+        - name: jumpHost2PrivateKey
+          in: formData
+          required: false
+          type: string
+        - name: jumpHost2PrivateKeyPassphrase
+          type: string
+          in: formData
+          required: false
+        - name: path
+          type: string
+          in: formData
+          required: true
+        - name: nodeId
+          in: path
+          description: ID of node for file upload
+          required: true
+          type: string
+        - name: file
+          in: formData
+          type: file
+        responses:
+          200:
+            description: Execution details
+            schema:
+              $ref: '#/definitions/ExecutionDetails'
+    /node/{nodeId}/execute:
+      put:
+        tags:
+        - ssh
+        summary: Execute command on node
+        operationId: executeScript
+        consumes:
+        - application/json
+        produces:
+        - application/json
+        parameters:
+        - name: accessKey
+          in: header
+          required: true
+          type: string
+        - name: secretKey
+          in: header
+          required: true
+          type: string
+        - name: nodeId
+          in: path
+          description: ID of node for file upload
+          required: true
+          type: string
+        - name: command
+          required: true
+          in: body
+          schema:
+            $ref: '#/definitions/Command'
+        responses:
+          200:
+            description: Successful
+            schema:
+              $ref: '#/definitions/CommandOutput'
+          
+  securityDefinitions:
+    key:
+      type: apiKey
+      name: api_key
+      in: header
+    secret:
+      type: apiKey
+      name: secret_key
+      in: header
+  definitions:
+    LogEntry:
+      properties:
+        level:
+          type: string
+          enum:
+           - INFO
+           - ERROR
+           - WARNING
+        message:
+          type: string
+    ExecutionDetails:
+      properties:
+        status:
+          type: string
+          enum:
+           - OK
+           - FAILED
+        message:
+          type: string
+        log:
+          type: array
+          items:
+            $ref: '#/definitions/LogEntry'  
+    CreateNodeResponse:
+      properties:
+        nodeId:
+          type: string
+        details:
+          $ref: '#/definitions/ExecutionDetails'          
+    SSHCredentials:
+      properties:
+        username:
+          type: string
+        privateKey:
+          type: string
+        privateKeyPassphrase:
+          type: string
+        jumpHost1:
+          type: string
+        jumpHost1Username:
+          type: string
+        jumpHost1PrivateKey:
+          type: string
+        jumpHost1PrivateKeyPassphrase:
+          type: string
+        jumpHost2:
+          type: string
+        jumpHost2Username:
+          type: string
+        jumpHost2PrivateKey:
+          type: string
+        jumpHost2PrivateKeyPassphrase:
+          type: string
+    NodeParameter:
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        required:
+          type: boolean
+        defaultValue:
+          type: string
+        canSuggest:
+          type: boolean
+        strictSuggest:
+          type: boolean
+        args:
+          type: array
+          items:
+            type: string          
+    ParameterValue:
+      properties:
+        value:
+          type: string
+        description:
+          type: string
+    InfrastructurePropertyRequestParameters:
+      properties:
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+    InfrastructurePropertyResponce:
+      properties:
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+    Node:
+      properties:
+        parameters:
+          type: object
+          additionalProperties:
+            type: string
+    FirewallInfo:
+      properties:
+        rules:
+          type: array
+          items:
+            $ref: '#/definitions/FirewallRule'
+    FirewallUpdate:
+      properties:
+        create:
+          type: array
+          items:
+            $ref: '#/definitions/FirewallRule'
+        delete:
+          type: array
+          items:
+            $ref: '#/definitions/FirewallRule'
+    FirewallRule:
+      properties:
+        protocol:
+          type: string
+        port:
+          type: string
+        from:
+          type: array
+          items: 
+            type: string
+    Tasks:
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: '#/definitions/TaskInfo'
+    TaskInfo:
+      properties:
+        status:
+          type: string
+    Subnet:
+      properties:
+        id:
+          type: string
+        name:  
+          type: string
+        cidr:  
+          type: string
+    SecurityGroup:
+      properties:
+        id:
+          type: string
+        name:  
+          type: string
+        description:  
+          type: string
+    TaskLog:
+      properties:
+        entries:
+          type: array
+          items:
+            type: string
+    NodeInfo:
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum:
+           - RUNNING
+           - PENDING
+           - TERMINATED
+        ip:
+          type: string
+        parameters:
+          type: object
+          additionalProperties:
+            type: string          
+    Command:
+      properties:
+        credentials:
+            $ref: '#/definitions/SSHCredentials'          
+        command:
+          type: array
+          items:
+            type: string
+    CommandOutput:
+      properties:
+        exitCode:
+          type: integer
+        output:
+          type: array
+          items:
+            type: string

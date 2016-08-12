@@ -28,7 +28,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.Deployer;
 import org.ecloudmanager.deployment.core.DeploymentObject;
-import org.ecloudmanager.deployment.vm.infrastructure.Infrastructure;
 import org.jetbrains.annotations.NotNull;
 import org.mongodb.morphia.annotations.Entity;
 
@@ -43,7 +42,7 @@ public class ApplicationDeployment extends Deployable {
     private static final long serialVersionUID = -8557535271917698832L;
     private List<Link> links = new ArrayList<>();
     private List<String> publicEndpoints = new ArrayList<>();
-    private Infrastructure infrastructure;
+    private String infrastructure;
 
     public ApplicationDeployment() {
     }
@@ -54,11 +53,11 @@ public class ApplicationDeployment extends Deployable {
         return new ApplicationDeployer();
     }
 
-    public Infrastructure getInfrastructure() {
+    public String getInfrastructure() {
         return infrastructure;
     }
 
-    public void setInfrastructure(Infrastructure infrastructure) {
+    public void setInfrastructure(String infrastructure) {
         this.infrastructure = infrastructure;
     }
 
