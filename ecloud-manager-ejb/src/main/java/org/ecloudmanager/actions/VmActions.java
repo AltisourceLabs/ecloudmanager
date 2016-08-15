@@ -63,15 +63,35 @@ public class VmActions {
         return Action.actionSequence("Create and Start VM",
                 Action.single("Create VM", () -> {
                     clearVmConstraints(vmDeployment);
-                    CreateNodeResponse response = NodeUtil.createNodeAndWait(nodeAPIProvider.getAPI(apiId), nodeAPIProvider.getCredentials(apiId), parameters);
+                    CreateNodeResponse response = nodeAPIProvider.getAPI(apiId).createNode(nodeAPIProvider.getCredentials(apiId), parameters);
                     if (response.getDetails().getStatus().equals(ExecutionDetails.StatusEnum.OK)) {
-                        NodeInfo nodeInfo = nodeAPIProvider.getAPI(apiId).getNode(nodeAPIProvider.getCredentials(apiId), response.getNodeId());
-                        InfrastructureDeployer.addVMId(vmDeployment, nodeInfo.getId());
-                        InfrastructureDeployer.addIP(vmDeployment, nodeInfo.getIp());
+                        InfrastructureDeployer.addVMId(vmDeployment, response.getNodeId());
                         applicationDeploymentService.update((ApplicationDeployment) vmDeployment.getTop());
-                        NodeUtil.logInfo(response.getDetails(), "Updated deployment entry");
                     }
                     return response.getDetails();
+                }, vmDeployment),
+                Action.single("Waiting", () -> {
+                    try {
+                        NodeInfo info = NodeUtil.wait(nodeAPIProvider.getAPI(apiId), nodeAPIProvider.getCredentials(apiId), InfrastructureDeployer.getVmId(vmDeployment));
+                        return new ExecutionDetails().status(ExecutionDetails.StatusEnum.OK).message("Node started with IP: " + info.getIp());
+                    } catch (Exception e) {
+                        ExecutionDetails details = new ExecutionDetails();
+                        NodeUtil.logError(details, "Can't obtain node IP address ", e);
+                        return details;
+                    }
+                }, vmDeployment),
+                Action.single("Configure VM", () -> nodeAPIProvider.getAPI(apiId).updateNode(nodeAPIProvider.getCredentials(apiId), InfrastructureDeployer.getVmId(vmDeployment), parameters), vmDeployment),
+                Action.single("Waiting", () -> {
+                    try {
+                        NodeInfo info = NodeUtil.wait(nodeAPIProvider.getAPI(apiId), nodeAPIProvider.getCredentials(apiId), InfrastructureDeployer.getVmId(vmDeployment));
+                        InfrastructureDeployer.addIP(vmDeployment, info.getIp());
+                        applicationDeploymentService.update((ApplicationDeployment) vmDeployment.getTop());
+                        return new ExecutionDetails().status(ExecutionDetails.StatusEnum.OK).message("Node started with IP: " + info.getIp());
+                    } catch (Exception e) {
+                        ExecutionDetails details = new ExecutionDetails();
+                        NodeUtil.logError(details, "Can't obtain node IP address ", e);
+                        return details;
+                    }
                 }, vmDeployment),
                 new CreateFirewallRulesAction(vmDeployment, nodeAPIProvider.getAPI(apiId), credentials));
     }

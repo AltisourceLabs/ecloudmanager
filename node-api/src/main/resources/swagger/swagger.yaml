@@ -555,6 +555,10 @@
           type: string
         required:
           type: boolean
+        create:
+          type: boolean
+        update:
+          type: boolean
         defaultValue:
           type: string
         canSuggest:

@@ -34,8 +34,8 @@ public class LocalNodeAPI extends LocalSshAPI implements NodeAPI {
     }
 
     @Override
-    public ExecutionDetails updateNode(Credentials credentials, String nodeId, Node node) throws Exception {
-        return nodeBaseAPI.updateNode(credentials, nodeId, node);
+    public ExecutionDetails updateNode(Credentials credentials, String nodeId, Map<String, String> parameters) throws Exception {
+        return nodeBaseAPI.updateNode(credentials, nodeId, parameters);
     }
 
     @Override

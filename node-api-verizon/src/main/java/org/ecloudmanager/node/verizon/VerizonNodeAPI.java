@@ -17,6 +17,8 @@ import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static org.ecloudmanager.tmrk.cloudapi.model.VirtualMachineStatus.NOT_DEPLOYED;
+
 public class VerizonNodeAPI implements NodeBaseAPI {
     private static final Set<Integer> ALLOWED_CPU_VALUES = Sets.newHashSet(1, 2, 4, 8);
     private static final long VZ_TASK_TIMEOUT_SEC = 1000;
@@ -166,23 +168,22 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         NodeUtil.logInfo(details, "VM created with id: " + vmId);
 
         // Allocate the disk space if needed
-        updateHardwareConfiguration(vmId, Integer.parseInt(storage), Integer.parseInt(cpu), Integer.parseInt(memory), registry);
+        updateHardwareConfiguration(details, vmId, Integer.parseInt(storage), Integer.parseInt(cpu), Integer.parseInt(memory), registry);
         NodeUtil.logInfo(details, "VM hardware configuaration updated");
-        startupVm(vmId, registry);
-        String ip = getIpAddress(vmId, 180, registry);
-        NodeUtil.logInfo(details, "VM started with ip " + ip);
-        assignIp(vmId, netStr, ip, cache, registry);
-        NodeUtil.logInfo(details, "IP " + ip + " assigned to VM " + vmId);
+        startupVm(vmId, registry, false);
+
         return new CreateNodeResponse().details(details.status(ExecutionDetails.StatusEnum.OK)).nodeId(envId + ":" + vmId);
     }
 
-    private void startupVm(String vmId, CloudServicesRegistry registry) {
+    private void startupVm(String vmId, CloudServicesRegistry registry, boolean wait) {
         //log.info("Starting VM " + vmId);
         waitUntilMachineIsNotReady(vmId, 1000, registry);
 
         TaskType task = registry.getVirtualMachineService().actionPowerOnMachine(vmId);
         task.setName("power on virtual machine");
-        waitUntilTaskNotFinished(task, registry);
+        if (wait) {
+            waitUntilTaskNotFinished(task, registry);
+        }
     }
 
     private void assignIp(String vmId, String network, String ipAddress, CloudCachedEntityService cache, CloudServicesRegistry registry) {
@@ -218,13 +219,6 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         while (address == null && System.currentTimeMillis() - start < timeout * 1000) {
             address = getIpAddress(vmId, registry);
         }
-
-        if (address == null) {
-            throw new RuntimeException("Cannot obtain IP address for VM " + vmId);
-        } else {
-//            log.info("Successfully obtained IP address " + address + " for VM " + vmId);
-        }
-
         return address;
     }
 
@@ -350,54 +344,57 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         return layout;
     }
 
-    public void updateHardwareConfiguration(String vmId, int storage, int cpu, int memory, CloudServicesRegistry registry) {
+    private void updateHardwareConfiguration(ExecutionDetails details, String vmId, Integer storage, Integer cpu, Integer memory, CloudServicesRegistry registry) {
         //log.info("Updating hardware configuration of VM " + vmId);
+
         VirtualMachineService vmService = registry.getVirtualMachineService();
-        if (storage > 512) {
-//            log.error("Cannot set storage to more than 512GB, but value is: " + storage);
-            return;
-        }
-        if (memory % 4 != 0) {
-//            log.error("Memory should be multiple of 4 but was: " + memory);
-            return;
-        }
-        if (!ALLOWED_CPU_VALUES.contains(cpu)) {
-//            log.error("Invalid cpu count: " + cpu);
-            return;
-        }
-
-        waitUntilMachineIsNotReady(vmId, 1000, registry);
-
+        HardwareConfigurationType hardwareConfiguration = vmService.getVirtualMachineHardwareConfiguration(vmId);
         boolean needShutdown = false;
         boolean nothingToDo = true;
+        if (storage != null) {
+            if (storage > 512) {
+                NodeUtil.logInfo(details, "Cannot set storage to more than 512GB, but value is: " + storage);
+            } else {
+                VirtualDiskType disk1 = hardwareConfiguration.getDisks().getValue().getDisk().get(0);
+                int currentStorage = disk1.getSize().getValue().intValue();
+                if (currentStorage != storage) {
+                    if (currentStorage > storage) {
+                        NodeUtil.logInfo(details, "Cannot set storage to a value less than current (shrink drive). Current: " +
+                                currentStorage + ", new: " + storage);
 
-        HardwareConfigurationType hardwareConfiguration = vmService.getVirtualMachineHardwareConfiguration(vmId);
-        VirtualDiskType disk1 = hardwareConfiguration.getDisks().getValue().getDisk().get(0);
-        int currentStorage = disk1.getSize().getValue().intValue();
-        if (currentStorage != storage) {
-            if (currentStorage > storage) {
-//                log.error("Cannot set storage to a value less than current (shrink drive). Current: " +
-//                    currentStorage + ", new: " + storage);
-                return;
+                    } else {
+                        nothingToDo = false;
+                        disk1.getSize().setValue(BigDecimal.valueOf(storage));
+                    }
+                }
             }
-            nothingToDo = false;
-            disk1.getSize().setValue(BigDecimal.valueOf(storage));
+            if (memory != null)
+                if (memory % 4 != 0) {
+                    NodeUtil.logInfo(details, "Memory should be multiple of 4 but was: " + memory);
+                } else {
+                    if (hardwareConfiguration.getMemory().getValue().getValue().intValue() != memory) {
+                        needShutdown = true;
+                        nothingToDo = false;
+                        hardwareConfiguration.getMemory().getValue().setValue(BigDecimal.valueOf(memory));
+                    }
+            }
         }
-        if (hardwareConfiguration.getMemory().getValue().getValue().intValue() != memory) {
-            needShutdown = true;
-            nothingToDo = false;
-            hardwareConfiguration.getMemory().getValue().setValue(BigDecimal.valueOf(memory));
+        if (cpu != null) {
+            if (!ALLOWED_CPU_VALUES.contains(cpu)) {
+                NodeUtil.logInfo(details, "Invalid cpu count: " + cpu);
+            } else {
+                if (!Objects.equals(hardwareConfiguration.getProcessorCount(), cpu)) {
+                    needShutdown = true;
+                    nothingToDo = false;
+                    hardwareConfiguration.setProcessorCount(cpu);
+                }
+            }
         }
-        if (hardwareConfiguration.getProcessorCount() != cpu) {
-            needShutdown = true;
-            nothingToDo = false;
-            hardwareConfiguration.setProcessorCount(cpu);
-        }
-
         if (nothingToDo) {
             return;
         }
 
+        waitUntilMachineIsNotReady(vmId, 1000, registry);
         boolean needStartup = false;
         if (needShutdown) {
             VirtualMachineType vm = vmService.getVirtualMachineById(vmId);
@@ -414,7 +411,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         waitUntilTaskNotFinished(task, registry);
 
         if (needStartup) {
-            startupVm(vmId, registry);
+            startupVm(vmId, registry, false);
         }
     }
 
@@ -472,7 +469,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         List<VirtualMachineStatus> badStatuses = Arrays.asList(
                 VirtualMachineStatus.COPY_IN_PROGRESS,
                 VirtualMachineStatus.TASK_IN_PROGRESS,
-                VirtualMachineStatus.NOT_DEPLOYED,
+                NOT_DEPLOYED,
                 VirtualMachineStatus.ORPHANED
         );
 
@@ -502,14 +499,17 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
         String envId = nodeId.split(":")[0];
-        String id = nodeId.split(":")[1];
+        String vmId = nodeId.split(":")[1];
         CloudCachedEntityService cache = getCache(accessKey, secretKey);
         CloudServicesRegistry registry = new CloudServicesRegistry(accessKey, secretKey);
-        VirtualMachineType vm = registry.getVirtualMachineService().getVirtualMachineById(id);
+        VirtualMachineType vm = registry.getVirtualMachineService().getVirtualMachineById(vmId);
         NodeInfo.StatusEnum status;
+        String ip = null;
         switch (vm.getStatus().getValue()) {
             case DEPLOYED:
-                status = NodeInfo.StatusEnum.RUNNING;
+                boolean poweredOn = vm.getPoweredOn().getValue();
+                ip = getIpAddress(vmId, registry);
+                status = ip == null || !poweredOn ? NodeInfo.StatusEnum.PENDING : NodeInfo.StatusEnum.RUNNING;
                 break;
             case NOT_DEPLOYED:
             case ORPHANED:
@@ -519,21 +519,55 @@ public class VerizonNodeAPI implements NodeBaseAPI {
                 status = NodeInfo.StatusEnum.PENDING;
         }
         ;
-        NodeInfo info = new NodeInfo().status(status).ip(getIpAddress(nodeId, registry)).id(nodeId);
+        NodeInfo info = new NodeInfo().status(status).ip(ip).id(nodeId);
         return info;
     }
 
     @Override
-    public ExecutionDetails updateNode(Credentials credentials, String nodeId, Node node) throws Exception {
+    public ExecutionDetails updateNode(Credentials credentials, String nodeId, Map<String, String> parameters) throws Exception {
         ExecutionDetails details = new ExecutionDetails();
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
         String envId = nodeId.split(":")[0];
-        String id = nodeId.split(":")[1];
-        NodeUtil.logInfo(details, "TODO");
-        // TODO
+        String vmId = nodeId.split(":")[1];
+        CloudCachedEntityService cache = getCache(accessKey, secretKey);
+        CloudServicesRegistry registry = new CloudServicesRegistry(accessKey, secretKey);
+        updateVmNameAndLayout(details, registry, cache, envId, vmId, parameters.get(Parameter.name.name()), parameters.get(Parameter.group.name()), parameters.get(Parameter.row.name()));
+        String cpuStr = parameters.get(Parameter.cpu.name());
+        String memoryStr = parameters.get(Parameter.memory.name());
+        String storageStr = parameters.get(Parameter.storage.name());
+        Integer cpu = cpuStr == null ? null : Integer.parseInt(cpuStr);
+        Integer memory = memoryStr == null ? null : Integer.parseInt(memoryStr);
+        Integer storage = storageStr == null ? null : Integer.parseInt(storageStr);
+        updateHardwareConfiguration(details, vmId, storage, cpu, memory, registry);
         return details.status(ExecutionDetails.StatusEnum.OK);
 
+    }
+
+    private void updateVmNameAndLayout(ExecutionDetails details, CloudServicesRegistry registry, CloudCachedEntityService cache, String envStr, String vmId, String name, String group, String row) {
+        VirtualMachineType vm = registry.getVirtualMachineService().getVirtualMachineById(vmId);
+
+        if (name != null && !vm.getName().equals(name)) {
+            NodeUtil.logInfo(details, "Renaming VM " + vmId + " from " + vm.getName() + " to " + name);
+
+            vm.setName(name);
+            TaskType task = registry.getVirtualMachineService().editVirtualMachine(vmId, vm);
+            task.setName("edit virtual machine");
+            waitUntilTaskNotFinished(task, registry);
+            NodeUtil.logInfo(details, "VM renamed");
+        }
+        String currentGroup = vm.getLayout().getValue().getGroup().getValue().getName();
+        String currentRow = vm.getLayout().getValue().getRow().getValue().getName();
+        String toGroup = group == null ? currentGroup : group;
+        String toRow = row == null ? currentRow : row;
+        if (!currentGroup.equals(toGroup) || !currentRow.equals(toRow)) {
+            EnvironmentType env = cache.getByHrefOrName(EnvironmentType.class, envStr);
+            LayoutRequestType layoutRequest = createLayoutRequest(toRow, toGroup, env, cache);
+            NodeUtil.logInfo(details, "Moving VM " + vmId);
+            NodeUtil.logInfo(details, "From group: " + currentGroup + " row: " + currentRow);
+            NodeUtil.logInfo(details, "To group: " + toGroup + " row: " + toRow);
+            registry.getVirtualMachineService().moveVirtualMachine(vmId, layoutRequest);
+        }
     }
 
     @Override
@@ -588,13 +622,32 @@ public class VerizonNodeAPI implements NodeBaseAPI {
 
     @Override
     public ExecutionDetails updateNodeFirewallRules(Credentials credentials, String nodeId, FirewallUpdate firewallUpdate) throws Exception {
+
+
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
         String envId = nodeId.split(":")[0];
-        String id = nodeId.split(":")[1];
-
+        String vmId = nodeId.split(":")[1];
+        ExecutionDetails details = new ExecutionDetails();
         CloudServicesRegistry registry = new CloudServicesRegistry(accessKey, secretKey);
-        FirewallAclEndpointType dest = firewallAclEndpointType(registry, id);
+        CloudCachedEntityService cache = getCache(accessKey, secretKey);
+
+        String detectedIp = getIpAddress(vmId, 180, registry);
+        if (detectedIp != null) {
+            NodeUtil.logInfo(details, "VM started with ip " + detectedIp);
+        } else {
+            NodeUtil.logError(details, "Can't detect IP address ");
+            return details.status(ExecutionDetails.StatusEnum.FAILED);
+        }
+        VirtualMachineType vm = registry.getVirtualMachineService().getVirtualMachineById(vmId);
+        boolean assigned = vm.getIpAddresses().getValue().getAssignedIpAddresses().getValue().getNetworks().getValue().getNetwork().stream()
+                .flatMap(dnt -> dnt.getIpAddresses().getValue().getIpAddress().stream()).anyMatch(detectedIp::equals);
+        if (!assigned) {
+            assignIp(vmId, getNetwork(registry, vmId), detectedIp, cache, registry);
+            NodeUtil.logInfo(details, "IP " + detectedIp + " assigned to VM " + vmId);
+        }
+
+        FirewallAclEndpointType dest = firewallAclEndpointType(registry, vmId);
         firewallUpdate.getCreate().forEach(r -> {
             FirewallAclEndpointType source = null;
             switch (r.getType()) {
@@ -611,17 +664,18 @@ public class VerizonNodeAPI implements NodeBaseAPI {
                     source.setType(FirewallAclEndpointTypeEnum.ANY);
                     break;
             }
+
             createFirewallRule(registry, envId, source, dest, Integer.parseInt(r.getPort()));
+            NodeUtil.logInfo(details, "Created firewall rule " + source);
         });
-        ExecutionDetails details = new ExecutionDetails();
         return details;
 
 
     }
 
-    private String getNetwork(CloudServicesRegistry registry, String nodeId) {
+    private String getNetwork(CloudServicesRegistry registry, String vmId) {
 
-        VirtualMachineType selectedVm = registry.getVirtualMachineService().getVirtualMachineById(nodeId);
+        VirtualMachineType selectedVm = registry.getVirtualMachineService().getVirtualMachineById(vmId);
 
         HardwareConfigurationType hwconfig = selectedVm.getHardwareConfiguration().getValue();
         NicsType nics = hwconfig.getNics().getValue();
@@ -632,9 +686,9 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         return networkId;
     }
 
-    private FirewallAclEndpointType firewallAclEndpointType(CloudServicesRegistry registry, String nodeId) {
-        String ip = getIpAddress(nodeId, registry);
-        String network = getNetwork(registry, nodeId);
+    private FirewallAclEndpointType firewallAclEndpointType(CloudServicesRegistry registry, String vmId) {
+        String ip = getIpAddress(vmId, registry);
+        String network = getNetwork(registry, vmId);
         FirewallAclEndpointType fwaclet = new FirewallAclEndpointType();
         IpAddressReferenceType v = objectFactory.createIpAddressReferenceType();
         String href = "/cloudapi/ecloud/ipaddresses/networks/" + network + "/" + ip;
@@ -677,22 +731,22 @@ public class VerizonNodeAPI implements NodeBaseAPI {
     }
 
     private enum Parameter {
-        name("Node name", true, null, false, false),
-        environment("Verizon environment", true, null, true, true),
-        catalog("Verizon catalog", true, null, true, true, environment),
-        storage("Storage size", true, "20", false, false),
-        cpu("CPU count", false, null, false, false),
-        memory("memory", false, null, false, false),
-        subnet("Subnet", true, null, true, true, environment),
-        row("Verizon Row", true, null, true, true, environment),
-        group("Verizon group", true, null, true, true, row),
-        tags("tags", true, null, false, true);
+        name("Node name", true, true, true, null, false, false),
+        environment("Verizon environment", true, false, true, null, true, true),
+        catalog("Verizon catalog", true, false, true, null, true, true, environment),
+        storage("Storage size", true, true, true, "20", false, false),
+        cpu("CPU count", true, true, true, null, false, false),
+        memory("memory", true, true, true, null, false, false),
+        subnet("Subnet", true, false, true, null, true, true, environment),
+        row("Verizon Row", true, true, true, null, true, true, environment),
+        group("Verizon group", true, true, true, null, true, true, row),
+        tags("tags", false, true, false, null, false, true);
 
         private NodeParameter nodeParameter;
 
-        Parameter(String description, boolean required, String defaultValue, boolean canSuggest, boolean strictSuggest, Parameter... args) {
+        Parameter(String description, boolean create, boolean update, boolean required, String defaultValue, boolean canSuggest, boolean strictSuggest, Parameter... args) {
             List<String> argsList = Arrays.stream(args).map(Enum::name).collect(Collectors.toList());
-            nodeParameter = new NodeParameter().name(name()).description(description)
+            nodeParameter = new NodeParameter().name(name()).description(description).create(create).update(update)
                     .required(required).defaultValue(defaultValue)
                     .canSuggest(canSuggest).strictSuggest(strictSuggest).args(argsList);
         }

@@ -4,13 +4,22 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.model.*;
+import com.amazonaws.services.ec2.model.Tag;
+import com.amazonaws.services.route53.AmazonRoute53;
+import com.amazonaws.services.route53.model.*;
+import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
+import org.apache.commons.lang3.StringUtils;
 import org.ecloudmanager.node.NodeBaseAPI;
 import org.ecloudmanager.node.model.*;
 import org.ecloudmanager.node.util.NodeUtil;
+import org.ecloudmanager.node.util.SynchronousPoller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -63,6 +72,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
         String secretKey = ((SecretKey) credentials).getSecret();
         String region = parameters == null ? null : parameters.get(Parameter.region.name());
         AmazonEC2 amazonEC2 = region == null ? null : AWS.ec2(accessKey, secretKey, region);
+        AmazonRoute53 route53Client = AWS.route53(accessKey, secretKey);
         Parameter p = Parameter.valueOf(parameter);
         switch (p) {
             case region:
@@ -94,6 +104,8 @@ public class AWSNodeAPI implements NodeBaseAPI {
                     t.printStackTrace();
 
                 }
+            case hosted_zone:
+                return route53Client.listHostedZones().getHostedZones().stream().map(z -> new ParameterValue().value(z.getName())).collect(Collectors.toList());
             case storage:
             case name:
             case cpu:
@@ -195,16 +207,243 @@ public class AWSNodeAPI implements NodeBaseAPI {
         return info;
     }
 
+    private int getStorageSize(AmazonEC2 ec2, String vmId) {
+        DescribeInstancesResult result =
+                ec2.describeInstances(new DescribeInstancesRequest().withInstanceIds(vmId));
+        Instance instance = result.getReservations().get(0).getInstances().get(0);
+        InstanceBlockDeviceMapping blockDeviceMapping = instance.getBlockDeviceMappings().get(0);
+        String volumeId = blockDeviceMapping.getEbs().getVolumeId();
+        //blockDeviceMapping.getEbs().getVolumeId().
+        DescribeVolumesResult dvr = ec2.describeVolumes(new DescribeVolumesRequest().withVolumeIds(volumeId));
+        return dvr.getVolumes().get(0).getSize();
+    }
+
+    private Instance getInstance(AmazonEC2 ec2, String vmId) {
+        DescribeInstancesResult result =
+                ec2.describeInstances(new DescribeInstancesRequest().withInstanceIds(vmId));
+        return result.getReservations().get(0).getInstances().get(0);
+    }
+
+    private String getInstanceName(Instance instance) {
+        Optional<Tag> tag = instance.getTags().stream().filter(t -> t.getKey().equals(TAG_NAME)).findAny();
+        return tag.isPresent() ? tag.get().getValue() : null;
+    }
+
+    private void setInstanceName(AmazonEC2 ec2, String vmId, String name) {
+        ec2.createTags(new CreateTagsRequest()
+                .withResources(vmId)
+                .withTags(new Tag(TAG_NAME, name)));
+    }
+
     @Override
-    public ExecutionDetails updateNode(Credentials credentials, String nodeId, Node node) throws Exception {
+    public ExecutionDetails updateNode(Credentials credentials, String nodeId, Map<String, String> parameters) throws Exception {
+
         ExecutionDetails details = new ExecutionDetails();
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
         String region = nodeId.split(":")[0];
-        String id = nodeId.split(":")[1];
-        NodeUtil.logInfo(details, "TODO");
-        // TODO
+        String vmId = nodeId.split(":")[1];
+        AmazonEC2 ec2 = AWS.ec2(accessKey, secretKey, region);
+        AmazonRoute53 route53 = AWS.route53(accessKey, secretKey);
+
+        SynchronousPoller poller = new SynchronousPoller();
+        Instance instance = getInstance(ec2, vmId);
+
+        String oldName = getInstanceName(instance);
+        String newName = parameters.get(Parameter.name.name());
+        if (newName != null && !newName.equals(oldName)) {
+            setInstanceName(ec2, vmId, newName);
+        }
+        String oldHostedZone = getAWSHostedZone(route53, instance.getPrivateIpAddress(), oldName);
+        String newHostedZone = parameters.get(Parameter.hosted_zone.name());
+        if (!StringUtils.equals(oldName, newName) ||
+                !StringUtils.equals(oldHostedZone, newHostedZone)) {
+            if (oldHostedZone != null) {
+                deleteDnsRecord(route53, oldName, oldHostedZone);
+                NodeUtil.logInfo(details, "Deleted DNS record for " + oldName + oldHostedZone);
+            }
+            createDnsRecord(route53, instance.getPrivateIpAddress(), newName, newHostedZone);
+            NodeUtil.logInfo(details, "Created DNS record for " + newName + newHostedZone + " with IP: " + instance.getPrivateIpAddress());
+        }
+
+        //createTags(instanceId, after, amazonEC2);
+
+        String newInstanceType = parameters.get(Parameter.instance_type.name());
+
+        String newStorage = parameters.get(Parameter.storage.name());
+        boolean needUpdateInstanceType = newInstanceType != null && !StringUtils.equals(instance.getInstanceType(), newInstanceType);
+
+        boolean needResizeStorage = newStorage != null && getStorageSize(ec2, vmId) != Integer.parseInt(newStorage);
+        if (needUpdateInstanceType || needResizeStorage) {
+            log.info("Stopping AWS instance " + vmId + "(" + newName + ")");
+            StopInstancesRequest stopInstancesRequest = new StopInstancesRequest().withInstanceIds(vmId);
+            ec2.stopInstances(stopInstancesRequest);
+
+            Callable<DescribeInstancesResult> poll =
+                    () -> ec2.describeInstances(new DescribeInstancesRequest().withInstanceIds(vmId));
+            Predicate<DescribeInstancesResult> check =
+                    (stopResult) -> "stopped".equals(stopResult.getReservations().get(0).getInstances().get(0).getState().getName());
+            poller.poll(poll, check, 1, 600, "wait for instance " + vmId + " to stop.");
+        }
+
+        if (needUpdateInstanceType) {
+            log.info("Changing instance type of AWS instance " + vmId + "(" + newName + ") to " + newInstanceType);
+            ModifyInstanceAttributeRequest modifyInstanceAttributeRequest =
+                    new ModifyInstanceAttributeRequest().withInstanceId(vmId).withInstanceType(newInstanceType);
+            ec2.modifyInstanceAttribute(modifyInstanceAttributeRequest);
+        }
+
+        if (needResizeStorage) {
+            log.info("Resizing root volume of AWS instance " + vmId + "(" + newName + ")");
+            InstanceBlockDeviceMapping blockDeviceMapping = instance.getBlockDeviceMappings().get(0);
+            String volumeId = blockDeviceMapping.getEbs().getVolumeId();
+            log.info("Creating snapshot of AWS volume " + volumeId + " attached to instance " + vmId + "(" + newName + ")");
+            CreateSnapshotRequest createSnapshotRequest = new CreateSnapshotRequest(volumeId, "Resize instance " + vmId);
+            CreateSnapshotResult createSnapshotResult = ec2.createSnapshot(createSnapshotRequest);
+            String snapshotId = createSnapshotResult.getSnapshot().getSnapshotId();
+
+            Callable<DescribeSnapshotsResult> poll =
+                    () -> ec2.describeSnapshots(new DescribeSnapshotsRequest().withSnapshotIds(snapshotId));
+            Predicate<DescribeSnapshotsResult> check =
+                    (snapshotResult) -> "completed".equals(snapshotResult.getSnapshots().get(0).getState());
+            poller.poll(poll, check, 1, 600, "wait for snapshot " + snapshotId + " to be completed.");
+
+            DescribeVolumesRequest describeVolumesRequest = new DescribeVolumesRequest().withVolumeIds(volumeId);
+            DescribeVolumesResult describeVolumesResult = ec2.describeVolumes(describeVolumesRequest);
+            String availabilityZone = describeVolumesResult.getVolumes().get(0).getAvailabilityZone();
+
+            log.info("Creating new volume " + volumeId + " in availability zone " + availabilityZone + " from snapshot " + snapshotId);
+            CreateVolumeRequest createVolumeRequest =
+                    new CreateVolumeRequest(snapshotId, availabilityZone).withSize(Integer.parseInt(newStorage));
+            CreateVolumeResult createVolumeResult = ec2.createVolume(createVolumeRequest);
+            String newVolumeId = createVolumeResult.getVolume().getVolumeId();
+
+            log.info("New volume " + newVolumeId + " was created from snapshot " + snapshotId);
+
+            Callable<DescribeVolumesResult> pollVol =
+                    () -> ec2.describeVolumes(new DescribeVolumesRequest().withVolumeIds(newVolumeId));
+            Predicate<DescribeVolumesResult> checkVol =
+                    (volResult) -> "available".equals(volResult.getVolumes().get(0).getState());
+            poller.poll(pollVol, checkVol, 1, 600, "wait for volume " + newVolumeId + " to become available.");
+
+            log.info("Detaching old volume " + volumeId + " from " + vmId + "(" + newName + ")");
+            ec2.detachVolume(new DetachVolumeRequest(volumeId));
+
+            log.info("Attaching new volume " + newVolumeId + " to instance " + vmId + "(" + newName + ")");
+            AttachVolumeRequest attachVolumeRequest = new AttachVolumeRequest(newVolumeId, vmId, blockDeviceMapping.getDeviceName());
+            ec2.attachVolume(attachVolumeRequest);
+
+            log.info("Deleting old volume " + volumeId);
+            ec2.deleteVolume(new DeleteVolumeRequest(volumeId));
+
+            log.info("Deleting snapshot " + snapshotId);
+            ec2.deleteSnapshot(new DeleteSnapshotRequest(snapshotId));
+        }
+
+        if (needUpdateInstanceType || needResizeStorage) {
+            log.info("Starting AWS instance " + vmId + "(" + newName + ")");
+            ec2.startInstances(new StartInstancesRequest().withInstanceIds(vmId));
+
+            Callable<DescribeInstancesResult> poll =
+                    () -> ec2.describeInstances(new DescribeInstancesRequest().withInstanceIds(vmId));
+            Predicate<DescribeInstancesResult> check =
+                    (describeResult) -> "running".equals(describeResult.getReservations().get(0).getInstances().get(0).getState().getName());
+            poller.poll(
+                    poll, check,
+                    1, 600, 20,
+                    "wait for instance " + vmId + " to become ready."
+            );
+        }
+
         return details.status(ExecutionDetails.StatusEnum.OK);
+    }
+
+    private void createDnsRecord(AmazonRoute53 route53, String ip, String name, String hostedZoneName) {
+        log.info("Creating route53 record for " + name);
+
+        HostedZone hostedZone = getHostedZone(hostedZoneName, route53);
+
+        ResourceRecord resourceRecord = new ResourceRecord(ip);
+        ResourceRecordSet resourceRecordSet = new ResourceRecordSet(name + "." + hostedZoneName, RRType.A).withTTL
+                (60L).withResourceRecords(resourceRecord);
+        ChangeBatch changeBatch = new ChangeBatch(Lists.newArrayList(new Change(ChangeAction.CREATE,
+                resourceRecordSet)));
+        ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest = new ChangeResourceRecordSetsRequest()
+                .withHostedZoneId(hostedZone.getId()).withChangeBatch(changeBatch);
+        guardedChangeResourceRecordSets(route53, changeResourceRecordSetsRequest);
+    }
+
+    private String getAWSHostedZone(AmazonRoute53 route53, String ip, String name) {
+        List<HostedZone> zones = route53.listHostedZones().getHostedZones().stream().filter(
+                z -> {
+                    String recordSetName = name + "." + z.getName();
+                    List<ResourceRecordSet> records = route53.listResourceRecordSets(new ListResourceRecordSetsRequest(z.getId()).withStartRecordName(recordSetName)).getResourceRecordSets();
+                    return records.stream().anyMatch(r -> r.getResourceRecords().stream().anyMatch(rr -> rr.getValue().equals(ip)));
+                }
+        ).collect(Collectors.toList());
+        if (zones == null || zones.size() == 0) {
+            return null;
+        }
+        return zones.get(0).getName();
+    }
+
+    private HostedZone getHostedZone(String awsHostedZone, AmazonRoute53 route53) {
+        ListHostedZonesResult listHostedZonesResult = route53.listHostedZones();
+        HostedZone hostedZone = listHostedZonesResult.getHostedZones().stream()
+                .filter(z -> z.getName().equals(awsHostedZone))
+                .findAny()
+                .orElse(null);
+        return hostedZone;
+    }
+
+    private void deleteDnsRecord(AmazonRoute53 route53, String name, String hostedZoneName) {
+        log.info("Deleting route53 record for " + name);
+        if (StringUtils.isEmpty(name)) {
+            log.error("Cannot delete route53 record - name is empty.");
+            return;
+        }
+        HostedZone hostedZone = getHostedZone(hostedZoneName, route53);
+
+        String recordSetName = name + "." + hostedZoneName;
+        ListResourceRecordSetsRequest listResourceRecordSetsRequest =
+                new ListResourceRecordSetsRequest(hostedZone.getId()).withStartRecordName(recordSetName);
+        ListResourceRecordSetsResult listResourceRecordSetsResult = route53.listResourceRecordSets
+                (listResourceRecordSetsRequest);
+        if (listResourceRecordSetsResult.getResourceRecordSets().size() < 1) {
+            log.error("Cannot delete route53 record - record not found. Skipping this step.");
+            return;
+        }
+
+        ResourceRecordSet resourceRecordSet = listResourceRecordSetsResult.getResourceRecordSets().get(0);
+        if (!recordSetName.equals(resourceRecordSet.getName())) {
+            log.error("Cannot delete route53 record - record not found. Skipping this step.");
+            return;
+        }
+
+        ChangeBatch changeBatch = new ChangeBatch(Lists.newArrayList(new Change(ChangeAction.DELETE,
+                resourceRecordSet)));
+        ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest = new ChangeResourceRecordSetsRequest()
+                .withHostedZoneId(hostedZone.getId()).withChangeBatch(changeBatch);
+        ChangeResourceRecordSetsResult changeResourceRecordSetsResult =
+                guardedChangeResourceRecordSets(route53, changeResourceRecordSetsRequest);
+        log.info("Submitted delete recordset request " + changeResourceRecordSetsResult.getChangeInfo().toString());
+    }
+
+    private ChangeResourceRecordSetsResult guardedChangeResourceRecordSets(
+            AmazonRoute53 route53,
+            ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest
+    ) {
+        Callable<ChangeResourceRecordSetsResult> poll =
+                () -> {
+                    try {
+                        return route53.changeResourceRecordSets(changeResourceRecordSetsRequest);
+                    } catch (PriorRequestNotCompleteException e) {
+                        log.warn("Route 53 request not completed, retrying...", e);
+                        return null;
+                    }
+                };
+        Predicate<ChangeResourceRecordSetsResult> check = Objects::nonNull;
+        return new SynchronousPoller().poll(poll, check, 1, 600, "wait for route53 request to be submitted");
     }
 
     @Override
@@ -215,9 +454,16 @@ public class AWSNodeAPI implements NodeBaseAPI {
         String region = nodeId.split(":")[0];
         String id = nodeId.split(":")[1];
         AmazonEC2 ec2 = AWS.ec2(accessKey, secretKey, region);
-        Reservation reservation = ec2.describeInstances(new DescribeInstancesRequest().withInstanceIds(id)).getReservations().get(0);
-        Instance instance = reservation.getInstances().get(0);
+        AmazonRoute53 route53 = AWS.route53(accessKey, secretKey);
+        Instance instance = getInstance(ec2, id);
         String vpcId = instance.getVpcId();
+        String name = getInstanceName(instance);
+        String hostedZone = getAWSHostedZone(route53, instance.getPrivateIpAddress(), name);
+        if (!Strings.isNullOrEmpty(hostedZone)) {
+            deleteDnsRecord(route53, name, getAWSHostedZone(route53, instance.getPrivateIpAddress(), name));
+            NodeUtil.logInfo(details, "Deleted dns record for : " + name + hostedZone);
+        }
+
         String groupIdToDelete = getSecurityGroup(ec2, id);
         if (groupIdToDelete != null) {
             log.info("Deassociating security group");
@@ -366,21 +612,22 @@ public class AWSNodeAPI implements NodeBaseAPI {
     }
 
     private enum Parameter {
-        name("Node name", true, null, false, false),
-        region("AWS region", true, null, true, true),
-        subnet("AWS subnet", true, null, true, true, region),
-        storage("Storage size", true, "20", false, false),
-        cpu("CPU count", false, null, false, false),
-        memory("memory", false, null, false, false),
-        instance_type("Instance type", true, null, true, true, cpu, memory),
-        keypair("Keypair", true, null, true, true, region),
-        image("AWS image", true, null, false, true, region);
+        name("Node name", true, true, true, null, false, false),
+        region("AWS region", true, false, true, null, true, true),
+        subnet("AWS subnet", true, true, true, null, true, true, region),
+        storage("Storage size", true, true, true, "20", false, false),
+        cpu("CPU count", true, true, false, null, false, false),
+        memory("memory", true, true, false, null, false, false),
+        instance_type("Instance type", true, true, true, null, true, true, cpu, memory),
+        keypair("Keypair", true, true, true, null, true, true, region),
+        image("AWS image", true, false, true, null, false, true, region),
+        hosted_zone("AWS hosted zone", false, true, true, null, true, true),;
 
         private NodeParameter nodeParameter;
 
-        Parameter(String description, boolean required, String defaultValue, boolean canSuggest, boolean strictSuggest, Parameter... args) {
+        Parameter(String description, boolean create, boolean update, boolean required, String defaultValue, boolean canSuggest, boolean strictSuggest, Parameter... args) {
             List<String> argsList = Arrays.stream(args).map(Enum::name).collect(Collectors.toList());
-            nodeParameter = new NodeParameter().name(name()).description(description)
+            nodeParameter = new NodeParameter().name(name()).description(description).create(create).update(update)
                     .required(required).defaultValue(defaultValue)
                     .canSuggest(canSuggest).strictSuggest(strictSuggest).args(argsList);
         }
