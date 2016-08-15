@@ -368,3 +368,25 @@ form > button.ui-button {
     padding-top: 0;
     padding-bottom: 0;
 }
+
+.embeddedForm {
+    width: auto;
+    border: none;
+    padding: 0;
+    overflow-y: visible !important;
+}
+
+.appDeploymentTabs .ui-datatable {
+    width: auto;
+}
+
+.comboAndButton {
+    display: inline-block;
+    vertical-align: top;
+    margin-top: 10px;
+    margin-right: 5px;
+}
+
+.comboAndButton.ui-selectonemenu {
+    width: 200px;
+}

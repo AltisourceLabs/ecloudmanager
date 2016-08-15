@@ -24,10 +24,12 @@
 
 package org.ecloudmanager.service.deployment.geolite;
 
+import org.ecloudmanager.jeecore.domain.DefaultDomainObject;
+
 import java.util.ArrayList;
 import java.util.List;
 
-public class GeolocationRule {
+public class GeolocationRule extends DefaultDomainObject {
     private String backendName; // null means 'reject request'
     private List<GeolocationExpr> locations = new ArrayList<>();
 

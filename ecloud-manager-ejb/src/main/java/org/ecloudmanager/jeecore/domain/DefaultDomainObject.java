@@ -1,7 +1,7 @@
 /*
- * MIT License
+ * The MIT License (MIT)
  *
- * Copyright (c) 2016  Altisource
+ * Copyright (c) 2016 Altisource Labs
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,12 +22,13 @@
  * SOFTWARE.
  */
 
-package org.ecloudmanager.repository.template;
+package org.ecloudmanager.jeecore.domain;
 
-import org.ecloudmanager.deployment.app.ApplicationTemplate;
-import org.ecloudmanager.jeecore.repository.MongoDBRepositorySupport;
-import org.ecloudmanager.jeecore.repository.Repository;
+import java.util.Collection;
 
-@Repository
-public class ApplicationTemplateRepository extends MongoDBRepositorySupport<ApplicationTemplate> {
+public abstract class DefaultDomainObject extends DomainObject {
+    @Override
+    protected Collection<String> getExcludeFieldNames() {
+        return null;
+    }
 }

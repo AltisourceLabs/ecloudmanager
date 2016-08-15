@@ -25,19 +25,11 @@
 package org.ecloudmanager.service;
 
 import org.apache.logging.log4j.Logger;
-import org.ecloudmanager.deployment.app.ApplicationTemplate;
 import org.ecloudmanager.deployment.core.Endpoint;
-import org.ecloudmanager.deployment.es.ExternalServiceTemplate;
-import org.ecloudmanager.deployment.ps.HAProxyFrontendConfig;
-import org.ecloudmanager.deployment.ps.ProducedServiceTemplate;
-import org.ecloudmanager.deployment.ps.cg.ComponentGroupTemplate;
-import org.ecloudmanager.deployment.ps.cg.HAProxyBackendConfig;
 import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
-import org.ecloudmanager.deployment.vm.infrastructure.Infrastructure;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.repository.template.VirtualMachineTemplateRepository;
 import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
-import org.ecloudmanager.service.template.ApplicationTemplateService;
 import org.ecloudmanager.service.template.RecipeService;
 import org.ecloudmanager.service.template.VirtualMachineTemplateService;
 
@@ -61,9 +53,6 @@ public class BootstrapSeedingService {
 
     @Inject
     private VirtualMachineTemplateService virtualMachineTemplateService;
-
-    @Inject
-    private ApplicationTemplateService applicationTemplateService;
 
     @Inject
     private ApplicationDeploymentService appDeploymentService;
@@ -136,34 +125,34 @@ public class BootstrapSeedingService {
         virtualMachineTemplateRepository.saveAll(Arrays.asList(
             t1, t2, t3));
 
-        ApplicationTemplate app = new ApplicationTemplate();
-        app.setName("app1");
-        ExternalServiceTemplate externalService = new ExternalServiceTemplate();
-        externalService.setName("external");
-        externalService.setDescription("http://example.com:7777");
-        ExternalServiceTemplate externalService1 = new ExternalServiceTemplate();
-        externalService1.setName("other service");
-        externalService1.setDescription("http://acme.com:3306");
-        app.addChild(externalService);
-        app.addChild(externalService1);
-
-        ComponentGroupTemplate cg = new ComponentGroupTemplate();
-        cg.setVirtualMachineTemplate(t1);
-        cg.setName("group1");
-        HAProxyBackendConfig hpbc = new HAProxyBackendConfig();
-        hpbc.setName("backend1");
-        hpbc.setConfig(Arrays.asList("str1", "str2"));
-        cg.setHaProxyBackendConfig(hpbc);
-        ProducedServiceTemplate srv = new ProducedServiceTemplate();
-        srv.setComponentGroups(Arrays.asList(cg));
-        srv.setName("service1");
-        HAProxyFrontendConfig hpfc = new HAProxyFrontendConfig();
-        hpfc.setName("frontend1");
-        hpfc.setConfig(Arrays.asList("str1", "str2"));
-        srv.setHaProxyFrontendConfig(hpfc);
-        app.addChild(srv);
-        applicationTemplateService.saveApp(app);
-        appDeploymentService.save(appDeploymentService.create(app, Infrastructure.VERIZON.name()));
+//        ApplicationTemplate app = new ApplicationTemplate();
+//        app.setName("app1");
+//        ExternalServiceTemplate externalService = new ExternalServiceTemplate();
+//        externalService.setName("external");
+//        externalService.setDescription("http://example.com:7777");
+//        ExternalServiceTemplate externalService1 = new ExternalServiceTemplate();
+//        externalService1.setName("other service");
+//        externalService1.setDescription("http://acme.com:3306");
+//        app.addChild(externalService);
+//        app.addChild(externalService1);
+//
+//        ComponentGroupTemplate cg = new ComponentGroupTemplate();
+//        cg.setVirtualMachineTemplate(t1);
+//        cg.setName("group1");
+//        HAProxyBackendConfig hpbc = new HAProxyBackendConfig();
+//        hpbc.setName("backend1");
+//        hpbc.setConfig(Arrays.asList("str1", "str2"));
+//        cg.setHaProxyBackendConfig(hpbc);
+//        ProducedServiceTemplate srv = new ProducedServiceTemplate();
+//        srv.setComponentGroups(Arrays.asList(cg));
+//        srv.setName("service1");
+//        HAProxyFrontendConfig hpfc = new HAProxyFrontendConfig();
+//        hpfc.setName("frontend1");
+//        hpfc.setConfig(Arrays.asList("str1", "str2"));
+//        srv.setHaProxyFrontendConfig(hpfc);
+//        app.addChild(srv);
+//        applicationTemplateService.saveApp(app);
+//        appDeploymentService.save(appDeploymentService.create(app, Infrastructure.VERIZON.name()));
     }
 
     private VirtualMachineTemplate createTemplate(String name, Recipe... recipes) {

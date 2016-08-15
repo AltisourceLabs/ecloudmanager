@@ -32,8 +32,8 @@ import org.ecloudmanager.jeecore.domain.MongoObject;
 import org.ecloudmanager.util.ClonerProducer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.mongodb.morphia.annotations.Embedded;
 import org.mongodb.morphia.annotations.Entity;
+import org.mongodb.morphia.annotations.Reference;
 
 import java.io.Serializable;
 import java.util.*;
@@ -50,7 +50,8 @@ public class VirtualMachineTemplate extends MongoObject implements Serializable,
     private int processorCount = 1;
     private int memory = 1;
     private int storage = 20;
-    @Embedded
+
+    @Reference(idOnly = true)
     private List<Recipe> runlist = new LinkedList<>();
 
     public VirtualMachineTemplate() {

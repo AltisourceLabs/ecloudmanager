@@ -62,12 +62,15 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
     }
 
     private boolean newChild = false;
-    private boolean newTemplate = false;
     private String publicEndpointToAdd;
     @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
     @Param(converter = "applicationDeploymentConverter")
     private ApplicationDeployment deployment;
+    @SuppressWarnings("CdiInjectionPointsInspection")
+    @Inject
+    @Param
+    private Boolean createNewDeployment;
     @Inject
     private Logger log;
     @Inject
@@ -81,18 +84,17 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
 
     @PostConstruct
     public void init() {
-        if (deployment == null) {
-            newTemplate = true;
+        if (createNewDeployment != null && createNewDeployment) {
             deployment = new ApplicationDeployment();
+            deployment.setName("New Deployment");
+            applicationDeploymentService.save(deployment);
         }
     }
 
-
     public void save() {
         deployment.specifyConstraints();
-        if (newTemplate) {
+        if (deployment.isNew()) {
             applicationDeploymentService.save(deployment);
-            newTemplate = false;
         } else {
             applicationDeploymentService.update(deployment);
         }

@@ -25,10 +25,10 @@
 package org.ecloudmanager.web.faces.convert;
 
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
-import org.ecloudmanager.jeecore.web.faces.convert.PersistableEntityConverter;
+import org.ecloudmanager.jeecore.web.faces.convert.MongoEntityConverter;
 
 import javax.faces.convert.FacesConverter;
 
-@FacesConverter("recipeConverter")
-public class RecipeConverter extends PersistableEntityConverter<Recipe> {
+@FacesConverter(value = "recipeConverter", forClass = Recipe.class)
+public class RecipeConverter extends MongoEntityConverter<Recipe> {
 }

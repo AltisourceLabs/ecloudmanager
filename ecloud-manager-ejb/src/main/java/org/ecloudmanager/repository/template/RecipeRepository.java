@@ -24,66 +24,43 @@
 
 package org.ecloudmanager.repository.template;
 
-import org.bson.types.ObjectId;
+import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
+import org.ecloudmanager.jeecore.repository.MongoDBRepositorySupport;
 import org.ecloudmanager.jeecore.repository.Repository;
-import org.mongodb.morphia.Datastore;
+import org.mongodb.morphia.query.Query;
 
-import javax.inject.Inject;
-import java.util.Collection;
 import java.util.List;
 
 @Repository
-public class RecipeRepository {
-    @Inject
-    protected Datastore datastore;
-
-    public Long getCount() {
-        return datastore.getCount(Recipe.class);
+public class RecipeRepository extends MongoDBRepositorySupport<Recipe> {
+    public List<Recipe> findByName(String name, Deployable owner) {
+        if (owner == null) {
+            return datastore.createQuery(getEntityType()).disableValidation()
+                    .field("name").equal(name).field("owner").doesNotExist().asList();
+        } else {
+            Object ownerKey = datastore.getKey(owner);
+            return datastore.createQuery(getEntityType()).disableValidation()
+                    .field("name").equal(name).field("owner").equal(ownerKey).asList();
+        }
     }
 
-    public Recipe get(ObjectId id) {
-        return datastore.get(Recipe.class, id);
+    public List<Recipe> getAll(Deployable owner) {
+        if (owner == null) {
+            return datastore.createQuery(getEntityType()).disableValidation()
+                    .field("owner").doesNotExist().asList();
+        } else {
+            Object ownerKey = datastore.getKey(owner);
+            return datastore.createQuery(getEntityType()).disableValidation()
+                    .field("owner").equal(ownerKey).asList();
+        }
     }
 
-    public Recipe get(String id) {
-        return datastore.get(Recipe.class, id);
-    }
-
-    public List<Recipe> getAll() {
-        return datastore.find(Recipe.class).asList();
-    }
-
-    public void save(Recipe entity) {
-        datastore.save(entity);
-    }
-
-    public void saveAll(Collection<Recipe> entities) {
-        datastore.save(entities);
-    }
-
-    public void update(Recipe entity) {
-        datastore.save(entity);
-    }
-
-    public void updateAll(Collection<Recipe> entities) {
-        datastore.save(entities);
-    }
-
-    public void saveOrUpdate(Recipe entity) {
-        datastore.save(entity);
-    }
-
-    public void saveOrUpdateAll(Collection<Recipe> entities) {
-        datastore.save(entities);
-    }
-
-    public void delete(Recipe entity) {
-        datastore.delete(entity);
-    }
-
-    public Recipe reload(Recipe r) {
-        return datastore.get(r);
+    public void deleteAll(Deployable owner) {
+        Object ownerKey = datastore.getKey(owner);
+        Query<Recipe> query = datastore.createQuery(getEntityType()).disableValidation()
+                .field("owner").equal(ownerKey);
+        datastore.delete(query);
     }
 
 }

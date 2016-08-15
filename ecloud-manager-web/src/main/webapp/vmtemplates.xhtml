@@ -83,18 +83,18 @@
                         <h:panelGroup rendered="#{!vmTemplatesController.edit}">
                             <h3>Add VM template</h3>
                         </h:panelGroup>
-                        <components:vmtemplate value="#{vmTemplateController.value}"/>
+                        <components:vmtemplate owner="#{null}"/>
                         <h:panelGroup rendered="#{vmTemplatesController.edit}">
-                            <p><p:commandButton id="save" value="save" update="out"
+                            <p><p:commandButton id="save" value="Save" update="out"
                                                 action="#{vmTemplatesController.save}"/>
-                                <p:commandButton id="cancel" value="cancel" update="out"
+                                <p:commandButton id="cancel" value="Cancel" update="out"
                                                  action="#{vmTemplatesController.cancel}"/>
                             </p>
                         </h:panelGroup>
                         <h:panelGroup rendered="#{!vmTemplatesController.edit}">
-                            <p><p:commandButton id="button_add" value="add" update="out"
+                            <p><p:commandButton id="button_add" value="Add" update="out"
                                                 action="#{vmTemplatesController.add}"/>
-                               <p:commandButton id="button_cancel" value="cancel" update="out"
+                               <p:commandButton id="button_cancel" value="Cancel" update="out"
                                                 action="#{vmTemplatesController.cancel}"/>
                             </p>
                         </h:panelGroup>

@@ -25,18 +25,30 @@
 package org.ecloudmanager.web.faces;
 
 import org.ecloudmanager.deployment.core.Endpoint;
+import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
+import org.omnifaces.cdi.Param;
 import org.primefaces.context.RequestContext;
 import org.primefaces.event.CloseEvent;
 
-import javax.faces.bean.ManagedBean;
-import javax.faces.bean.SessionScoped;
+import javax.annotation.PostConstruct;
+import javax.faces.context.FacesContext;
+import javax.inject.Inject;
 import java.io.Serializable;
 
-@SessionScoped
-@ManagedBean
+@Controller
 public class EndpointController extends FacesSupport implements Serializable {
+    @SuppressWarnings("CdiInjectionPointsInspection")
+    @Inject
+    @Param
+    private String valueParamId;
+
     private Endpoint value;
+
+    @PostConstruct
+    public void init() {
+        value = (Endpoint) FacesContext.getCurrentInstance().getExternalContext().getSessionMap().remove(valueParamId);
+    }
 
     public Endpoint getValue() {
         return value;

@@ -1,7 +1,7 @@
 /*
- * MIT License
+ * The MIT License (MIT)
  *
- * Copyright (c) 2016  Altisource
+ * Copyright (c) 2016 Altisource Labs
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,51 +24,50 @@
 
 package org.ecloudmanager.web.faces;
 
-import org.ecloudmanager.deployment.ps.HAProxyDeployer;
-import org.ecloudmanager.deployment.ps.cg.ComponentGroupTemplate;
-import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
+import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.jeecore.web.faces.Controller;
-import org.ecloudmanager.jeecore.web.faces.FacesSupport;
-import org.ecloudmanager.repository.template.VirtualMachineTemplateRepository;
+import org.ecloudmanager.repository.template.RecipeRepository;
+import org.primefaces.context.RequestContext;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.Serializable;
-import java.util.Collections;
 import java.util.List;
 
 @Controller
-public class ComponentGroupTemplateController extends FacesSupport implements Serializable {
-    public static String DIALOG_EDIT = "dlg_edit_cg";
-    private ComponentGroupTemplate value;
-
+public class ImportRecipeController implements Serializable {
     @Inject
-    private transient VirtualMachineTemplateRepository virtualMachineTemplateRepository;
-    private List<VirtualMachineTemplate> virtualMachineTemplates;
+    private transient RecipeRepository recipeRepository;
+
+    private List<Recipe> selectedRecipes;
+    private List<Recipe> recipes;
 
     @PostConstruct
-    private void init() {
-        refresh();
+    public void init() {
+        recipes = recipeRepository.getAll();
     }
 
-    void refresh() {
-        virtualMachineTemplates = virtualMachineTemplateRepository.getAll();
+    public List<Recipe> getSelectedRecipes() {
+        return selectedRecipes;
     }
 
-    public List<VirtualMachineTemplate> getVirtualMachineTemplates() {
-        return virtualMachineTemplates;
+    public void setSelectedRecipes(List<Recipe> selectedRecipes) {
+        this.selectedRecipes = selectedRecipes;
     }
 
-    public ComponentGroupTemplate getValue() {
-        return value;
+    public List<Recipe> getRecipes() {
+        return recipes;
     }
 
-    public void setValue(ComponentGroupTemplate value) {
-        this.value = value;
+    public void setRecipes(List<Recipe> recipes) {
+        this.recipes = recipes;
     }
 
-    public List<String> generateHaproxyBackendConfig() {
-        return value == null ? Collections.emptyList() : HAProxyDeployer.generateHAProxyBackendConfig(value.getName(), value.getHaProxyBackendConfig());
+    public void save() {
+        RequestContext.getCurrentInstance().closeDialog(selectedRecipes);
     }
 
+    public void cancel() {
+        RequestContext.getCurrentInstance().closeDialog(null);
+    }
 }

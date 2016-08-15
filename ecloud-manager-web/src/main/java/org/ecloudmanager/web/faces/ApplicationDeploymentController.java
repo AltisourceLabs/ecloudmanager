@@ -28,7 +28,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.logging.log4j.Logger;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
-import org.ecloudmanager.deployment.app.ApplicationTemplate;
 import org.ecloudmanager.deployment.core.*;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
 import org.ecloudmanager.deployment.ps.cg.ComponentGroupDeployment;
@@ -39,7 +38,6 @@ import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
 import org.ecloudmanager.repository.deployment.DeploymentAttemptRepository;
-import org.ecloudmanager.repository.template.ApplicationTemplateRepository;
 import org.ecloudmanager.service.chef.ChefGenerationService;
 import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
 import org.ecloudmanager.service.deployment.GatewayService;
@@ -71,11 +69,6 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
 
     @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
-    @Param(converter = "applicationTemplateConverter")
-    private ApplicationTemplate template;
-
-    @SuppressWarnings("CdiInjectionPointsInspection")
-    @Inject
     @Param
     private String infrastructure;
 
@@ -99,8 +92,6 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
     private transient GatewayService gatewayService;
     @Inject
     private transient ApplicationDeploymentRepository applicationDeploymentRepository;
-    @Inject
-    private transient ApplicationTemplateRepository applicationTemplateRepository;
     @Inject
     private transient DeploymentAttemptRepository deploymentAttemptRepository;
 
@@ -127,9 +118,7 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
 
     @PostConstruct
     public void init() {
-        if (template != null) {
-            deployment = applicationDeploymentService.create(template, infrastructure);
-        } else if (gatewayName != null) {
+        if (gatewayName != null) {
             deployment = gatewayService.create(gatewayName, vmTemplate, infrastructure);
         }
     }

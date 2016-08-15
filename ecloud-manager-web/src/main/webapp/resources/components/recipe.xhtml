@@ -35,6 +35,8 @@
 
 <!-- INTERFACE -->
 <composite:interface>
+    <composite:attribute name="owner" required="true" default="#{null}"
+                         type="org.ecloudmanager.deployment.app.ApplicationDeployment"/>
     <composite:attribute name="value" required="true"
                          type="org.ecloudmanager.deployment.vm.provisioning.Recipe"/>
 </composite:interface>
@@ -43,12 +45,18 @@
 <composite:implementation>
     <p:panelGrid id="panelgrid_recipe" columns="3" style="margin-bottom:10px"
                  styleClass="ui-panelgrid-blank" cellpadding="5">
-        <p:outputLabel id="label_id" for="id" value="Id:"/>
-        <p:inputText id="id" value="#{cc.attrs.value.id}" required="true">
-            <f:validator validatorId="recipeIdValidator"/>
-            <f:attribute name="oldId" value="#{cc.attrs.value.oldId}"/>
+        <p:outputLabel id="label_id" for="id" value="Name:" title="Display Name"/>
+        <p:inputText id="id" value="#{cc.attrs.value.name}" required="true">
+            <f:validator validatorId="recipeNameValidator"/>
+            <f:attribute name="owner" value="#{cc.attrs.owner}"/>
+            <f:attribute name="recipeId" value="#{cc.attrs.value.id}"/>
         </p:inputText>
         <p:message id="message_id" for="id"/>
+
+        <p:outputLabel for="input_runlistItem" value="Runlist Item:" title="Cookbook/recipe as it should appear in the runlist"/>
+        <p:inputText id="input_runlistItem" value="#{cc.attrs.value.runlistItem}"/>
+        <p:message for="input_runlistItem"/>
+
         <p:outputLabel id="label_description" for="input_description"
                        value="Description:"/>
         <p:inputTextarea id="input_description" rows="1" cols="33"

@@ -24,6 +24,7 @@
 
 package org.ecloudmanager.web.faces;
 
+import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.jeecore.web.faces.Controller;
@@ -31,10 +32,14 @@ import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.template.RecipeRepository;
 import org.ecloudmanager.repository.template.VirtualMachineTemplateRepository;
 import org.ecloudmanager.service.template.VirtualMachineTemplateService;
+import org.primefaces.context.RequestContext;
+import org.primefaces.event.SelectEvent;
 
 import javax.annotation.PostConstruct;
+import javax.faces.application.FacesMessage;
 import javax.inject.Inject;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
 
 @Controller
@@ -49,6 +54,8 @@ public class VmTemplateController extends FacesSupport implements Serializable {
     private transient VirtualMachineTemplateService vmtemplateService;
     @Inject
     private transient RecipeRepository recipeRepository;
+    @Inject
+    private transient ApplicationDeploymentEditorController applicationDeploymentEditorController;
 
     private Recipe recipeToAdd = null;
 
@@ -74,8 +81,8 @@ public class VmTemplateController extends FacesSupport implements Serializable {
         value.getRunlist().remove(recipe);
     }
 
-    public List<Recipe> getRecipes() {
-        return recipeRepository.getAll();
+    public List<Recipe> getRecipes(Deployable owner) {
+        return recipeRepository.getAll(owner);
     }
 
     public void setRecipeToAdd(Recipe recipeToAdd) {
@@ -93,4 +100,20 @@ public class VmTemplateController extends FacesSupport implements Serializable {
         }
     }
 
+    public void startImportVmTemplate() {
+        HashMap<String, Object> options = new HashMap<>();
+        options.put("width", 640);
+        options.put("modal", true);
+        RequestContext.getCurrentInstance().openDialog("importVmTemplate", options, null);
+    }
+
+    public void onImportVmTemplateReturn(SelectEvent event) {
+        VirtualMachineTemplate virtualMachineTemplate = (VirtualMachineTemplate) event.getObject();
+        if (virtualMachineTemplate != null) {
+            String message = vmtemplateService.importVm(virtualMachineTemplate, value, applicationDeploymentEditorController.getDeployment());
+            if (!message.isEmpty()) {
+                addMessage(new FacesMessage(message));
+            }
+        }
+    }
 }

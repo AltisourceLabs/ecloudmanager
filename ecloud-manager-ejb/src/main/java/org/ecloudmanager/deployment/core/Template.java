@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-public interface Template<T extends Deployable> extends App {
+public interface Template<T extends Deployable> {
     @NotNull T toDeployment();
 
     String getName();
@@ -40,6 +40,12 @@ public interface Template<T extends Deployable> extends App {
     @Nullable String getDescription();
 
     void setDescription(String description);
+
+    @NotNull
+    List<Endpoint> getEndpoints();
+
+    @NotNull
+    List<String> getRequiredEndpoints();
 
     default List<String> getRequiredEndpointsIncludingTemplateName() {
         List<String> result = new ArrayList<>();

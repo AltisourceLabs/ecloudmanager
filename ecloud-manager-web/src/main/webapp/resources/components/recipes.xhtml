@@ -1,7 +1,7 @@
 <!--
-  ~ MIT License
+  ~ The MIT License (MIT)
   ~
-  ~ Copyright (c) 2016  Altisource
+  ~ Copyright (c) 2016 Altisource Labs
   ~
   ~ Permission is hereby granted, free of charge, to any person obtaining a copy
   ~ of this software and associated documentation files (the "Software"), to deal
@@ -22,17 +22,27 @@
   ~ SOFTWARE.
   -->
 
-<ui:composition xmlns="http://www.w3.org/1999/xhtml"
-                xmlns:ui="http://java.sun.com/jsf/facelets"
-                xmlns:f="http://java.sun.com/jsf/core"
-                xmlns:h="http://java.sun.com/jsf/html"
-                xmlns:p="http://primefaces.org/ui"
-                xmlns:components="http://java.sun.com/jsf/composite/components"
-                template="/WEB-INF/templates/default.xhtml">
-    <ui:define name="content">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:f="http://java.sun.com/jsf/core"
+      xmlns:h="http://java.sun.com/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:composite="http://java.sun.com/jsf/composite"
+      xmlns:components="http://java.sun.com/jsf/composite/components">
+
+<!-- INTERFACE -->
+<composite:interface>
+    <composite:attribute name="owner" required="true" default="#{null}"
+                         type="org.ecloudmanager.deployment.app.ApplicationDeployment"/>
+</composite:interface>
+
+<!-- IMPLEMENTATION -->
+<composite:implementation>
         <p:outputPanel id="out">
             <h:panelGroup>
-                <h:form id="recipes" styleClass="contentForm">
+                <h:form id="recipes" styleClass="#{cc.attrs.owner == null ? 'contentForm' : 'embeddedForm'} recipesForm">
                     <p:confirmDialog id="confirm" global="true" showEffect="fade" hideEffect="fade">
                         <p:commandButton id="yes" value="Yes" type="button" styleClass="ui-confirmdialog-yes"
                                          icon="ui-icon-check"/>
@@ -40,18 +50,19 @@
                                          icon="ui-icon-close"/>
                     </p:confirmDialog>
 
-                    <p:layout id="layout" style="min-width:400px;min-height:600px;">
+                    <p:layout id="layout" style="min-height: 600px;">
                         <p:layoutUnit id="west" position="west" size="200">
                             <p:outputPanel id="list">
                                 <p:toolbar id="toolbar">
                                     <f:facet name="left">
-                                        <p:commandButton id="new" icon="ui-icon-plusthick" update=":recipes">
+                                        <p:commandButton id="new" title="New" icon="fa fa-plus"
+                                                         update="@form, @widgetVar(v_table)">
                                             <p:collector value="#{recipesController.newRecipe}"
                                                          addTo="#{recipesController.recipes}" unique="true"/>
                                         </p:commandButton>
 
-                                        <p:commandButton id="delete" title="Delete" icon="ui-icon-minusthick"
-                                                         update=":recipes"
+                                        <p:commandButton id="delete" title="Delete" icon="fa fa-minus"
+                                                         update="@form, @widgetVar(v_table)"
                                                          action="#{recipesController.deleteSelected()}"
                                                          disabled="#{recipeController.value == null}">
                                             <p:confirm header="Confirmation" message="Are you sure?"
@@ -59,26 +70,34 @@
                                             <p:collector value="#{recipeController.value}"
                                                          removeFrom="#{recipesController.recipes}" unique="true"/>
                                         </p:commandButton>
-                                        <p:commandButton id="copy" title="Copy" icon="ui-icon-copy" update=":recipes"
+                                        <p:commandButton id="copy" title="Copy" icon="fa fa-files-o"
+                                                         update="@form, @widgetVar(v_table)"
                                                          disabled="#{recipeController.value == null}">
                                             <p:collector value="#{recipeController.createCopy()}"
                                                          addTo="#{recipesController.recipes}" unique="true"/>
+                                        </p:commandButton>
+                                        <p:commandButton title="Import" icon="fa fa-cart-arrow-down fa-lg"
+                                                         update="@form, @widgetVar(v_table)"
+                                                         action="#{recipeController.startImportRecipe()}"
+                                        >
+                                            <p:ajax event="dialogReturn" listener="#{recipesController.onImportRecipeReturn}"
+                                                    update="@form, @widgetVar(v_table)"/>
                                         </p:commandButton>
                                     </f:facet>
 
 
                                 </p:toolbar>
-                                <p:dataTable id="table" var="recipe"
+                                <p:dataTable id="table" widgetVar="v_table" var="recipe"
                                              value="#{recipesController.recipes}" selectionMode="single"
                                              selection="#{recipeController.value}" rowKey="#{recipe.id}">
                                     <p:ajax event="rowSelect" listener="#{recipesController.onRowSelect}"
-                                            update=":recipes"/>
+                                            update="@form"/>
                                     <p:ajax event="rowUnselect" listener="#{recipesController.onRowUnselect}"
-                                            update=":recipes"/>
+                                            update="@form"/>
 
-                                    <p:column id="column_id" headerText="Recipes" filterBy="#{recipe.id}"
+                                    <p:column id="column_id" headerText="Recipes" filterBy="#{recipe.name}"
                                               filterMatchMode="contains">
-                                        <h:outputText value="#{recipe.id}"/>
+                                        <h:outputText value="#{recipe.name}"/>
                                     </p:column>
                                 </p:dataTable>
                             </p:outputPanel>
@@ -86,18 +105,18 @@
 
                         <p:layoutUnit id="center" position="center">
                             <p:outputPanel id="details" rendered="#{recipeController.value != null}">
-                                <h:form id="recipe">
-                                    <components:recipe value="#{recipeController.value}" id="recipe"/>
+                                <h:form id="recipeForm">
+                                    <components:recipe value="#{recipeController.value}" id="recipe" owner="#{cc.attrs.owner}"/>
                                     <p:panelGrid id="recipe_buttons" columns="2" style="margin-bottom:10px"
                                                  styleClass="ui-panelgrid-blank" cellpadding="5">
-                                        <p:commandButton id="button_save" value="save"
-                                                         update=":recipes"
+                                        <p:commandButton id="button_save" value="Save"
+                                                         update="@(.recipesForm) @widgetVar(v_table)"
                                                          action="#{recipesController.save}"/>
-                                        <p:commandButton id="button_cancel" value="cancel" immediate="true"
-                                                         update=":recipes"
+                                        <p:commandButton id="button_cancel" value="Cancel" immediate="true"
+                                                         update="@(.recipesForm) @widgetVar(v_table)"
                                                          actionListener="#{recipesController.cancel}"/>
                                     </p:panelGrid>
-                                    <p:growl id="messages" sticky="true" showDetail="true"/>
+                                    <p:growl id="messages" sticky="true" showDetail="true" escape="false"/>
                                 </h:form>
                             </p:outputPanel>
                         </p:layoutUnit>
@@ -107,7 +126,5 @@
             </h:panelGroup>
 
         </p:outputPanel>
-
-
-    </ui:define>
-</ui:composition>
+</composite:implementation>
+</html>

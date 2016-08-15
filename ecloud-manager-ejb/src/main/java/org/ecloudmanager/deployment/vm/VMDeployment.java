@@ -43,7 +43,7 @@ import java.util.stream.Stream;
 public class VMDeployment extends Deployable {
     private static final long serialVersionUID = 4504079285011312598L;
 
-    private VirtualMachineTemplate virtualMachineTemplate;
+    private VirtualMachineTemplate virtualMachineTemplate = new VirtualMachineTemplate();
 
     @Transient
     private VMDeployer deployer;

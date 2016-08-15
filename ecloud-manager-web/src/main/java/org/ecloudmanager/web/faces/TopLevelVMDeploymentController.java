@@ -43,6 +43,9 @@ public class TopLevelVMDeploymentController extends FacesSupport implements Seri
     private List<VirtualMachineTemplate> virtualMachineTemplates;
     private VMDeployment value;
 
+    @Inject
+    private transient VmTemplateController vmTemplateController;
+
     @PostConstruct
     private void init() {
         refresh();
@@ -62,6 +65,7 @@ public class TopLevelVMDeploymentController extends FacesSupport implements Seri
 
     public void setValue(VMDeployment value) {
         this.value = value;
+        vmTemplateController.setValue(value.getVirtualMachineTemplate());
     }
 
 }

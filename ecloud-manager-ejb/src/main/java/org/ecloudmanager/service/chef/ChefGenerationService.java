@@ -101,7 +101,7 @@ public class ChefGenerationService {
 
     public Writer generateChefNodeEnv(Writer writer, VMDeployment vmDeployment) {
         String runlist = vmDeployment.getRunlist().stream().
-            map(s -> "\"recipe[" + s + "]\"").collect(Collectors.joining(","));
+            map(s -> "\"recipe[" + s.getRunlistItem() + "]\"").collect(Collectors.joining(","));
         return generateChefNodeEnv(writer, vmDeployment, runlist);
     }
 

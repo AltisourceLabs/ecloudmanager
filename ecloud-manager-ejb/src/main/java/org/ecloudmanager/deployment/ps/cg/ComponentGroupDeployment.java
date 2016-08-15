@@ -52,7 +52,7 @@ public class ComponentGroupDeployment extends Deployable {
     @Transient
     private Deployer deployer;
 
-    private VirtualMachineTemplate virtualMachineTemplate;
+    private VirtualMachineTemplate virtualMachineTemplate = new VirtualMachineTemplate();
 
     public ComponentGroupDeployment() {
         setId(new ObjectId());

@@ -25,17 +25,24 @@
 package org.ecloudmanager.service.template;
 
 import org.apache.logging.log4j.Logger;
+import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.jeecore.service.ServiceSupport;
+import org.ecloudmanager.repository.template.RecipeRepository;
 
 import javax.ejb.Stateless;
 import javax.inject.Inject;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Stateless
 public class RecipeService extends ServiceSupport {
 
     @Inject
     private Logger log;
+    @Inject
+    RecipeRepository recipeRepository;
 
     public void save(Recipe recipe) {
         log.info("Saving " + recipe.getId());
@@ -45,11 +52,6 @@ public class RecipeService extends ServiceSupport {
 
     public void update(Recipe recipe) {
         log.info("Updating " + recipe.getId());
-        if (!recipe.isNew() && !recipe.getOldId().equals(recipe.getId())) {
-            log.info("Recipe " + recipe.getOldId() + " renamed to " + recipe.getId());
-        }
-        // FIXME update refereces?
-        datastore.delete(Recipe.class, recipe.getOldId());
         datastore.save(recipe);
         fireEvent(recipe);
     }
@@ -66,4 +68,26 @@ public class RecipeService extends ServiceSupport {
         fireEvent(id);
     }
 
+    public void saveWithUniqueName(Recipe recipe) {
+        log.info("Saving with unique name " + recipe.getId());
+        recipe.setName(getUniqueRecipeName(recipe.getName(), recipe.getOwner()));
+        datastore.save(recipe);
+        fireEvent(recipe);
+    }
+
+    private String getUniqueRecipeName(String hint, Deployable owner) {
+        Set<String> usedNames = recipeRepository.getAll(owner).stream().map(Recipe::getName).collect(Collectors.toSet());
+        if (!usedNames.contains(hint)) {
+            return hint;
+        }
+
+        for (int i = 1; i < Integer.MAX_VALUE; i++) {
+            String candidate = hint + i;
+            if (!usedNames.contains(candidate)) {
+                return candidate;
+            }
+        }
+
+        return hint + UUID.randomUUID().toString();
+    }
 }

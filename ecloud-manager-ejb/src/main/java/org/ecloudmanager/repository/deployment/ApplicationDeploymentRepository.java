@@ -24,67 +24,14 @@
 
 package org.ecloudmanager.repository.deployment;
 
-import org.bson.types.ObjectId;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
+import org.ecloudmanager.jeecore.repository.MongoDBRepositorySupport;
 import org.ecloudmanager.jeecore.repository.Repository;
-import org.mongodb.morphia.Datastore;
-
-import javax.inject.Inject;
-import java.util.Collection;
-import java.util.List;
 
 @Repository
-public class ApplicationDeploymentRepository {
-    @Inject
-    protected Datastore datastore;
-
-    public Long getCount() {
-        return datastore.getCount(ApplicationDeployment.class);
-    }
-
-    public ApplicationDeployment get(ObjectId id) {
-        return datastore.get(ApplicationDeployment.class, id);
-    }
-
-    public ApplicationDeployment get(String id) {
-        return datastore.get(ApplicationDeployment.class, id);
-    }
-
-    public List<ApplicationDeployment> getAll() {
-        return datastore.find(ApplicationDeployment.class).asList();
-    }
-
-    public void save(ApplicationDeployment entity) {
-        datastore.save(entity);
-    }
-
-    public void saveAll(Collection<ApplicationDeployment> entities) {
-        datastore.save(entities);
-    }
-
-    public void update(ApplicationDeployment entity) {
-        datastore.save(entity);
-    }
-
-    public void updateAll(Collection<ApplicationDeployment> entities) {
-        datastore.save(entities);
-    }
-
-    public void saveOrUpdate(ApplicationDeployment entity) {
-        datastore.save(entity);
-    }
-
-    public void saveOrUpdateAll(Collection<ApplicationDeployment> entities) {
-        datastore.save(entities);
-    }
-
-    public void delete(ApplicationDeployment entity) {
-        datastore.delete(entity);
-    }
-
+public class ApplicationDeploymentRepository extends MongoDBRepositorySupport<ApplicationDeployment> {
     public ApplicationDeployment reload(ApplicationDeployment r) {
         return datastore.get(r);
     }
-
 }
 

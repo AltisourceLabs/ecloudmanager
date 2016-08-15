@@ -33,18 +33,21 @@ import com.rits.cloning.Cloner;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
-import org.ecloudmanager.deployment.app.ApplicationTemplate;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.DeploymentConstraint;
 import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
 import org.ecloudmanager.deployment.ps.cg.ComponentGroupDeployment;
-import org.ecloudmanager.deployment.vm.infrastructure.Infrastructure;
+import org.ecloudmanager.deployment.vm.VMDeployment;
+import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
+import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.jeecore.service.ServiceSupport;
 import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
 import org.ecloudmanager.repository.deployment.DeploymentAttemptRepository;
+import org.ecloudmanager.repository.template.RecipeRepository;
 import org.ecloudmanager.service.execution.Action;
 import org.ecloudmanager.service.execution.ActionExecutor;
+import org.ecloudmanager.service.template.VirtualMachineTemplateService;
 import org.mongodb.morphia.Morphia;
 import org.picketlink.Identity;
 
@@ -52,6 +55,9 @@ import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.inject.Inject;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Stateless
 public class ApplicationDeploymentService extends ServiceSupport {
@@ -67,18 +73,13 @@ public class ApplicationDeploymentService extends ServiceSupport {
     private DeploymentAttemptRepository deploymentAttemptRepository;
     @Inject
     private ApplicationDeploymentRepository applicationDeploymentRepository;
+    @Inject
+    private RecipeRepository recipeRepository;
+    @Inject
+    private VirtualMachineTemplateService virtualMachineTemplateService;
 
     @Inject
     private Morphia morphia;
-
-    public ApplicationDeployment create(ApplicationTemplate app, String infrastructure) {
-        log.info("Creating deployment for application " + app.getName() + ", " + infrastructure);
-        Infrastructure infra = Infrastructure.valueOf(infrastructure);
-        ApplicationDeployment ad = app.toDeployment();
-        ad.setInfrastructure(infra);
-        ad.specifyConstraints();
-        return ad;
-    }
 
     public void save(ApplicationDeployment ad) {
         log.info("Saving " + ad.getName());
@@ -93,6 +94,9 @@ public class ApplicationDeploymentService extends ServiceSupport {
     }
 
     public void remove(ApplicationDeployment ad) {
+        log.info("Deleting recipes for " + ad.getName());
+        recipeRepository.deleteAll(ad);
+
         log.info("Deleting " + ad.getName());
         datastore.delete(ad);
         fireEntityDeleted(ad);
@@ -159,6 +163,25 @@ public class ApplicationDeploymentService extends ServiceSupport {
             });
             newDeployment.specifyConstraints();
         }
+
+        // Save the deployment before importing recipes to be able to create recipe owner references
+        applicationDeploymentRepository.save(newDeployment);
+
+        // Copy all the recipes from src to dst deployment. Create a dummy VM template with all the recipes and "import" it
+        List<Recipe> srcDeploymentRecipes = recipeRepository.getAll(source);
+        VirtualMachineTemplate dummySrc = new VirtualMachineTemplate();
+        dummySrc.getRunlist().addAll(srcDeploymentRecipes);
+        VirtualMachineTemplate dummyDst = new VirtualMachineTemplate();
+        virtualMachineTemplateService.importVm(dummySrc, dummyDst, newDeployment);
+
+        // Fix runlists in VM templates
+        Map<String, Recipe> recipeMap = dummyDst.getRunlist().stream().collect(Collectors.toMap(Recipe::getName, r -> r));
+        newDeployment.stream(VMDeployment.class).forEach(vmd -> {
+            vmd.getVirtualMachineTemplate().getRunlist().replaceAll(r -> recipeMap.get(r.getName()));
+        });
+        newDeployment.stream(ComponentGroupDeployment.class).forEach(cgd -> {
+            cgd.getVirtualMachineTemplate().getRunlist().replaceAll(r -> recipeMap.get(r.getName()));
+        });
 
         applicationDeploymentRepository.save(newDeployment);
     }
