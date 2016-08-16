@@ -239,7 +239,7 @@
         security:
         - key: []
         - secret: []
-      put:
+      post:
         tags:
         - node
         summary: Configure node
@@ -610,7 +610,7 @@
         protocol:
           type: string
         port:
-          type: string
+          type: integer
         from:
           type: string
     Tasks:

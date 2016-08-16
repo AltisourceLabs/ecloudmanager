@@ -66,7 +66,7 @@ public class HAProxyActions {
         // TODO - here we use the same port from endpoint both for frontend and backend. They should be different.
         // Delete firewall rule for haproxy frontend if there's a public endpoint
         producedServiceDeployment.children(Endpoint.class).forEach(endpoint -> {
-            int port = Integer.parseInt(endpoint.getConfigValue("port"));
+            int port = endpoint.getPort();
             String publicEndpointName = producedServiceDeployment.getName() + ":" + endpoint.getName();
             if (ad.getPublicEndpoints().contains(publicEndpointName)) {
                 GatewayVMDeployment gatewayVmDeployment = HAProxyDeployer.getGatewayVmDeployment(producedServiceDeployment);
@@ -74,7 +74,7 @@ public class HAProxyActions {
                 String apiId = ((ApplicationDeployment) (gatewayVmDeployment.getTop())).getInfrastructure();
 
                 NodeAPI nodeAPI = nodeAPIProvider.getAPI(apiId);
-                FirewallRule rule = new FirewallRule().type(FirewallRule.TypeEnum.ANY).port(Integer.toString(port)).protocol("TCP");
+                FirewallRule rule = new FirewallRule().type(FirewallRule.TypeEnum.ANY).port(port).protocol("TCP");
 
                 try {
                     nodeAPI.updateNodeFirewallRules(nodeAPIProvider.getCredentials(apiId), vmId, new FirewallUpdate().delete(Arrays.asList(rule)));
@@ -90,14 +90,14 @@ public class HAProxyActions {
         // TODO - here we use the same port from endpoint both for frontend and backend. They should be different.
         // Create firewall rule for haproxy frontend if there's a public endpoint
         producedServiceDeployment.children(Endpoint.class).forEach(e -> {
-            int port = Integer.parseInt(e.getConfigValue("port"));
+            int port = e.getPort();
             String publicEndpointName = producedServiceDeployment.getName() + ":" + e.getName();
             if (ad.getPublicEndpoints().contains(publicEndpointName)) {
 
                 GatewayVMDeployment gatewayVmDeployment = HAProxyDeployer.getGatewayVmDeployment(producedServiceDeployment);
                 String vmId = InfrastructureDeployerImpl.getVmId(gatewayVmDeployment);
                 String apiId = ((ApplicationDeployment) (gatewayVmDeployment.getTop())).getInfrastructure();
-                FirewallRule rule = new FirewallRule().type(FirewallRule.TypeEnum.ANY).port(Integer.toString(port)).protocol("TCP");
+                FirewallRule rule = new FirewallRule().type(FirewallRule.TypeEnum.ANY).port(port).protocol("TCP");
                 NodeAPI nodeAPI = nodeAPIProvider.getAPI(apiId);
 
                 try {

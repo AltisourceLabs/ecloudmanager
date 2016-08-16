@@ -38,7 +38,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
 
     private static List<FirewallRule> fromIpPermission(IpPermission permission) {
         return permission.getIpRanges().stream().map(range ->
-                new FirewallRule().type(FirewallRule.TypeEnum.IP).protocol(permission.getIpProtocol()).port(permission.getToPort().toString()).from(range)).collect(Collectors.toList());
+                new FirewallRule().type(FirewallRule.TypeEnum.IP).protocol(permission.getIpProtocol()).port(permission.getToPort()).from(range)).collect(Collectors.toList());
     }
 
     private IpPermission fromFirewallRule(Credentials credentials, FirewallRule rule) throws Exception {
@@ -54,7 +54,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
                 ipRange = "0.0.0.0/0";
                 break;
         }
-        return new IpPermission().withFromPort(Integer.parseInt(rule.getPort())).withToPort(Integer.parseInt(rule.getPort())).withIpProtocol(rule.getProtocol()).withIpRanges(ipRange);
+        return new IpPermission().withFromPort(rule.getPort()).withToPort(rule.getPort()).withIpProtocol(rule.getProtocol()).withIpRanges(ipRange);
     }
 
     private String getCidrIp() {

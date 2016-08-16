@@ -60,9 +60,15 @@ public class NodeController {
         }
     }
 
-    public ResponseContext updateNode(RequestContext request, String accessKey, String secretKey, String nodeId, Node node) {
-        // TODO
-        return new ResponseContext().status(Status.NOT_IMPLEMENTED).entity(nodeId);
+    public ResponseContext configureNode(RequestContext request, String accessKey, String secretKey, String nodeId, Node node) {
+        try {
+            ExecutionDetails response = api.configureNode(new SecretKey(accessKey, secretKey), nodeId, node.getParameters());
+            return new ResponseContext().status(Status.OK).entity(response);
+        } catch (Exception e) {
+            return new ResponseContext()
+                    .status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(e.getMessage());
+        }
     }
 
     public ResponseContext deleteNode(RequestContext request, String accessKey, String secretKey, String nodeId) {

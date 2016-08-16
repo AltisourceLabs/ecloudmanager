@@ -665,7 +665,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
                     break;
             }
 
-            createFirewallRule(registry, envId, source, dest, Integer.parseInt(r.getPort()));
+            createFirewallRule(registry, envId, source, dest, r.getPort());
             NodeUtil.logInfo(details, "Created firewall rule " + source);
         });
         return details;

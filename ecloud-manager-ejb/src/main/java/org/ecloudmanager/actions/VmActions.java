@@ -70,7 +70,7 @@ public class VmActions {
                     }
                     return response.getDetails();
                 }, vmDeployment),
-                Action.single("Waiting", () -> {
+                Action.single("Wait for node to be ready", () -> {
                     try {
                         NodeInfo info = NodeUtil.wait(nodeAPIProvider.getAPI(apiId), nodeAPIProvider.getCredentials(apiId), InfrastructureDeployer.getVmId(vmDeployment));
                         return new ExecutionDetails().status(ExecutionDetails.StatusEnum.OK).message("Node started with IP: " + info.getIp());
@@ -80,8 +80,16 @@ public class VmActions {
                         return details;
                     }
                 }, vmDeployment),
-                Action.single("Configure VM", () -> nodeAPIProvider.getAPI(apiId).configureNode(nodeAPIProvider.getCredentials(apiId), InfrastructureDeployer.getVmId(vmDeployment), parameters), vmDeployment),
-                Action.single("Waiting", () -> {
+                Action.single("Configure VM", () -> {
+                    try {
+                        return nodeAPIProvider.getAPI(apiId).configureNode(nodeAPIProvider.getCredentials(apiId), InfrastructureDeployer.getVmId(vmDeployment), parameters);
+                    } catch (Exception e) {
+                        ExecutionDetails details = new ExecutionDetails();
+                        NodeUtil.logError(details, "Can't configure node", e);
+                        return details;
+                    }
+                }, vmDeployment),
+                Action.single("Wait for node to be ready", () -> {
                     try {
                         NodeInfo info = NodeUtil.wait(nodeAPIProvider.getAPI(apiId), nodeAPIProvider.getCredentials(apiId), InfrastructureDeployer.getVmId(vmDeployment));
                         InfrastructureDeployer.addIP(vmDeployment, info.getIp());
