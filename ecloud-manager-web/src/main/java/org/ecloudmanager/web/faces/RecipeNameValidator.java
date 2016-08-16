@@ -26,7 +26,7 @@ package org.ecloudmanager.web.faces;
 
 import org.apache.deltaspike.core.util.StringUtils;
 import org.bson.types.ObjectId;
-import org.ecloudmanager.deployment.core.Deployable;
+import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.repository.template.RecipeRepository;
 
@@ -37,7 +37,6 @@ import javax.faces.validator.FacesValidator;
 import javax.faces.validator.Validator;
 import javax.faces.validator.ValidatorException;
 import javax.inject.Inject;
-import java.util.List;
 
 @FacesValidator("recipeNameValidator")
 public class RecipeNameValidator implements Validator {
@@ -46,7 +45,7 @@ public class RecipeNameValidator implements Validator {
 
     @Override
     public void validate(FacesContext context, UIComponent component, Object value) throws ValidatorException {
-        Deployable deployment = (Deployable) component.getAttributes().get("owner");
+        ApplicationDeployment deployment = (ApplicationDeployment) component.getAttributes().get("owner");
         ObjectId recipeId = (ObjectId) component.getAttributes().get("recipeId");
 
         String newName = (String) value;
@@ -55,8 +54,8 @@ public class RecipeNameValidator implements Validator {
             throw new ValidatorException(new FacesMessage(FacesMessage.SEVERITY_ERROR, "Name should not be empty.", "Please enter a valid name"));
         }
 
-        List<Recipe> recipes = recipeRepository.findByName(newName, deployment);
-        boolean duplicateName = recipes.stream().filter(r -> !r.getId().equals(recipeId)).count() > 0;
+        Recipe recipe = recipeRepository.findByName(newName, deployment);
+        boolean duplicateName = recipe != null && !recipe.getId().equals(recipeId);
         if (duplicateName) {
             throw new ValidatorException(new FacesMessage(FacesMessage.SEVERITY_ERROR, "Recipe " + newName + " already exist", "Please enter unique name"));
         }

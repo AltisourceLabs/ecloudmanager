@@ -38,7 +38,6 @@ import org.ecloudmanager.deployment.core.DeploymentConstraint;
 import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
 import org.ecloudmanager.deployment.ps.cg.ComponentGroupDeployment;
-import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.jeecore.service.ServiceSupport;
@@ -94,9 +93,6 @@ public class ApplicationDeploymentService extends ServiceSupport {
     }
 
     public void remove(ApplicationDeployment ad) {
-        log.info("Deleting recipes for " + ad.getName());
-        recipeRepository.deleteAll(ad);
-
         log.info("Deleting " + ad.getName());
         datastore.delete(ad);
         fireEntityDeleted(ad);
@@ -176,11 +172,8 @@ public class ApplicationDeploymentService extends ServiceSupport {
 
         // Fix runlists in VM templates
         Map<String, Recipe> recipeMap = dummyDst.getRunlist().stream().collect(Collectors.toMap(Recipe::getName, r -> r));
-        newDeployment.stream(VMDeployment.class).forEach(vmd -> {
-            vmd.getVirtualMachineTemplate().getRunlist().replaceAll(r -> recipeMap.get(r.getName()));
-        });
-        newDeployment.stream(ComponentGroupDeployment.class).forEach(cgd -> {
-            cgd.getVirtualMachineTemplate().getRunlist().replaceAll(r -> recipeMap.get(r.getName()));
+        newDeployment.stream(VirtualMachineTemplate.class).forEach(vmt -> {
+            vmt.getRunlist().replaceAll(r -> recipeMap.get(r.getName()));
         });
 
         applicationDeploymentRepository.save(newDeployment);

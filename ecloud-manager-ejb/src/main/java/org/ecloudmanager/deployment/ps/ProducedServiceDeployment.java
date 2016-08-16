@@ -68,10 +68,7 @@ public class ProducedServiceDeployment extends Deployable {
     }
 
     public List<ComponentGroupDeployment> getComponentGroups() {
-        return children().stream()
-            .filter(ComponentGroupDeployment.class::isInstance)
-            .map(ComponentGroupDeployment.class::cast)
-            .collect(Collectors.toList());
+        return children(ComponentGroupDeployment.class);
     }
 
     @NotNull

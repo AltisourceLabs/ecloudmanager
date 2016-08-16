@@ -131,6 +131,7 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
     public void newProducedService() {
         newChild = true;
         ProducedServiceDeployment producedServiceDeployment = new ProducedServiceDeployment();
+        producedServiceDeployment.setParent(deployment);
         producedServiceDeployment.children().add(new Endpoint());
         startEditChild(producedServiceDeployment);
     }
@@ -143,7 +144,9 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
 
     public void newVmRef() {
         newChild = true;
-        startEditChild(new VMDeployment());
+        VMDeployment vmDeployment = new VMDeployment();
+        vmDeployment.setParent(deployment);
+        startEditChild(vmDeployment);
     }
 
     public void cancel() {

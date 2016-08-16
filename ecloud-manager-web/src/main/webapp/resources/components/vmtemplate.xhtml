@@ -67,6 +67,7 @@
     <p:dataTable var="recipe" value="#{vmTemplateController.value.runlist}"
                  draggableRows="true" id="recipes">
         <f:facet name="header">Chef run list</f:facet>
+        <p:ajax event="rowReorder" listener="#{vmTemplateController.onRowReorder}"/>
         <p:column id="column_recipe_id" headerText="Recipe Name">
             <h:outputText value="#{recipe.name}"/>
         </p:column>

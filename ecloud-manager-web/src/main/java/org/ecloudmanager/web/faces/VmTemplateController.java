@@ -24,7 +24,7 @@
 
 package org.ecloudmanager.web.faces;
 
-import org.ecloudmanager.deployment.core.Deployable;
+import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.jeecore.web.faces.Controller;
@@ -33,6 +33,7 @@ import org.ecloudmanager.repository.template.RecipeRepository;
 import org.ecloudmanager.repository.template.VirtualMachineTemplateRepository;
 import org.ecloudmanager.service.template.VirtualMachineTemplateService;
 import org.primefaces.context.RequestContext;
+import org.primefaces.event.ReorderEvent;
 import org.primefaces.event.SelectEvent;
 
 import javax.annotation.PostConstruct;
@@ -78,10 +79,10 @@ public class VmTemplateController extends FacesSupport implements Serializable {
     }
 
     public void deleteRecipe(Recipe recipe) {
-        value.getRunlist().remove(recipe);
+        value.removeRecipe(recipe);
     }
 
-    public List<Recipe> getRecipes(Deployable owner) {
+    public List<Recipe> getRecipes(ApplicationDeployment owner) {
         return recipeRepository.getAll(owner);
     }
 
@@ -115,5 +116,12 @@ public class VmTemplateController extends FacesSupport implements Serializable {
                 addMessage(new FacesMessage(message));
             }
         }
+    }
+
+    public void onRowReorder(ReorderEvent event) {
+        List<Recipe> runlist = value.getRunlist();
+        Recipe moving = runlist.remove(event.getFromIndex());
+        runlist.add(event.getToIndex(), moving);
+        value.setRunlist(runlist);
     }
 }

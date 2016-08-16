@@ -30,9 +30,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.logging.log4j.Logger;
 import org.bson.types.ObjectId;
+import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.core.Deployable;
-import org.ecloudmanager.deployment.ps.cg.ComponentGroupDeployment;
-import org.ecloudmanager.deployment.vm.VMDeployment;
+import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.jeecore.service.ServiceSupport;
@@ -73,12 +73,14 @@ public class VirtualMachineTemplateService extends ServiceSupport {
         delete(vm);
     }
 
-    public String importVm(VirtualMachineTemplate src, VirtualMachineTemplate dst, Deployable owner) {
+    public String importVm(VirtualMachineTemplate src, VirtualMachineTemplate dst, ApplicationDeployment owner) {
         ObjectId id = dst.getId();
         String name = dst.getName();
+        DeploymentObject parent = dst.getParent();
         cloner.copyPropertiesOfInheritedClass(src, dst);
         dst.setId(id);
-        if (!StringUtils.isEmpty(dst.getName())) {
+
+        if (!StringUtils.isEmpty(name)) {
             dst.setName(name);
         }
 
@@ -88,10 +90,10 @@ public class VirtualMachineTemplateService extends ServiceSupport {
         List<Recipe> newRunlist = new ArrayList<>();
         dst.getRunlist().stream().forEachOrdered(recipe -> {
             Recipe newRecipe = null;
-            List<Recipe> existingRecipe = recipeRepository.findByName(recipe.getName(), owner);
-            if (existingRecipe.size() > 0) {
-                if (EqualsBuilder.reflectionEquals(recipe, existingRecipe.get(0), ImmutableList.of("id", "owner"))) {
-                    newRecipe = existingRecipe.get(0);
+            Recipe existingRecipe = recipeRepository.findByName(recipe.getName(), owner);
+            if (existingRecipe != null) {
+                if (EqualsBuilder.reflectionEquals(recipe, existingRecipe, ImmutableList.of("id", "owner"))) {
+                    newRecipe = existingRecipe;
                 }
             }
 
@@ -111,6 +113,7 @@ public class VirtualMachineTemplateService extends ServiceSupport {
         });
 
         dst.setRunlist(newRunlist);
+        dst.setParent(parent);
 
         StringBuilder builder = new StringBuilder();
         if (addedRecipes.size() > 0) {
@@ -132,13 +135,9 @@ public class VirtualMachineTemplateService extends ServiceSupport {
                     .collect(Collectors.toList());
         } else {
             List<String> result = new ArrayList<>();
-            result.addAll(owner.children(VMDeployment.class).stream()
-                    .filter(vmd -> vmd.getVirtualMachineTemplate().getRunlist().contains(recipe))
-                    .map(vmd -> owner.getName() + ":" + vmd.getPath(":") + ":" + vmd.getVirtualMachineTemplate().getName())
-                    .collect(Collectors.toList()));
-            result.addAll(owner.stream(ComponentGroupDeployment.class)
-                    .filter(cgd -> cgd.getVirtualMachineTemplate().getRunlist().contains(recipe))
-                    .map(cgd -> owner.getName() + ":" + cgd.getPath(":") + ":" + cgd.getVirtualMachineTemplate().getName())
+            result.addAll(owner.stream(VirtualMachineTemplate.class)
+                    .filter(vmt -> vmt.getRunlist().contains(recipe))
+                    .map(vmt -> owner.getName() + ":" + vmt.getParent().getPath(":") + ":" + vmt.getName())
                     .collect(Collectors.toList()));
             return result;
         }

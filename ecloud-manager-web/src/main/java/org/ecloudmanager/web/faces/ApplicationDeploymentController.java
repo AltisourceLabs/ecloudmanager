@@ -164,7 +164,7 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
 
     private TreeNode getTree(DeploymentObject deployable, TreeNode parent) {
         if (deployable instanceof Config && deployable.children().isEmpty() && deployable.getConstraintFields()
-            .isEmpty()) {
+            .isEmpty() || deployable instanceof VirtualMachineTemplate) {
             return null;
         }
         TreeNode node = new SortableDefaultTreeNode(deployable, parent);

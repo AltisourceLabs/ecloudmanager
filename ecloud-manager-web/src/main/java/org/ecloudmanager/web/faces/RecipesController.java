@@ -27,7 +27,7 @@ package org.ecloudmanager.web.faces;
 import com.rits.cloning.Cloner;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
-import org.ecloudmanager.deployment.core.Deployable;
+import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
@@ -58,21 +58,9 @@ public class RecipesController extends FacesSupport implements Serializable {
     @Inject
     private transient RecipeController recipeController;
     @Inject
-    private ApplicationDeploymentEditorController applicationDeploymentEditorController;
+    private transient ApplicationDeploymentEditorController applicationDeploymentEditorController;
 
     private List<Recipe> recipes;
-
-    public void setRecipeController(RecipeController recipeController) {
-        this.recipeController = recipeController;
-    }
-
-    public ApplicationDeploymentEditorController getApplicationDeploymentEditorController() {
-        return applicationDeploymentEditorController;
-    }
-
-    public void setApplicationDeploymentEditorController(ApplicationDeploymentEditorController applicationDeploymentEditorController) {
-        this.applicationDeploymentEditorController = applicationDeploymentEditorController;
-    }
 
     @PostConstruct
     private void init() {
@@ -80,7 +68,7 @@ public class RecipesController extends FacesSupport implements Serializable {
     }
 
     public void refresh() {
-        Deployable owner = applicationDeploymentEditorController == null || applicationDeploymentEditorController.getDeployment() == null ?
+        ApplicationDeployment owner = applicationDeploymentEditorController == null || applicationDeploymentEditorController.getDeployment() == null ?
                 null : applicationDeploymentEditorController.getDeployment();
         recipes = recipeRepository.getAll(owner);
     }
@@ -109,7 +97,7 @@ public class RecipesController extends FacesSupport implements Serializable {
         if (value.isNew()) {
             recipes.remove(value);
         } else {
-            Recipe reloaded = recipeRepository.get(value.getId());
+            Recipe reloaded = recipeRepository.reload(value);
             int idx = recipes.indexOf(value);
             recipes.set(idx, reloaded);
         }
@@ -182,7 +170,7 @@ public class RecipesController extends FacesSupport implements Serializable {
                 newRecipe.setId(new ObjectId());
                 updateOwner(newRecipe);
                 recipeService.saveWithUniqueName(newRecipe);
-                recipes.add(newRecipe);
+                refresh();
             });
         }
     }

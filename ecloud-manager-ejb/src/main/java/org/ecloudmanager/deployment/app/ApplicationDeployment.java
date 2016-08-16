@@ -25,12 +25,15 @@
 package org.ecloudmanager.deployment.app;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.bson.types.ObjectId;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.Deployer;
 import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.vm.infrastructure.Infrastructure;
+import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.jetbrains.annotations.NotNull;
 import org.mongodb.morphia.annotations.Entity;
+import org.mongodb.morphia.annotations.PostLoad;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +47,8 @@ public class ApplicationDeployment extends Deployable {
     private List<Link> links = new ArrayList<>();
     private List<String> publicEndpoints = new ArrayList<>();
     private Infrastructure infrastructure;
+
+    private List<Recipe> recipes = new ArrayList<>();
 
     public ApplicationDeployment() {
     }
@@ -70,6 +75,22 @@ public class ApplicationDeployment extends Deployable {
         this.links = links;
     }
 
+    public List<Recipe> getRecipes() {
+        return recipes;
+    }
+
+    public void setRecipes(List<Recipe> recipes) {
+        this.recipes = recipes;
+    }
+
+    public Recipe getRecipe(ObjectId id) {
+        // Throw an exception if there's no such id
+        return recipes.stream().filter(r -> id.equals(r.getId())).findAny().get();
+    }
+
+    public Recipe getRecipe(String name) {
+        return recipes.stream().filter(r -> name.equals(r.getName())).findAny().orElse(null);
+    }
 
     public List<String> getPublicEndpoints() {
         return publicEndpoints;
@@ -127,4 +148,8 @@ public class ApplicationDeployment extends Deployable {
         return false;
     }
 
+    @PostLoad
+    public void updateRecipes() {
+        recipes.forEach(r -> r.setOwner(this));
+    }
 }

@@ -24,13 +24,13 @@
 
 package org.ecloudmanager.deployment.vm.provisioning;
 
-import org.ecloudmanager.deployment.core.Deployable;
+import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.jeecore.domain.MongoObject;
 import org.jetbrains.annotations.NotNull;
 import org.mongodb.morphia.annotations.PostLoad;
 import org.mongodb.morphia.annotations.PrePersist;
-import org.mongodb.morphia.annotations.Reference;
+import org.mongodb.morphia.annotations.Transient;
 
 import java.util.*;
 
@@ -43,10 +43,10 @@ public class Recipe extends MongoObject {
     private String version = "= 0.1.0";
     private List<Endpoint> endpoints = new ArrayList<>();
 
+    @Transient
     private transient boolean isNew = true;
-
-    @Reference
-    private Deployable owner;
+    @Transient
+    private transient ApplicationDeployment owner;
 
     public Recipe() {
     }
@@ -64,11 +64,11 @@ public class Recipe extends MongoObject {
         this.name = name;
     }
 
-    public Deployable getOwner() {
+    public ApplicationDeployment getOwner() {
         return owner;
     }
 
-    public void setOwner(Deployable owner) {
+    public void setOwner(ApplicationDeployment owner) {
         this.owner = owner;
     }
 

@@ -43,8 +43,6 @@ import java.util.stream.Stream;
 public class VMDeployment extends Deployable {
     private static final long serialVersionUID = 4504079285011312598L;
 
-    private VirtualMachineTemplate virtualMachineTemplate = new VirtualMachineTemplate();
-
     @Transient
     private VMDeployer deployer;
 
@@ -68,18 +66,24 @@ public class VMDeployment extends Deployable {
     }
 
     public VirtualMachineTemplate getVirtualMachineTemplate() {
-        return virtualMachineTemplate;
+        List<VirtualMachineTemplate> virtualMachineTemplates = children(VirtualMachineTemplate.class);
+        if (virtualMachineTemplates.size() == 0) {
+            addChild(new VirtualMachineTemplate());
+        }
+
+        return children(VirtualMachineTemplate.class).get(0);
     }
 
     public void setVirtualMachineTemplate(VirtualMachineTemplate virtualMachineTemplate) {
-        this.virtualMachineTemplate = virtualMachineTemplate;
+        children().remove(getVirtualMachineTemplate());
+        addChild(virtualMachineTemplate);
     }
 
     public Stream<Deployable> getRequired() {
         ApplicationDeployment ad = (ApplicationDeployment) getTop();
         List<Link> links = ad.getLinks();
         List<Deployable> required = new ArrayList<>();
-        virtualMachineTemplate.getRequiredEndpointsIncludingTemplateName().forEach(r -> {
+        getVirtualMachineTemplate().getRequiredEndpointsIncludingTemplateName().forEach(r -> {
             Optional<Link> o = links.stream().filter(l -> l.getConsumer().equals(r)).findFirst();
             if (o.isPresent()) {
                 String endpoint = o.get().getSupplier();
@@ -133,11 +137,11 @@ public class VMDeployment extends Deployable {
 
     @Override
     public List<Endpoint> getEndpoints() {
-        return virtualMachineTemplate.getEndpoints();
+        return getVirtualMachineTemplate().getEndpoints();
     }
 
     @Override
     public List<String> getRequiredEndpoints() {
-        return virtualMachineTemplate.getRequiredEndpoints();
+        return getVirtualMachineTemplate().getRequiredEndpoints();
     }
 }

@@ -77,6 +77,7 @@ public class ProducedServiceDeploymentController extends FacesSupport implements
     public void newComponentGroup() {
         newChild = true;
         ComponentGroupDeployment componentGroupDeployment = new ComponentGroupDeployment();
+        componentGroupDeployment.setParent(value);
         startEditComponentGroup(componentGroupDeployment);
     }
 
