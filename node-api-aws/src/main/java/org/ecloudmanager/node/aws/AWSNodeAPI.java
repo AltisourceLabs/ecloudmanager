@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -27,6 +28,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
     static Logger log = LoggerFactory.getLogger(AWSNodeAPI.class);
     private static String DEFAULT_SECURITY_GROUP_NAME = "default";
     private static String TAG_NAME = "Name";
+    private static String TAG_CREATOR = "Creator";
 
     private static String getSubnetLabel(com.amazonaws.services.ec2.model.Subnet subnet) {
         return subnet.getTags().stream()
@@ -41,39 +43,64 @@ public class AWSNodeAPI implements NodeBaseAPI {
                 new FirewallRule().type(FirewallRule.TypeEnum.IP).protocol(permission.getIpProtocol()).port(permission.getToPort()).from(range)).collect(Collectors.toList());
     }
 
-    private IpPermission fromFirewallRule(Credentials credentials, FirewallRule rule) throws Exception {
-        String ipRange = "";
-        switch (rule.getType()) {
-            case IP:
-                ipRange = rule.getFrom() + "/32";
-                break;
-            case NODE_ID:
-                ipRange = getNode(credentials, rule.getFrom()).getIp() + "/32";
-                break;
-            case ANY:
-                ipRange = "0.0.0.0/0";
-                break;
+    private void createTags(ExecutionDetails details, String accessKey, String secretKey, String instanceId, Map<String, String> parameters, AmazonEC2 ec2) {
+        String userId;
+        try {
+            userId = AWS.identityManagementClient(accessKey, secretKey).getUser().getUser().getUserId();
+        } catch (AmazonServiceException e) {
+            userId = e.getErrorMessage().replaceAll("^[^/]*/", "").replaceAll(" is not authorized .*", "");
         }
-        return new IpPermission().withFromPort(rule.getPort()).withToPort(rule.getPort()).withIpProtocol(rule.getProtocol()).withIpRanges(ipRange);
+        ArrayList<Tag> tags = new ArrayList<>();
+        tags.add(new Tag(TAG_CREATOR, userId));
+        getTagParameters().forEach(p -> {
+                    if (parameters.containsKey(p.getName())) {
+                        tags.add(new Tag(p.getName(), parameters.get(p.getName())));
+                    }
+
+                }
+        );
+        CreateTagsRequest createTagsRequest = new CreateTagsRequest()
+                .withResources(instanceId)
+                .withTags(tags);
+        log.info("Updating tags of AWS instance " + instanceId);
+        ec2.createTags(createTagsRequest);
+        NodeUtil.logInfo(details, "Tags created:");
+        createTagsRequest.getTags().forEach(t -> NodeUtil.logInfo(details, t.toString()));
     }
 
-    private String getCidrIp() {
-        return "0.0.0.0/0";
+    private List<NodeParameter> getTagParameters() {
+        // FIXME should be configurable
+        NodeParameter costCenter = new NodeParameter().name("Cost Center").description("Cost Center").create(true).configure(true).canSuggest(true).strictSuggest(false).required(true).defaultValue("521633");
+        NodeParameter group = new NodeParameter().name("Group").description("Group").create(true).configure(true).canSuggest(true).strictSuggest(false).required(true).defaultValue("rfng");
+        return Lists.newArrayList(costCenter, group);
     }
 
     @Override
     public List<NodeParameter> getNodeParameters(Credentials credentials) throws Exception {
-        return Arrays.stream(Parameter.values()).map(Parameter::getNodeParameter).collect(Collectors.toList());
+        return Stream.concat(Arrays.stream(Parameter.values()).map(Parameter::getNodeParameter), getTagParameters().stream()).collect(Collectors.toList());
+    }
+
+    private List<String> getTagValues(AmazonEC2 ec2, String tag) {
+        DescribeTagsResult describeTagsResult = ec2.describeTags(new DescribeTagsRequest().withFilters(new Filter("key", Lists.newArrayList(tag))));
+        return describeTagsResult.getTags().stream()
+                .map(TagDescription::getValue)
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     @Override
-    public List<ParameterValue> getNodeParameterValues(Credentials credentials, String parameter, Map<String, String> parameters) throws Exception {
+    public List<ParameterValue> getNodeParameterValues(Credentials credentials, String parameter, Map<String, String> parameters) throws AWS.RegionNotExistException, ExecutionException {
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
         String region = parameters == null ? null : parameters.get(Parameter.region.name());
         AmazonEC2 amazonEC2 = region == null ? null : AWS.ec2(accessKey, secretKey, region);
         AmazonRoute53 route53Client = AWS.route53(accessKey, secretKey);
-        Parameter p = Parameter.valueOf(parameter);
+        Parameter p;
+        try {
+            p = Parameter.valueOf(parameter);
+        } catch (IllegalArgumentException e) {
+            return getTagValues(amazonEC2, parameter).stream().map(t -> new ParameterValue().value(t)).collect(Collectors.toList());
+        }
         switch (p) {
             case region:
                 return Stream.of(Regions.values())
@@ -163,7 +190,8 @@ public class AWSNodeAPI implements NodeBaseAPI {
             return new CreateNodeResponse().details(details);
         }
         try {
-            createTags(accessKey, secretKey, nodeId, name, ec2);
+            setInstanceName(ec2, nodeId, name);
+            createTags(details, accessKey, secretKey, nodeId, parameters, ec2);
         } catch (Exception e) {
             NodeUtil.logInfo(details, "Tags creation failed: " + e.getMessage());
 
@@ -205,6 +233,26 @@ public class AWSNodeAPI implements NodeBaseAPI {
         }
         NodeInfo info = new NodeInfo().status(status).ip(instance.getPrivateIpAddress()).id(nodeId);
         return info;
+    }
+
+    private IpPermission fromFirewallRule(Credentials credentials, FirewallRule rule) throws Exception {
+        String ipRange = "";
+        switch (rule.getType()) {
+            case IP:
+                ipRange = rule.getFrom() + "/32";
+                break;
+            case NODE_ID:
+                ipRange = getNode(credentials, rule.getFrom()).getIp() + "/32";
+                break;
+            case ANY:
+                ipRange = "0.0.0.0/0";
+                break;
+        }
+        return new IpPermission().withFromPort(rule.getPort()).withToPort(rule.getPort()).withIpProtocol(rule.getProtocol()).withIpRanges(ipRange);
+    }
+
+    private String getCidrIp() {
+        return "0.0.0.0/0";
     }
 
     private int getStorageSize(AmazonEC2 ec2, String vmId) {
@@ -254,6 +302,8 @@ public class AWSNodeAPI implements NodeBaseAPI {
         if (newName != null && !newName.equals(oldName)) {
             setInstanceName(ec2, vmId, newName);
         }
+        createTags(details, accessKey, secretKey, vmId, parameters, ec2);
+
         String oldHostedZone = getAWSHostedZone(route53, instance.getPrivateIpAddress(), oldName);
         String newHostedZone = parameters.get(Parameter.hosted_zone.name());
         if (!StringUtils.equals(oldName, newName) ||
@@ -354,7 +404,6 @@ public class AWSNodeAPI implements NodeBaseAPI {
                     "wait for instance " + vmId + " to become ready."
             );
         }
-
         return details.status(ExecutionDetails.StatusEnum.OK);
     }
 
@@ -537,27 +586,6 @@ public class AWSNodeAPI implements NodeBaseAPI {
             NodeUtil.logInfo(details, firewallUpdate.getDelete().toString());
         }
         return details.status(ExecutionDetails.StatusEnum.OK);
-    }
-
-    private void createTags(String accessKey, String secretKey, String instanceId, String name, AmazonEC2 ec2) {
-        // TODO generic tags support
-        String userId;
-        try {
-            userId = AWS.identityManagementClient(accessKey, secretKey).getUser().getUser().getUserId();
-        } catch (AmazonServiceException e) {
-            userId = e.getErrorMessage().replaceAll("^[^/]*/", "").replaceAll(" is not authorized .*", "");
-        }
-        ArrayList<Tag> tags = new ArrayList<>();
-        tags.add(new Tag(TAG_NAME, name));
-        tags.add(new Tag("Creator", userId));
-        tags.add(new Tag("Group", "rfng"));
-        tags.add(new Tag("Cost Center", "521633"));
-        CreateTagsRequest createTagsRequest = new CreateTagsRequest()
-                .withResources(instanceId)
-                .withTags(tags);
-
-        log.info("Updating tags of AWS instance " + name);
-        ec2.createTags(createTagsRequest);
     }
 
     private String getSecurityGroup(AmazonEC2 ec2, String nodeInternalId) {
