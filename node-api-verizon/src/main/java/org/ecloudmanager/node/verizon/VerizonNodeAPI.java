@@ -524,7 +524,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
     }
 
     @Override
-    public ExecutionDetails updateNode(Credentials credentials, String nodeId, Map<String, String> parameters) throws Exception {
+    public ExecutionDetails configureNode(Credentials credentials, String nodeId, Map<String, String> parameters) throws Exception {
         ExecutionDetails details = new ExecutionDetails();
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
@@ -744,9 +744,9 @@ public class VerizonNodeAPI implements NodeBaseAPI {
 
         private NodeParameter nodeParameter;
 
-        Parameter(String description, boolean create, boolean update, boolean required, String defaultValue, boolean canSuggest, boolean strictSuggest, Parameter... args) {
+        Parameter(String description, boolean create, boolean configure, boolean required, String defaultValue, boolean canSuggest, boolean strictSuggest, Parameter... args) {
             List<String> argsList = Arrays.stream(args).map(Enum::name).collect(Collectors.toList());
-            nodeParameter = new NodeParameter().name(name()).description(description).create(create).update(update)
+            nodeParameter = new NodeParameter().name(name()).description(description).create(create).configure(configure)
                     .required(required).defaultValue(defaultValue)
                     .canSuggest(canSuggest).strictSuggest(strictSuggest).args(argsList);
         }

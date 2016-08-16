@@ -52,9 +52,9 @@ public class RestNodeAPI implements org.ecloudmanager.node.NodeAPI {
     }
 
     @Override
-    public ExecutionDetails updateNode(Credentials credentials, String nodeId, Map<String, String> parameters) throws Exception {
+    public ExecutionDetails configureNode(Credentials credentials, String nodeId, Map<String, String> parameters) throws Exception {
         SecretKey sk = (SecretKey) credentials;
-        return nodeApi.updateNode(sk.getName(), sk.getSecret(), nodeId, new Node().parameters(parameters));
+        return nodeApi.configureNode(sk.getName(), sk.getSecret(), nodeId, new Node().parameters(parameters));
     }
 
     @Override

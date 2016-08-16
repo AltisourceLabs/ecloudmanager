@@ -101,17 +101,7 @@
             description: Invalid ID
           404:
             description: Task not found
-# {
-#  "parameters": {
-#        "name":"dp-agent",
-#        "region":"us-east-1",
-#        "subnet":"subnet-e2c17e95",
-#        "storage":"20",
-#        "image":"ami-c2a818aa",
-#        "instance_type":"t2.micro",
-#        "keypair":"root"
-#}
-#}
+
     /nodeParameters:
       get:
         tags:
@@ -252,8 +242,8 @@
       put:
         tags:
         - node
-        summary: Update node
-        operationId: updateNode
+        summary: Configure node
+        operationId: configureNode
         produces:
          
         - application/json
@@ -557,7 +547,7 @@
           type: boolean
         create:
           type: boolean
-        update:
+        configure:
           type: boolean
         defaultValue:
           type: string

@@ -29,7 +29,7 @@ public interface NodeBaseAPI {
     /**
      * @return Updates node with parameter values specified in 'node'
      */
-    ExecutionDetails updateNode(Credentials credentials, String nodeId, Map<String, String> parameters) throws Exception;
+    ExecutionDetails configureNode(Credentials credentials, String nodeId, Map<String, String> parameters) throws Exception;
 
     /**
      * Delete node

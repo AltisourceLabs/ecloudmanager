@@ -80,7 +80,7 @@ public class VmActions {
                         return details;
                     }
                 }, vmDeployment),
-                Action.single("Configure VM", () -> nodeAPIProvider.getAPI(apiId).updateNode(nodeAPIProvider.getCredentials(apiId), InfrastructureDeployer.getVmId(vmDeployment), parameters), vmDeployment),
+                Action.single("Configure VM", () -> nodeAPIProvider.getAPI(apiId).configureNode(nodeAPIProvider.getCredentials(apiId), InfrastructureDeployer.getVmId(vmDeployment), parameters), vmDeployment),
                 Action.single("Waiting", () -> {
                     try {
                         NodeInfo info = NodeUtil.wait(nodeAPIProvider.getAPI(apiId), nodeAPIProvider.getCredentials(apiId), InfrastructureDeployer.getVmId(vmDeployment));
