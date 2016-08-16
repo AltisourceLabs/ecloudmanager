@@ -30,8 +30,12 @@ import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.deployment.GatewayRepository;
 import org.ecloudmanager.repository.template.VirtualMachineTemplateRepository;
+import org.ecloudmanager.service.NodeAPIProvider;
 import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
 import org.ecloudmanager.service.deployment.GatewayService;
+import org.primefaces.model.menu.DefaultMenuItem;
+import org.primefaces.model.menu.DefaultMenuModel;
+import org.primefaces.model.menu.MenuModel;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -49,14 +53,25 @@ public class GatewaysController extends FacesSupport implements Serializable {
     private transient GatewayRepository gatewayRepository;
     @Inject
     private transient VirtualMachineTemplateRepository virtualMachineTemplateRepository;
+    @Inject
+    private transient NodeAPIProvider nodeAPIProvider;
 
     private List<GatewayDeployment> gatewayDeployments;
 
     private String newGatewayName;
     private VirtualMachineTemplate newGatewayVmTemplate;
+    private MenuModel nodeAPIMenuModel;
 
     @PostConstruct
     private void init() {
+        nodeAPIMenuModel = new DefaultMenuModel();
+        nodeAPIProvider.getAPIs().forEach(a -> {
+                    DefaultMenuItem item = new DefaultMenuItem(a);
+                    item.setCommand("#{gatewaysController.goToDeployment('" + a + "')}");
+                    item.setIcon("ui-icon-circle-triangle-e");
+                    nodeAPIMenuModel.addElement(item);
+                }
+        );
         refresh();
     }
 
@@ -115,5 +130,10 @@ public class GatewaysController extends FacesSupport implements Serializable {
                "&vmTemplate=" + newGatewayVmTemplate.getId().toString() +
                "&infrastructure=" + infrastructure;
     }
+
+    public MenuModel getNodeAPIMenuModel() {
+        return nodeAPIMenuModel;
+    }
+
 }
 

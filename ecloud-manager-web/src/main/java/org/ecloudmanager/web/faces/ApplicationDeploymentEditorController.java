@@ -61,10 +61,6 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
         dialogs.put(ExternalServiceDeployment.class, ExternalServiceDeploymentController.DIALOG_EDIT);
         dialogs.put(VMDeployment.class, TopLevelVMDeploymentController.DIALOG_EDIT);
     }
-
-    @Inject
-    private NodeAPIProvider nodeAPIProvider;
-
     private boolean newChild = false;
     private boolean newTemplate = false;
     private String publicEndpointToAdd;
@@ -78,14 +74,17 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
     private transient ApplicationDeploymentRepository applicationDeploymentRepository;
     @Inject
     private transient ApplicationDeploymentService applicationDeploymentService;
+    @Inject
+    private transient NodeAPIProvider nodeAPIProvider;
 
     public ApplicationDeployment getDeployment() {
         return deployment;
     }
 
     public List<String> getNodeApiIds() {
-        return NodeAPIProvider.getAPIs();
+        return nodeAPIProvider.getAPIs();
     }
+
     @PostConstruct
     public void init() {
         if (deployment == null) {
