@@ -1,7 +1,7 @@
 /*
- * MIT License
+ * The MIT License (MIT)
  *
- * Copyright (c) 2016  Altisource
+ * Copyright (c) 2016 Altisource Labs
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,13 +22,40 @@
  * SOFTWARE.
  */
 
-package org.ecloudmanager.web.faces.convert;
+package org.ecloudmanager.deployment.core;
 
-import org.ecloudmanager.deployment.app.ApplicationTemplate;
-import org.ecloudmanager.jeecore.web.faces.convert.MongoEntityConverter;
+import org.ecloudmanager.jeecore.domain.MongoObject;
 
-import javax.faces.convert.FacesConverter;
+public class ObjectRef {
+    private DeploymentObject owner;
+    private MongoObject object;
 
-@FacesConverter("applicationTemplateConverter")
-public class ApplicationTemplateConverter extends MongoEntityConverter<ApplicationTemplate> {
+    public ObjectRef(DeploymentObject owner, MongoObject object) {
+        this.owner = owner;
+        this.object = object;
+    }
+
+    public ObjectRef(DeploymentObject object) {
+        this(object, object);
+    }
+
+    public DeploymentObject getDeployment() {
+        return owner == null ? null : owner.getTop();
+    }
+
+    public String getPath() {
+        return owner == null ? "" : owner.getPath(":");
+    }
+
+    public MongoObject getObject() {
+        return object;
+    }
+
+    public String getId() {
+        if (owner != null) {
+            return owner.getTop().getId() + ":" + owner.getPath(":");
+        } else {
+            return object.getId().toString();
+        }
+    }
 }

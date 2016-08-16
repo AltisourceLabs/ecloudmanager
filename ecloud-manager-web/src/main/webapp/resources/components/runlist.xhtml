@@ -47,8 +47,8 @@
         <f:facet name="header">
             <h:outputText value="#{cc.attrs.title}"/>
         </f:facet>
-        <p:column id="column_recipe_id" headerText="Id">
-            <h:outputText value="#{recipe.id}"/>
+        <p:column id="column_recipe_id" headerText="Name">
+            <h:outputText value="#{recipe.name}"/>
         </p:column>
         <p:column id="column_recipe_action" width="30">
             <p:commandButton id="delete_recipe" title="Delete" icon="ui-icon-close"

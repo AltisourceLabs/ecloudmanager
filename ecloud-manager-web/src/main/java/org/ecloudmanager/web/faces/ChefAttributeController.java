@@ -25,22 +25,34 @@
 package org.ecloudmanager.web.faces;
 
 import org.ecloudmanager.deployment.vm.provisioning.ChefAttribute;
+import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
+import org.omnifaces.cdi.Param;
 import org.primefaces.context.RequestContext;
 import org.primefaces.event.CloseEvent;
 
-import javax.faces.bean.ManagedBean;
-import javax.faces.bean.SessionScoped;
+import javax.annotation.PostConstruct;
+import javax.faces.context.FacesContext;
+import javax.inject.Inject;
 import java.io.Serializable;
 
-@SessionScoped
-@ManagedBean
+@Controller
 public class ChefAttributeController extends FacesSupport implements Serializable {
     private static final String ENV_DEFAULT = "Default";
     private static final String ENV_OVERRIDE = "Override";
     private static final String ENV_NO = "No";
 
+    @SuppressWarnings("CdiInjectionPointsInspection")
+    @Inject
+    @Param
+    private String valueParamId;
+
     private ChefAttribute value;
+
+    @PostConstruct
+    public void init() {
+        value = (ChefAttribute) FacesContext.getCurrentInstance().getExternalContext().getSessionMap().remove(valueParamId);
+    }
 
     public ChefAttribute getValue() {
         return value;

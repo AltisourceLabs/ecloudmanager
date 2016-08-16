@@ -24,7 +24,9 @@
 
 package org.ecloudmanager.deployment.core;
 
-public class ConstraintValue {
+import org.ecloudmanager.jeecore.domain.DefaultDomainObject;
+
+public class ConstraintValue extends DefaultDomainObject {
     private String value;
     private String reference;
 

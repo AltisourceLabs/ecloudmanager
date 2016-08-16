@@ -25,11 +25,12 @@
 package org.ecloudmanager.deployment.ps.cg;
 
 import org.ecloudmanager.deployment.ps.HAProxyMode;
+import org.ecloudmanager.jeecore.domain.DefaultDomainObject;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class HAProxyBackendConfig {
+public class HAProxyBackendConfig extends DefaultDomainObject {
 
     private String name;
 

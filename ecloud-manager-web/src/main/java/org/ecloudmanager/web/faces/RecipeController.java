@@ -25,25 +25,24 @@
 package org.ecloudmanager.web.faces;
 
 import com.rits.cloning.Cloner;
+import org.bson.types.ObjectId;
 import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.vm.provisioning.ChefAttribute;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
+import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.template.RecipeRepository;
 import org.ecloudmanager.service.template.RecipeService;
+import org.jetbrains.annotations.NotNull;
 import org.primefaces.context.RequestContext;
 import org.primefaces.event.SelectEvent;
 
-import javax.faces.bean.ManagedBean;
-import javax.faces.bean.ManagedProperty;
-import javax.faces.bean.SessionScoped;
+import javax.faces.context.FacesContext;
 import javax.inject.Inject;
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
-@SessionScoped
-@ManagedBean
+@Controller
 public class RecipeController extends FacesSupport implements Serializable {
     private static final long serialVersionUID = -7592006943742318320L;
     private static Map<String, Object> options = new HashMap<>();
@@ -66,21 +65,7 @@ public class RecipeController extends FacesSupport implements Serializable {
     private transient RecipeService recipeService;
     @Inject
     private transient Cloner cloner;
-    @ManagedProperty(value = "#{endpointController}")
-    private EndpointController endpointController;
-    @ManagedProperty(value = "#{chefAttributeController}")
-    private ChefAttributeController chefAttributeController;
     private boolean changed = false;
-
-    @SuppressWarnings("unused") // required for JSF DI
-    public void setEndpointController(EndpointController endpointController) {
-        this.endpointController = endpointController;
-    }
-
-    @SuppressWarnings("unused") // required for JSF DI
-    public void setChefAttributeController(ChefAttributeController chefAttributeController) {
-        this.chefAttributeController = chefAttributeController;
-    }
 
     public Recipe getValue() {
         return value;
@@ -105,23 +90,37 @@ public class RecipeController extends FacesSupport implements Serializable {
             return null;
         }
         Recipe r = cloner.deepClone(value);
-        r.setId(r.getId() + "[1]"); //FIXME
+        r.setId(new ObjectId());
         value = r;
         return r;
     }
 
-    public void startEditChefAttribute(ChefAttribute entity) {
-        chefAttributeController.setValue(entity);
-        RequestContext.getCurrentInstance().openDialog("editChefAttribute", options, null);
+    public void startImportRecipe() {
+        RequestContext.getCurrentInstance().openDialog("importRecipe", options, null);
     }
+
+    @NotNull
+    private Map<String, List<String>> storeToSessionMapAndGetParamsMapWithId(Object entity) {
+        Map<String, List<String>> params = new HashMap<>();
+        String valueParamId = UUID.randomUUID().toString();
+        params.put("valueParamId", Collections.singletonList(valueParamId));
+        FacesContext.getCurrentInstance().getExternalContext().getSessionMap().put(valueParamId, entity);
+        return params;
+    }
+
+    public void startEditChefAttribute(ChefAttribute entity) {
+        Map<String, List<String>> params = storeToSessionMapAndGetParamsMapWithId(entity);
+        RequestContext.getCurrentInstance().openDialog("editChefAttribute", options, params);
+    }
+
 
     public void addNewEndpoint() {
         startEditEndpoint(new Endpoint());
     }
 
     public void startEditEndpoint(Endpoint entity) {
-        endpointController.setValue(entity);
-        RequestContext.getCurrentInstance().openDialog("editRecipeEndpoint", options, null);
+        Map<String, List<String>> params = storeToSessionMapAndGetParamsMapWithId(entity);
+        RequestContext.getCurrentInstance().openDialog("editRecipeEndpoint", options, params);
     }
 
     public void deleteEndpoint(Endpoint endpoint) {

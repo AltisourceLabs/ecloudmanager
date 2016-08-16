@@ -37,7 +37,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.mongodb.morphia.annotations.Transient;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -50,8 +49,6 @@ public class ComponentGroupDeployment extends Deployable {
     private HAProxyBackendConfig haProxyBackendConfig = new HAProxyBackendConfig();
     @Transient
     private Deployer deployer;
-
-    private VirtualMachineTemplate virtualMachineTemplate;
 
     public ComponentGroupDeployment() {
         setId(new ObjectId());
@@ -66,11 +63,17 @@ public class ComponentGroupDeployment extends Deployable {
     }
 
     public VirtualMachineTemplate getVirtualMachineTemplate() {
-        return virtualMachineTemplate;
+        List<VirtualMachineTemplate> virtualMachineTemplates = children(VirtualMachineTemplate.class);
+        if (virtualMachineTemplates.size() == 0) {
+            addChild(new VirtualMachineTemplate());
+        }
+
+        return children(VirtualMachineTemplate.class).get(0);
     }
 
     public void setVirtualMachineTemplate(VirtualMachineTemplate virtualMachineTemplate) {
-        this.virtualMachineTemplate = virtualMachineTemplate;
+        children().remove(getVirtualMachineTemplate());
+        addChild(virtualMachineTemplate);
     }
 
     @NotNull
@@ -101,7 +104,7 @@ public class ComponentGroupDeployment extends Deployable {
     }
 
     public void addVm() {
-        VMDeployment vmDeployment = virtualMachineTemplate.toDeployment();
+        VMDeployment vmDeployment = getVirtualMachineTemplate().toDeployment();
         vmDeployment.setName(generateNextVmName());
         addChild(vmDeployment);
     }
@@ -155,9 +158,6 @@ public class ComponentGroupDeployment extends Deployable {
 
     @Override
     public List<String> getRequiredEndpoints() {
-        if (virtualMachineTemplate == null) {
-            return Collections.emptyList();
-        }
-        return virtualMachineTemplate.getRequiredEndpoints();
+        return getVirtualMachineTemplate().getRequiredEndpoints();
     }
 }

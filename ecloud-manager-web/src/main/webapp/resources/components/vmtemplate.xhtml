@@ -35,33 +35,41 @@
 
 <!-- INTERFACE -->
 <composite:interface>
-    <composite:attribute name="value" required="true"
-                         type="org.ecloudmanager.deployment.vm.VirtualMachineTemplate"/>
+    <composite:attribute name="owner" required="true"
+                         type="org.ecloudmanager.deployment.core.Deployable"/>
 </composite:interface>
 
 <!-- IMPLEMENTATION -->
 <composite:implementation>
+    <p:commandButton value="&nbsp;Import Settings..."
+                     icon="fa fa-cart-arrow-down fa-lg"
+                     action="#{vmTemplateController.startImportVmTemplate()}"
+    >
+        <p:ajax event="dialogReturn" listener="#{vmTemplateController.onImportVmTemplateReturn}"
+                update="@form"/>
+    </p:commandButton>
     <p:panelGrid id="panelgrid_edit" columns="2" style="margin-bottom:10px" styleClass="ui-panelgrid-blank"
-                 cellpadding="5">
+                 cellpadding="5" columnClasses="colLabel, colValue">
 
-        <p>Name: <p:inputText id="input_name" value="#{cc.attrs.value.name}"/></p>
+        <p>Name: <p:inputText id="input_name" value="#{vmTemplateController.value.name}"/></p>
 
-        <p>Description: <p:inputTextarea id="input_description" value="#{cc.attrs.value.description}"/></p>
+        <p>Description: <p:inputTextarea id="input_description" value="#{vmTemplateController.value.description}"/></p>
 
-        <p>vCPUs: <p:inputText id="input_cpu" value="#{cc.attrs.value.processorCount}"/></p>
+        <p>vCPUs: <p:inputText id="input_cpu" value="#{vmTemplateController.value.processorCount}"/></p>
 
         <p>Memory (MB): <p:inputText id="input_memory"
-                                     value="#{cc.attrs.value.memory}"/></p>
+                                     value="#{vmTemplateController.value.memory}"/></p>
 
         <p>Storage (GB): <p:inputText id="input_storage"
-                                      value="#{cc.attrs.value.storage}"/>
+                                      value="#{vmTemplateController.value.storage}"/>
         </p>
     </p:panelGrid>
-    <p:dataTable var="recipe" value="#{cc.attrs.value.runlist}"
+    <p:dataTable var="recipe" value="#{vmTemplateController.value.runlist}"
                  draggableRows="true" id="recipes">
         <f:facet name="header">Chef run list</f:facet>
-        <p:column id="column_recipe_id" headerText="Id">
-            <h:outputText value="#{recipe.id}"/>
+        <p:ajax event="rowReorder" listener="#{vmTemplateController.onRowReorder}"/>
+        <p:column id="column_recipe_id" headerText="Recipe Name">
+            <h:outputText value="#{recipe.name}"/>
         </p:column>
         <p:column id="column_recipe_action" width="30">
             <p:commandButton id="delete_recipe" title="Delete" icon="ui-icon-close"
@@ -70,17 +78,17 @@
         </p:column>
     </p:dataTable>
 
-    <p:panelGrid id="panelgrid_add_recipe" columns="2" style="margin-bottom:10px" styleClass="ui-panelgrid-blank"
-                 cellpadding="5">
-        <p:selectOneMenu id="addRecipe" value="#{vmTemplateController.recipeToAdd}"
-                         converter="recipeConverter">
-            <f:selectItem itemLabel="Select recipe to add" itemValue=""/>
-            <f:selectItems value="#{vmTemplateController.recipes}"/>
-        </p:selectOneMenu>
-        <p:commandButton id="add_recipe" value="Add"
-                         update="recipes, addRecipe, :templates_form:messages"
-                         action="#{vmTemplateController.addRecipe}"/>
-    </p:panelGrid>
+    <p:selectOneMenu id="addRecipe" value="#{vmTemplateController.recipeToAdd}"
+                     converter="recipeConverter" styleClass="comboAndButton">
+        <f:selectItem itemLabel="Select recipe to add" itemValue=""/>
+        <f:selectItems value="#{vmTemplateController.getRecipes(cc.attrs.owner)}"/>
+    </p:selectOneMenu>
+    <p:commandButton id="add_recipe" value="Add"
+                     styleClass="comboAndButton"
+                     update="recipes, addRecipe, vmTemplateMessages"
+                     action="#{vmTemplateController.addRecipe}"/>
+
+    <p:growl id="vmTemplateMessages" sticky="true" showDetail="true"/>
 
 </composite:implementation>
 </html>

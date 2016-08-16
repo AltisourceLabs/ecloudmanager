@@ -35,7 +35,6 @@ import org.ecloudmanager.service.execution.Action;
 import org.jetbrains.annotations.NotNull;
 
 import javax.enterprise.inject.spi.CDI;
-import java.util.ArrayList;
 import java.util.List;
 
 public class ChefProvisioningDeployer implements Deployer<VMDeployment> {
@@ -99,7 +98,7 @@ public class ChefProvisioningDeployer implements Deployer<VMDeployment> {
     }
 
     private static String constraintDescription(Recipe r, ChefAttribute a) {
-        return "Recipe: " + r.getId() + " Chef Attribute: " + a.getName();
+        return "Recipe: " + r.getName() + " Chef Attribute: " + a.getName();
     }
 
 

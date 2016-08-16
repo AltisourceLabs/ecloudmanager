@@ -24,7 +24,12 @@
 
 package org.ecloudmanager.deployment.core;
 
-public class ConstraintField {
+import org.ecloudmanager.jeecore.domain.DomainObject;
+
+import java.util.Collection;
+import java.util.Collections;
+
+public class ConstraintField extends DomainObject {
 
     private String name;
     private String description;
@@ -177,5 +182,10 @@ public class ConstraintField {
             return new ConstraintField(name, description, defaultValue, type, required, readOnly, allowReference,
                 suggestionsProvider);
         }
+    }
+
+    @Override
+    protected Collection<String> getExcludeFieldNames() {
+        return Collections.singletonList("suggestionsProvider");
     }
 }

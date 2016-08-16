@@ -47,7 +47,7 @@ public class RunlistController extends FacesSupport implements Serializable {
 
     @PostConstruct
     public void init() {
-        recipes = recipeRepository.getAll();
+        recipes = recipeRepository.getAll(null);
     }
 
     public List<Recipe> getRecipes() {

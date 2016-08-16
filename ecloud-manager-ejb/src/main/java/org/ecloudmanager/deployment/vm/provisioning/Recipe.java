@@ -24,42 +24,60 @@
 
 package org.ecloudmanager.deployment.vm.provisioning;
 
-import org.ecloudmanager.deployment.core.App;
+import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.core.Endpoint;
-import org.ecloudmanager.jeecore.domain.DomainObject;
-import org.ecloudmanager.jeecore.domain.Persistable;
+import org.ecloudmanager.jeecore.domain.MongoObject;
 import org.jetbrains.annotations.NotNull;
-import org.mongodb.morphia.annotations.Id;
 import org.mongodb.morphia.annotations.PostLoad;
-import org.mongodb.morphia.annotations.PostPersist;
+import org.mongodb.morphia.annotations.PrePersist;
 import org.mongodb.morphia.annotations.Transient;
 
 import java.util.*;
 
-public class Recipe extends DomainObject implements App, Persistable<String> {
+public class Recipe extends MongoObject {
     private static final long serialVersionUID = -3878655521051524483L;
     List<ChefAttribute> attributes = new ArrayList<>();
-    @Id
-    private String id;
+    private String name;
+    private String runlistItem;
     private String description;
     private String version = "= 0.1.0";
-    @Transient
-    private String oldId = null;
     private List<Endpoint> endpoints = new ArrayList<>();
+
+    @Transient
+    private transient boolean isNew = true;
+    @Transient
+    private transient ApplicationDeployment owner;
 
     public Recipe() {
     }
 
-    public Recipe(String id) {
-        this.id = id;
+    public Recipe(String name) {
+        this.name = name;
+        runlistItem = name;
     }
 
-    public static void createRecipes() {
-
+    public String getName() {
+        return name;
     }
 
-    public String getOldId() {
-        return oldId;
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public ApplicationDeployment getOwner() {
+        return owner;
+    }
+
+    public void setOwner(ApplicationDeployment owner) {
+        this.owner = owner;
+    }
+
+    public String getRunlistItem() {
+        return runlistItem;
+    }
+
+    public void setRunlistItem(String runlistItem) {
+        this.runlistItem = runlistItem;
     }
 
     public List<ChefAttribute> getAttributes() {
@@ -82,19 +100,6 @@ public class Recipe extends DomainObject implements App, Persistable<String> {
         attributes.add(new ChefAttribute(id, value));
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    @Override
-    public boolean isNew() {
-        return oldId == null;
-    }
-
     @NotNull
     public List<Endpoint> getEndpoints() {
         return endpoints;
@@ -105,13 +110,12 @@ public class Recipe extends DomainObject implements App, Persistable<String> {
     }
 
     public String getCookbookName() {
-        int pos = id.indexOf("::");
+        int pos = runlistItem.indexOf("::");
 
-        return pos == -1 ? id : id.substring(0, pos);
+        return pos == -1 ? runlistItem : runlistItem.substring(0, pos);
     }
 
     @NotNull
-    @Override
     public List<String> getRequiredEndpoints() {
         List<String> constraints = getConstraintNames();
         Set<String> result = new TreeSet<>();
@@ -142,17 +146,11 @@ public class Recipe extends DomainObject implements App, Persistable<String> {
 
     @Override
     protected Collection<String> getExcludeFieldNames() {
-        return Arrays.asList("attributes", "endpoints", "oldId");
-    }
-
-    @PostLoad
-    @PostPersist
-    void saveOldId() {
-        oldId = id;
+        return Arrays.asList("attributes", "endpoints", "isNew");
     }
 
     public String toString() {
-        return id;
+        return name;
     }
 
     public List<String> getConstraintNames() {
@@ -163,4 +161,14 @@ public class Recipe extends DomainObject implements App, Persistable<String> {
         return new ArrayList<>(result);
     }
 
+    @PostLoad
+    @PrePersist
+    private void markAsNotNew() {
+        isNew = false;
+    }
+
+    @Override
+    public boolean isNew() {
+        return isNew;
+    }
 }

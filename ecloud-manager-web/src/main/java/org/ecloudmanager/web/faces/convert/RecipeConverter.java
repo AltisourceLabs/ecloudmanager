@@ -24,11 +24,65 @@
 
 package org.ecloudmanager.web.faces.convert;
 
+import org.bson.types.ObjectId;
+import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
-import org.ecloudmanager.jeecore.web.faces.convert.PersistableEntityConverter;
+import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
+import org.ecloudmanager.repository.template.RecipeRepository;
 
+import javax.faces.application.FacesMessage;
+import javax.faces.component.UIComponent;
+import javax.faces.context.FacesContext;
+import javax.faces.convert.Converter;
+import javax.faces.convert.ConverterException;
 import javax.faces.convert.FacesConverter;
+import javax.inject.Inject;
 
-@FacesConverter("recipeConverter")
-public class RecipeConverter extends PersistableEntityConverter<Recipe> {
+@FacesConverter(value = "recipeConverter", forClass = Recipe.class)
+public class RecipeConverter implements Converter {
+    @Inject
+    private transient RecipeRepository recipeRepository;
+    @Inject
+    private transient ApplicationDeploymentRepository applicationDeploymentRepository;
+
+    @Override
+    public Recipe getAsObject(FacesContext context, UIComponent component, String value) {
+        if (value == null || value.isEmpty()) {
+            return null;
+        }
+        try {
+            Recipe result;
+
+            if (value.contains(":")) {
+                String[] split = value.split(":");
+                ObjectId recipeId = new ObjectId(split[0]);
+                String deploymentId = split[1];
+                ApplicationDeployment deployment = applicationDeploymentRepository.get(deploymentId);
+                result = recipeRepository.get(recipeId, deployment);
+            } else {
+                result = recipeRepository.get(new ObjectId(value));
+            }
+
+            if (result == null) {
+                throw new ConverterException(new FacesMessage("Recipe with id " + value +
+                                                              " not found"));
+            }
+            return result;
+        } catch (IllegalArgumentException ex) {
+            throw new ConverterException(new FacesMessage("Invalid id format :" + value, ex.getMessage()));
+        }
+    }
+
+    @Override
+    public String getAsString(FacesContext context, UIComponent component, Object value) {
+        if (value instanceof Recipe) {
+            Recipe recipe = Recipe.class.cast(value);
+            StringBuilder result = new StringBuilder(recipe.getId().toString());
+            if (recipe.getOwner() != null) {
+                result.append(":").append(recipe.getOwner().getId());
+            }
+            return result.toString();
+        }
+        return "";
+    }
 }

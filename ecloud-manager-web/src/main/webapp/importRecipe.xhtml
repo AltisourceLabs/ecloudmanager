@@ -1,0 +1,74 @@
+<!--
+  ~ The MIT License (MIT)
+  ~
+  ~ Copyright (c) 2016 Altisource Labs
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://java.sun.com/jsf/html"
+      xmlns:p="http://primefaces.org/ui">
+
+<h:head>
+    <title>Import existing recipe(s)</title>
+    <h:outputStylesheet name="css/screen.css" />
+</h:head>
+
+<h:body>
+    <h:form>
+        <p:outputPanel>
+            <p:dataTable value="#{importRecipeController.recipes}"
+                         var="recipe"
+                         selection="#{importRecipeController.selectedRecipes}"
+                         selectionMode="multiple"
+                         rowKey="#{recipe.id}"
+                         rows="10"
+                         paginator="true"
+                         sortBy="#{recipe.owner ne null ? recipe.owner.name : '-'}"
+            >
+                <p:column headerText="Deployment Name"
+                          filterBy="#{recipe.owner ne null ? recipe.owner.name : '-'}"
+                          filterMatchMode="startsWith"
+                          sortBy="#{recipe.owner ne null ? recipe.owner.name : '-'}"
+                >
+                    <h:outputText value="#{recipe.owner ne null ? recipe.owner.name : '-'}"/>
+                </p:column>
+                <p:column headerText="Recipe Name"
+                          filterBy="#{recipe.name}"
+                          filterMatchMode="contains"
+                          sortBy="#{recipe.name}"
+                >
+                    <h:outputText value="#{recipe.name}"/>
+                </p:column>
+            </p:dataTable>
+        </p:outputPanel>
+        <p:panelGrid columns="2" cellpadding="5" styleClass="ui-panelgrid-blank">
+            <p:commandButton value="Import"
+                             actionListener="#{importRecipeController.save()}"/>
+            <p:commandButton value="Cancel" immediate="true"
+                             actionListener="#{importRecipeController.cancel()}"/>
+        </p:panelGrid>
+    </h:form>
+</h:body>
+
+</html>

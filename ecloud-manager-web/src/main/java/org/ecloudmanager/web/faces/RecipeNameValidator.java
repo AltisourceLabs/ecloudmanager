@@ -24,6 +24,9 @@
 
 package org.ecloudmanager.web.faces;
 
+import org.apache.deltaspike.core.util.StringUtils;
+import org.bson.types.ObjectId;
+import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.repository.template.RecipeRepository;
 
@@ -35,27 +38,26 @@ import javax.faces.validator.Validator;
 import javax.faces.validator.ValidatorException;
 import javax.inject.Inject;
 
-@FacesValidator("recipeIdValidator")
-public class RecipeIdValidator implements Validator {
+@FacesValidator("recipeNameValidator")
+public class RecipeNameValidator implements Validator {
     @Inject
     private transient RecipeRepository recipeRepository;
 
     @Override
     public void validate(FacesContext context, UIComponent component, Object value) throws ValidatorException {
-        String oldId = (String) component.getAttributes().get("oldId");
+        ApplicationDeployment deployment = (ApplicationDeployment) component.getAttributes().get("owner");
+        ObjectId recipeId = (ObjectId) component.getAttributes().get("recipeId");
 
-        String newId = (String) value;
-        if (oldId != null && oldId.equals(newId)) {
-            return;
+        String newName = (String) value;
+
+        if (StringUtils.isEmpty(newName)) {
+            throw new ValidatorException(new FacesMessage(FacesMessage.SEVERITY_ERROR, "Name should not be empty.", "Please enter a valid name"));
         }
-        if (RecipesController.NEW_RECIPE_ID.equals(newId)) {
-            throw new ValidatorException(new FacesMessage(FacesMessage.SEVERITY_ERROR, "Invalid Id: " + newId,
-                "Please enter valid Id"));
-        }
-        Recipe fromDB = recipeRepository.get(newId);
-        if (fromDB != null) {
-            throw new ValidatorException(new FacesMessage(FacesMessage.SEVERITY_ERROR, "Recipe " + newId + " already " +
-                "exist", "Please enter unique Id"));
+
+        Recipe recipe = recipeRepository.findByName(newName, deployment);
+        boolean duplicateName = recipe != null && !recipe.getId().equals(recipeId);
+        if (duplicateName) {
+            throw new ValidatorException(new FacesMessage(FacesMessage.SEVERITY_ERROR, "Recipe " + newName + " already exist", "Please enter unique name"));
         }
     }
 }

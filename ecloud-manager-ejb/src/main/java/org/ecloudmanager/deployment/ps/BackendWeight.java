@@ -24,9 +24,11 @@
 
 package org.ecloudmanager.deployment.ps;
 
-public class BackendWeight {
-    String backendName;
-    int weight = 0;
+import org.ecloudmanager.jeecore.domain.DefaultDomainObject;
+
+public class BackendWeight extends DefaultDomainObject {
+    private String backendName;
+    private int weight = 0;
 
     BackendWeight() {}
 

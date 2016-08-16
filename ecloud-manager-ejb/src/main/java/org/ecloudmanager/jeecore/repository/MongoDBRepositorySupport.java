@@ -82,19 +82,19 @@ public class MongoDBRepositorySupport<T> {
     }
 
     public void update(T entity) {
-        datastore.save(entity);
+        save(entity);
     }
 
     public void updateAll(Collection<T> entities) {
-        datastore.save(entities);
+        saveAll(entities);
     }
 
     public void saveOrUpdate(T entity) {
-        datastore.save(entity);
+        save(entity);
     }
 
     public void saveOrUpdateAll(Collection<T> entities) {
-        datastore.save(entities);
+        saveAll(entities);
     }
 
     public void delete(T entity) {

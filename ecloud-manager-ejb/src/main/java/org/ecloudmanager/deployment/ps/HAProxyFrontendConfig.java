@@ -24,12 +24,13 @@
 
 package org.ecloudmanager.deployment.ps;
 
+import org.ecloudmanager.jeecore.domain.DefaultDomainObject;
 import org.ecloudmanager.service.deployment.geolite.GeolocationRule;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class HAProxyFrontendConfig {
+public class HAProxyFrontendConfig extends DefaultDomainObject {
 
     private String name;
 

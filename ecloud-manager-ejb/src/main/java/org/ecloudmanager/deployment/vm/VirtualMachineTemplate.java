@@ -25,33 +25,31 @@
 package org.ecloudmanager.deployment.vm;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.bson.types.ObjectId;
+import org.ecloudmanager.deployment.app.ApplicationDeployment;
+import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.core.Template;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
-import org.ecloudmanager.jeecore.domain.MongoObject;
+import org.ecloudmanager.repository.template.RecipeRepository;
 import org.ecloudmanager.util.ClonerProducer;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.mongodb.morphia.annotations.Embedded;
-import org.mongodb.morphia.annotations.Entity;
 
+import javax.enterprise.inject.spi.CDI;
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Entity(noClassnameStored = true)
 @JsonIgnoreProperties({"version", "new"})
-public class VirtualMachineTemplate extends MongoObject implements Serializable, Template<VMDeployment> {
+public class VirtualMachineTemplate extends DeploymentObject implements Serializable, Template<VMDeployment> {
 
     private static final long serialVersionUID = 8513536191362885293L;
     //    Map<String, App> dependencies = new HashMap<>();
-    private String name;
-    private String description;
     private int processorCount = 1;
     private int memory = 1;
     private int storage = 20;
-    @Embedded
-    private List<Recipe> runlist = new LinkedList<>();
+
+    private List<ObjectId> runlist = new LinkedList<>();
 
     public VirtualMachineTemplate() {
     }
@@ -83,24 +81,6 @@ public class VirtualMachineTemplate extends MongoObject implements Serializable,
         this.memory = memory;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    @Nullable
-    @Override
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
     public int getStorage() {
         return storage;
     }
@@ -111,24 +91,32 @@ public class VirtualMachineTemplate extends MongoObject implements Serializable,
 
     @NotNull
     public List<Recipe> getRunlist() {
-        return runlist;
+        RecipeRepository recipeRepository = CDI.current().select(RecipeRepository.class).get();
+        DeploymentObject top = getTop();
+        return runlist.stream()
+                .map(id -> recipeRepository.get(id, top instanceof ApplicationDeployment ? (ApplicationDeployment) top : null))
+                .collect(Collectors.toList());
     }
 
     public void setRunlist(List<Recipe> runlist) {
         this.runlist.clear();
         if (runlist != null) {
-            this.runlist.addAll(runlist);
+            this.runlist.addAll(runlist.stream().map(Recipe::getId).collect(Collectors.toList()));
         }
     }
 
     public void addRecipe(Recipe recipe) {
-        if (!runlist.contains(recipe)) {
-            runlist.add(recipe);
+        if (!runlist.contains(recipe.getId())) {
+            runlist.add(recipe.getId());
         }
     }
 
+    public void removeRecipe(Recipe recipe) {
+        runlist.remove(recipe.getId());
+    }
+
     public String toString() {
-        return name;
+        return getName();
     }
 
 //    @Override

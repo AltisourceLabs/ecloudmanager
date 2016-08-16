@@ -68,7 +68,9 @@
                         </p:column>
 
                     </p:dataTable>
-                    <p:button outcome="editApplicationDeployment" icon="ui-icon-plus" value="New"/>
+                    <p:button outcome="editApplicationDeployment" icon="ui-icon-plus" value="New">
+                        <f:param name="createNewDeployment" value="#{true}"/>
+                    </p:button>
                     <p:growl id="messages" sticky="true" showDetail="true"/>
                 </h:form>
             </h:panelGroup>

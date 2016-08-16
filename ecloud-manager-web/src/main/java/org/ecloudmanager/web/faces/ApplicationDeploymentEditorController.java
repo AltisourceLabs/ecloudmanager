@@ -66,12 +66,15 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
     private NodeAPIProvider nodeAPIProvider;
 
     private boolean newChild = false;
-    private boolean newTemplate = false;
     private String publicEndpointToAdd;
     @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
     @Param(converter = "applicationDeploymentConverter")
     private ApplicationDeployment deployment;
+    @SuppressWarnings("CdiInjectionPointsInspection")
+    @Inject
+    @Param
+    private Boolean createNewDeployment;
     @Inject
     private Logger log;
     @Inject
@@ -88,18 +91,17 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
     }
     @PostConstruct
     public void init() {
-        if (deployment == null) {
-            newTemplate = true;
+        if (createNewDeployment != null && createNewDeployment) {
             deployment = new ApplicationDeployment();
+            deployment.setName("New Deployment");
+            applicationDeploymentService.save(deployment);
         }
     }
 
-
     public void save() {
         deployment.specifyConstraints();
-        if (newTemplate) {
+        if (deployment.isNew()) {
             applicationDeploymentService.save(deployment);
-            newTemplate = false;
         } else {
             applicationDeploymentService.update(deployment);
         }
@@ -136,6 +138,7 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
     public void newProducedService() {
         newChild = true;
         ProducedServiceDeployment producedServiceDeployment = new ProducedServiceDeployment();
+        producedServiceDeployment.setParent(deployment);
         producedServiceDeployment.children().add(new Endpoint());
         startEditChild(producedServiceDeployment);
     }
@@ -148,7 +151,9 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
 
     public void newVmRef() {
         newChild = true;
-        startEditChild(new VMDeployment());
+        VMDeployment vmDeployment = new VMDeployment();
+        vmDeployment.setParent(deployment);
+        startEditChild(vmDeployment);
     }
 
     public void cancel() {

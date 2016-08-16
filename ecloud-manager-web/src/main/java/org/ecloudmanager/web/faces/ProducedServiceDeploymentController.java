@@ -35,6 +35,7 @@ import org.omnifaces.util.Beans;
 import org.primefaces.context.RequestContext;
 import org.primefaces.event.CloseEvent;
 
+import javax.inject.Inject;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
@@ -44,6 +45,9 @@ public class ProducedServiceDeploymentController extends FacesSupport implements
     public static String DIALOG_EDIT = "dlg_edit_service";
     private ProducedServiceDeployment value;
     private boolean newChild = false;
+
+    @Inject
+    private transient VmTemplateController vmTemplateController;
 
     public ProducedServiceDeployment getValue() {
         return value;
@@ -60,6 +64,7 @@ public class ProducedServiceDeploymentController extends FacesSupport implements
     public void startEditComponentGroup(ComponentGroupDeployment componentGroupDeployment) {
         ComponentGroupDeploymentController controller = Beans.getInstance(ComponentGroupDeploymentController.class);
         controller.setValue(componentGroupDeployment);
+        vmTemplateController.setValue(componentGroupDeployment.getVirtualMachineTemplate());
         RequestContext ctx = RequestContext.getCurrentInstance();
         ctx.update(ComponentGroupDeploymentController.DIALOG_EDIT);
         ctx.execute("PF('" + ComponentGroupDeploymentController.DIALOG_EDIT + "').show()");
@@ -72,6 +77,7 @@ public class ProducedServiceDeploymentController extends FacesSupport implements
     public void newComponentGroup() {
         newChild = true;
         ComponentGroupDeployment componentGroupDeployment = new ComponentGroupDeployment();
+        componentGroupDeployment.setParent(value);
         startEditComponentGroup(componentGroupDeployment);
     }
 

@@ -24,9 +24,11 @@
 
 package org.ecloudmanager.deployment.vm.provisioning;
 
+import org.ecloudmanager.jeecore.domain.DefaultDomainObject;
+
 import java.util.List;
 
-public class ChefAttribute {
+public class ChefAttribute extends DefaultDomainObject {
     private String name;
     private String value;
     private boolean nodeAttribute = true;
