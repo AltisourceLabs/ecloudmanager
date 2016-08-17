@@ -31,7 +31,9 @@ import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.vm.provisioning.ChefAttribute;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
+import org.ecloudmanager.service.NodeAPIProvider;
 
+import javax.enterprise.inject.spi.CDI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -102,7 +104,7 @@ public class GatewayVMDeployment extends VMDeployment {
     @Override
     public List<Recipe> getRunlist() {
         List<Recipe> runlist = new ArrayList<>();
-        //List<Recipe> runlist = new ArrayList<>(getInfrastructure().getRunlistHolder().getRunlist());
+        runlist.addAll(CDI.current().select(NodeAPIProvider.class).get().getRunlist(getInfrastructure()));
         runlist.addAll(gatewayRunlist);
         return runlist;
     }
