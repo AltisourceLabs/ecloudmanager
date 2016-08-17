@@ -31,6 +31,10 @@ public class NodeUtil {
         details.setStatus(ExecutionDetails.StatusEnum.FAILED);
     }
 
+    public static void logWarn(ExecutionDetails details, String message) {
+        details.addLogItem(new LogEntry().level(LogEntry.LevelEnum.WARNING).message(message));
+    }
+
     public static void logError(ExecutionDetails details, String message, Throwable t) {
         details.setStatus(ExecutionDetails.StatusEnum.FAILED);
         details.addLogItem(new LogEntry().level(LogEntry.LevelEnum.ERROR).message(message));

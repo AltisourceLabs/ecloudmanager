@@ -24,6 +24,7 @@
 
 package org.ecloudmanager.deployment.vm;
 
+import com.google.common.collect.Lists;
 import org.apache.commons.lang3.tuple.Pair;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.DeploymentObject;
@@ -41,7 +42,7 @@ public class GatewayVMDeployment extends VMDeployment {
     public static final String ETCD_NODE = "etcd_node";
     public static final String ETCD_PATH = "etcd_path";
     private static List<Recipe> gatewayRunlist = new ArrayList<>();
-
+    private static Endpoint haproxyStats;
     static {
         Recipe selinux = new Recipe("selinux");
         selinux.setVersion("= 0.9.0");
@@ -61,7 +62,7 @@ public class GatewayVMDeployment extends VMDeployment {
                 "}");
         attribute.setEnvironmentAttribute(false);
         haproxy.addChefAttribute(attribute);
-        Endpoint haproxyStats = new Endpoint(HAPROXY_STATS);
+        haproxyStats = new Endpoint(HAPROXY_STATS);
         haproxyStats.setPort(22002);
         haproxyStats.setConstant(true);
         haproxy.addEndpoint(haproxyStats);
@@ -104,5 +105,9 @@ public class GatewayVMDeployment extends VMDeployment {
         //List<Recipe> runlist = new ArrayList<>(getInfrastructure().getRunlistHolder().getRunlist());
         runlist.addAll(gatewayRunlist);
         return runlist;
+    }
+
+    public List<Endpoint> getEndpoints() {
+        return Lists.newArrayList(haproxyStats);
     }
 }
