@@ -33,7 +33,7 @@ public class NodeAPIProvider {
     @Inject
     private VerizonConfigurationService verizonConfigurationService;
 
-    public static List<String> getAPIs() {
+    public List<String> getAPIs() {
         return new ArrayList<>(apis.keySet());
     }
 

@@ -144,7 +144,6 @@ public class AWSNodeAPI implements NodeBaseAPI {
 
     @Override
     public CreateNodeResponse createNode(Credentials credentials, Map<String, String> parameters) {
-        // TODO tags support
         ExecutionDetails details = new ExecutionDetails();
 
         String accessKey = ((SecretKey) credentials).getName();

@@ -1,6 +1,5 @@
 package org.ecloudmanager.deployment.core;
 
-import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployerImpl;
 import org.ecloudmanager.node.model.NodeParameter;
 import org.ecloudmanager.service.NodeAPIProvider;
 import org.mongodb.morphia.annotations.Transient;
@@ -26,7 +25,7 @@ public class NodeAPISuggestions implements ConstraintFieldSuggestionsProvider {
 
     @Override
     public List<ConstraintFieldSuggestion> getSuggestions(DeploymentConstraint deploymentConstraint) {
-        Map<String, String> params = InfrastructureDeployerImpl.getNodeParameters(deploymentConstraint);
+        Map<String, String> params = ((DeploymentObject) deploymentConstraint).getConfigValues();
         try {
             return nodeAPIProvider.getAPI(apiId).getNodeParameterValues(nodeAPIProvider.getCredentials(apiId), parameter.getName(), params).stream()
                     .map(p -> new ConstraintFieldSuggestion(p.getDescription(), p.getValue())).collect(Collectors.toList());

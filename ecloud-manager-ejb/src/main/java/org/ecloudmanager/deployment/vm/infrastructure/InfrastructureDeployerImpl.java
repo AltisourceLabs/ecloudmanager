@@ -24,9 +24,14 @@
 
 package org.ecloudmanager.deployment.vm.infrastructure;
 
+import com.google.common.collect.MapDifference;
+import com.google.common.collect.Maps;
 import org.ecloudmanager.actions.VmActions;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
-import org.ecloudmanager.deployment.core.*;
+import org.ecloudmanager.deployment.core.ConstraintField;
+import org.ecloudmanager.deployment.core.DeploymentConstraint;
+import org.ecloudmanager.deployment.core.DeploymentObject;
+import org.ecloudmanager.deployment.core.NodeAPISuggestions;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
 import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.node.model.NodeParameter;
@@ -35,7 +40,6 @@ import org.ecloudmanager.service.NodeAPIProvider;
 import org.ecloudmanager.service.execution.Action;
 
 import javax.enterprise.inject.spi.CDI;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -58,22 +62,9 @@ public class InfrastructureDeployerImpl extends InfrastructureDeployer {
     }
 
     public static Map<String, String> getNodeParameters(VMDeployment deployment) {
-        return getNodeParameters(InfrastructureDeployerImpl.getConfig(deployment));
+        return InfrastructureDeployerImpl.getConfig(deployment).getConfigValues();
     }
 
-    public static Map<String, String> getNodeParameters(DeploymentConstraint deploymentConstraint) {
-        Map<String, String> params = new HashMap<>();
-        deploymentConstraint.getConstraintFields().forEach(f -> {
-            ConstraintValue cv = deploymentConstraint.getValue(f.getName());
-            if (cv != null) {
-                String value = cv.getValue();
-                if (value != null) {
-                    params.put(f.getName(), value);
-                }
-            }
-        });
-        return params;
-    }
 
     @Override
     public void specifyConstraints(VMDeployment vmDeployment) {
@@ -114,7 +105,18 @@ public class InfrastructureDeployerImpl extends InfrastructureDeployer {
 
     @Override
     public boolean isRecreateActionRequired(VMDeployment before, VMDeployment after) {
-//        AWSInstanceType beforeInstanceType = AWSInstanceType.get(getAwsInstanceType(before));
+        Map<String, String> beforeParams = getNodeParameters(before);
+        Map<String, String> afterParams = getNodeParameters(after);
+        List<NodeParameter> params;
+        try {
+            params = nodeAPIProvider.getAPI(apiId).getNodeParameters(credentials);
+        } catch (Exception e) {
+            throw new RuntimeException("Can't get node parameters", e);
+        }
+        Map<String, MapDifference.ValueDifference<String>> diff = Maps.difference(beforeParams, afterParams).entriesDiffering();
+
+        return diff.entrySet().stream().anyMatch(entry -> params.stream().anyMatch(parameter -> parameter.getName().equals(entry.getKey()) && !parameter.getConfigure()));
+//          AWSInstanceType beforeInstanceType = AWSInstanceType.get(getAwsInstanceType(before));
 //        AWSInstanceType afterInstanceType = AWSInstanceType.get(getAwsInstanceType(after));
 //        if (beforeInstanceType == null || afterInstanceType == null || !afterInstanceType.isCompatible(beforeInstanceType)) {
 //            return true;
@@ -133,7 +135,6 @@ public class InfrastructureDeployerImpl extends InfrastructureDeployer {
 //               !getAwsSubnet(after).equals(getAwsSubnet(before)) ||
 //               !getAwsAmi(after).equals(getAwsAmi(before)) ||
 //               !getAwsKeypair(after).equals(getAwsKeypair(before));
-        return false;
     }
 
 }

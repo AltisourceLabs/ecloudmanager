@@ -90,13 +90,7 @@
 
                         <h:panelGroup>
                             <p:spacer/>
-                            <p:menuButton value="Deploy...">
-                                <p:menuitem value="Deploy to Verizon" action="#{gatewaysController.goToDeployment('VERIZON')}"
-                                            icon="ui-icon-circle-triangle-e">
-                                </p:menuitem>
-                                <p:menuitem value="Deploy to AWS" action="#{gatewaysController.goToDeployment('AWS')}"
-                                            icon="ui-icon-circle-triangle-e">
-                                </p:menuitem>
+                            <p:menuButton model="#{gatewaysController.nodeAPIMenuModel}" value="Deploy...">
                             </p:menuButton>
                             <p:commandButton id="cancel" value="Cancel" update="out" action="#{gatewaysController.cancel}" immediate="true"/>
                         </h:panelGroup>
