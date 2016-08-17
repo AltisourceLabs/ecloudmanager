@@ -24,6 +24,8 @@
 
 package org.ecloudmanager.deployment.vm.infrastructure;
 
+import com.google.common.collect.MapDifference;
+import com.google.common.collect.Maps;
 import org.ecloudmanager.actions.VmActions;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.core.ConstraintField;
@@ -103,7 +105,18 @@ public class InfrastructureDeployerImpl extends InfrastructureDeployer {
 
     @Override
     public boolean isRecreateActionRequired(VMDeployment before, VMDeployment after) {
-//        AWSInstanceType beforeInstanceType = AWSInstanceType.get(getAwsInstanceType(before));
+        Map<String, String> beforeParams = getNodeParameters(before);
+        Map<String, String> afterParams = getNodeParameters(after);
+        List<NodeParameter> params;
+        try {
+            params = nodeAPIProvider.getAPI(apiId).getNodeParameters(credentials);
+        } catch (Exception e) {
+            throw new RuntimeException("Can't get node parameters", e);
+        }
+        Map<String, MapDifference.ValueDifference<String>> diff = Maps.difference(beforeParams, afterParams).entriesDiffering();
+
+        return diff.entrySet().stream().anyMatch(entry -> params.stream().anyMatch(parameter -> parameter.getName().equals(entry.getKey()) && !parameter.getConfigure()));
+//          AWSInstanceType beforeInstanceType = AWSInstanceType.get(getAwsInstanceType(before));
 //        AWSInstanceType afterInstanceType = AWSInstanceType.get(getAwsInstanceType(after));
 //        if (beforeInstanceType == null || afterInstanceType == null || !afterInstanceType.isCompatible(beforeInstanceType)) {
 //            return true;
@@ -122,7 +135,6 @@ public class InfrastructureDeployerImpl extends InfrastructureDeployer {
 //               !getAwsSubnet(after).equals(getAwsSubnet(before)) ||
 //               !getAwsAmi(after).equals(getAwsAmi(before)) ||
 //               !getAwsKeypair(after).equals(getAwsKeypair(before));
-        return false;
     }
 
 }
