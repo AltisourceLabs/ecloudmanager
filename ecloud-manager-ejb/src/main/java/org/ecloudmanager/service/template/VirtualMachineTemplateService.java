@@ -60,12 +60,12 @@ public class VirtualMachineTemplateService extends ServiceSupport {
 
     public void saveVm(VirtualMachineTemplate vm) {
         log.info("Saving " + vm.getName());
-        save(vm);
+        virtualMachineTemplateRepository.save(vm);
     }
 
     public void updateVm(VirtualMachineTemplate vm) {
         log.info("Updating " + vm.getName());
-        update(vm);
+        virtualMachineTemplateRepository.save(vm);
     }
 
     public void removeVm(VirtualMachineTemplate vm) {
