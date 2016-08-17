@@ -76,12 +76,6 @@ public class SingleAction extends Action implements Runnable {
     }
 
     private static void logDetails(Logger log, ExecutionDetails details) {
-        switch (details.getStatus()) {
-            case OK:
-                log.info(details.getMessage());
-            case FAILED:
-                log.error(details.getMessage());
-        }
         details.getLog().forEach(e -> {
             switch (e.getLevel()) {
                 case INFO:
@@ -95,6 +89,12 @@ public class SingleAction extends Action implements Runnable {
                     break;
             }
         });
+        switch (details.getStatus()) {
+            case OK:
+                log.info("Action completed. " + details.getMessage());
+            case FAILED:
+                log.error("Action failed. " + details.getMessage());
+        }
     }
 
     public String getDescription() {

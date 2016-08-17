@@ -29,6 +29,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
     private static String DEFAULT_SECURITY_GROUP_NAME = "default";
     private static String TAG_NAME = "Name";
     private static String TAG_CREATOR = "Creator";
+    private static String TAG_HOSTED_ZONE = "Hosted Zone";
 
     private static String getSubnetLabel(com.amazonaws.services.ec2.model.Subnet subnet) {
         return subnet.getTags().stream()
@@ -76,7 +77,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
     }
 
     @Override
-    public List<NodeParameter> getNodeParameters(Credentials credentials) throws Exception {
+    public List<NodeParameter> getNodeParameters(Credentials credentials) {
         return Stream.concat(Arrays.stream(Parameter.values()).map(Parameter::getNodeParameter), getTagParameters().stream()).collect(Collectors.toList());
     }
 
@@ -303,16 +304,19 @@ public class AWSNodeAPI implements NodeBaseAPI {
         }
         createTags(details, accessKey, secretKey, vmId, parameters, ec2);
 
-        String oldHostedZone = getAWSHostedZone(route53, instance.getPrivateIpAddress(), oldName);
+        String oldHostedZone = getInstanceHostedZone(instance);
         String newHostedZone = parameters.get(Parameter.hosted_zone.name());
+        if (!StringUtils.equals(oldHostedZone, newHostedZone)) {
+            setInstanceHostedZone(ec2, vmId, newHostedZone);
+        }
         if (!StringUtils.equals(oldName, newName) ||
                 !StringUtils.equals(oldHostedZone, newHostedZone)) {
             if (oldHostedZone != null) {
-                deleteDnsRecord(route53, oldName, oldHostedZone);
+                deleteDnsRecord(details, route53, oldName, oldHostedZone);
                 NodeUtil.logInfo(details, "Deleted DNS record for " + oldName + oldHostedZone);
             }
             createDnsRecord(route53, instance.getPrivateIpAddress(), newName, newHostedZone);
-            NodeUtil.logInfo(details, "Created DNS record for " + newName + newHostedZone + " with IP: " + instance.getPrivateIpAddress());
+            NodeUtil.logInfo(details, "Created DNS record for " + newName + "." + newHostedZone + " with IP: " + instance.getPrivateIpAddress());
         }
 
         //createTags(instanceId, after, amazonEC2);
@@ -406,6 +410,17 @@ public class AWSNodeAPI implements NodeBaseAPI {
         return details.status(ExecutionDetails.StatusEnum.OK);
     }
 
+    private String getInstanceHostedZone(Instance instance) {
+        Optional<Tag> tag = instance.getTags().stream().filter(t -> t.getKey().equals(TAG_HOSTED_ZONE)).findAny();
+        return tag.isPresent() ? tag.get().getValue() : null;
+    }
+
+    private void setInstanceHostedZone(AmazonEC2 ec2, String vmId, String hostedZone) {
+        ec2.createTags(new CreateTagsRequest()
+                .withResources(vmId)
+                .withTags(new Tag(TAG_HOSTED_ZONE, hostedZone)));
+    }
+
     private void createDnsRecord(AmazonRoute53 route53, String ip, String name, String hostedZoneName) {
         log.info("Creating route53 record for " + name);
 
@@ -444,7 +459,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
         return hostedZone;
     }
 
-    private void deleteDnsRecord(AmazonRoute53 route53, String name, String hostedZoneName) {
+    private void deleteDnsRecord(ExecutionDetails details, AmazonRoute53 route53, String name, String hostedZoneName) {
         log.info("Deleting route53 record for " + name);
         if (StringUtils.isEmpty(name)) {
             log.error("Cannot delete route53 record - name is empty.");
@@ -455,26 +470,22 @@ public class AWSNodeAPI implements NodeBaseAPI {
         String recordSetName = name + "." + hostedZoneName;
         ListResourceRecordSetsRequest listResourceRecordSetsRequest =
                 new ListResourceRecordSetsRequest(hostedZone.getId()).withStartRecordName(recordSetName);
-        ListResourceRecordSetsResult listResourceRecordSetsResult = route53.listResourceRecordSets
-                (listResourceRecordSetsRequest);
-        if (listResourceRecordSetsResult.getResourceRecordSets().size() < 1) {
-            log.error("Cannot delete route53 record - record not found. Skipping this step.");
+        List<ResourceRecordSet> resourceRecordSets = route53.listResourceRecordSets
+                (listResourceRecordSetsRequest).getResourceRecordSets();
+        List<ResourceRecordSet> filtered = resourceRecordSets.stream().filter(f -> recordSetName.equals(f.getName())).collect(Collectors.toList());
+        //.filter(r -> r.getResourceRecords().stream().anyMatch(rr -> rr.getValue().equals(ip)))
+        if (filtered.size() < 1) {
+            NodeUtil.logWarn(details, "Cannot delete route53 record - record not found. Skipping this step.");
             return;
         }
-
-        ResourceRecordSet resourceRecordSet = listResourceRecordSetsResult.getResourceRecordSets().get(0);
-        if (!recordSetName.equals(resourceRecordSet.getName())) {
-            log.error("Cannot delete route53 record - record not found. Skipping this step.");
-            return;
-        }
-
+        NodeUtil.logInfo(details, "Records found:  " + filtered);
         ChangeBatch changeBatch = new ChangeBatch(Lists.newArrayList(new Change(ChangeAction.DELETE,
-                resourceRecordSet)));
+                filtered.get(0))));
         ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest = new ChangeResourceRecordSetsRequest()
                 .withHostedZoneId(hostedZone.getId()).withChangeBatch(changeBatch);
         ChangeResourceRecordSetsResult changeResourceRecordSetsResult =
                 guardedChangeResourceRecordSets(route53, changeResourceRecordSetsRequest);
-        log.info("Submitted delete recordset request " + changeResourceRecordSetsResult.getChangeInfo().toString());
+        NodeUtil.logInfo(details, "Submitted delete recordset request " + changeResourceRecordSetsResult.getChangeInfo().toString());
     }
 
     private ChangeResourceRecordSetsResult guardedChangeResourceRecordSets(
@@ -506,10 +517,10 @@ public class AWSNodeAPI implements NodeBaseAPI {
         Instance instance = getInstance(ec2, id);
         String vpcId = instance.getVpcId();
         String name = getInstanceName(instance);
-        String hostedZone = getAWSHostedZone(route53, instance.getPrivateIpAddress(), name);
+        String hostedZone = getInstanceHostedZone(instance);
         if (!Strings.isNullOrEmpty(hostedZone)) {
-            deleteDnsRecord(route53, name, getAWSHostedZone(route53, instance.getPrivateIpAddress(), name));
-            NodeUtil.logInfo(details, "Deleted dns record for : " + name + hostedZone);
+            deleteDnsRecord(details, route53, name, hostedZone);
+            NodeUtil.logInfo(details, "Deleted dns record for : " + name + "." + hostedZone);
         }
 
         String groupIdToDelete = getSecurityGroup(ec2, id);
@@ -641,7 +652,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
     private enum Parameter {
         name("Node name", true, true, true, null, false, false),
         region("AWS region", true, false, true, null, true, true),
-        subnet("AWS subnet", true, true, true, null, true, true, region),
+        subnet("AWS subnet", true, false, true, null, true, true, region),
         storage("Storage size", true, true, true, "20", false, false),
         cpu("CPU count", true, true, false, null, false, false),
         memory("memory", true, true, false, null, false, false),
