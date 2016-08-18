@@ -182,17 +182,18 @@ public class AWSNodeAPI implements NodeBaseAPI {
         }
         String nodeId;
         try {
-            nodeId = createNode(ec2, storage, securityGroupId, subnet, image, instanceType, keyPair);
+            nodeId = runWithRetry(details, "Create node", () -> createNode(ec2, storage, securityGroupId, subnet, image, instanceType, keyPair), AmazonServiceException.class);
+            createNode(ec2, storage, securityGroupId, subnet, image, instanceType, keyPair);
             NodeUtil.logInfo(details, "Node created with id: " + nodeId);
         } catch (Exception t) {
             NodeUtil.logError(details, "Can't create node", t);
             deleteSecurityGroup(ec2, securityGroupId, details);
             return new CreateNodeResponse().details(details);
         }
-        runWithRetry("Create 'Name' tag", () -> {
+        runWithRetry(details, "Create 'Name' tag", () -> {
             setInstanceName(ec2, nodeId, name);
             return new Object();
-        });
+        }, Exception.class);
         return new CreateNodeResponse().nodeId(region + ":" + nodeId).details(details.status(ExecutionDetails.StatusEnum.OK));
     }
 
@@ -313,7 +314,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
             if (oldHostedZone != null) {
                 deleteDnsRecord(details, route53, oldName, oldHostedZone);
             }
-            createDnsRecord(route53, instance.getPrivateIpAddress(), newName, newHostedZone);
+            createDnsRecord(details, route53, instance.getPrivateIpAddress(), newName, newHostedZone);
             NodeUtil.logInfo(details, "Created DNS record for " + newName + "." + newHostedZone + " with IP: " + instance.getPrivateIpAddress());
         }
 
@@ -419,7 +420,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
                 .withTags(new Tag(TAG_HOSTED_ZONE, hostedZone)));
     }
 
-    private void createDnsRecord(AmazonRoute53 route53, String ip, String name, String hostedZoneName) {
+    private void createDnsRecord(ExecutionDetails details, AmazonRoute53 route53, String ip, String name, String hostedZoneName) {
         log.info("Creating route53 record for " + name);
 
         HostedZone hostedZone = getHostedZone(hostedZoneName, route53);
@@ -431,7 +432,10 @@ public class AWSNodeAPI implements NodeBaseAPI {
                 resourceRecordSet)));
         ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest = new ChangeResourceRecordSetsRequest()
                 .withHostedZoneId(hostedZone.getId()).withChangeBatch(changeBatch);
-        guardedChangeResourceRecordSets(route53, changeResourceRecordSetsRequest);
+        ChangeResourceRecordSetsResult changeResourceRecordSetsResult =
+                runWithRetry(details, "Route53 request", () -> route53.changeResourceRecordSets(changeResourceRecordSetsRequest), PriorRequestNotCompleteException.class);
+
+//        guardedChangeResourceRecordSets(route53, changeResourceRecordSetsRequest);
     }
 
     private HostedZone getHostedZone(String awsHostedZone, AmazonRoute53 route53) {
@@ -464,10 +468,10 @@ public class AWSNodeAPI implements NodeBaseAPI {
                 filtered.get(0))));
         ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest = new ChangeResourceRecordSetsRequest()
                 .withHostedZoneId(hostedZone.getId()).withChangeBatch(changeBatch);
-//        ChangeResourceRecordSetsResult changeResourceRecordSetsResult =
-//                runWithRetry("Route53 request", () -> route53.changeResourceRecordSets(changeResourceRecordSetsRequest));
         ChangeResourceRecordSetsResult changeResourceRecordSetsResult =
-                guardedChangeResourceRecordSets(route53, changeResourceRecordSetsRequest);
+                runWithRetry(details, "Route53 request", () -> route53.changeResourceRecordSets(changeResourceRecordSetsRequest), PriorRequestNotCompleteException.class);
+//        ChangeResourceRecordSetsResult changeResourceRecordSetsResult =
+//                guardedChangeResourceRecordSets(route53, changeResourceRecordSetsRequest);
         NodeUtil.logInfo(details, "Submitted delete recordset request " + changeResourceRecordSetsResult.getChangeInfo().toString());
     }
 
@@ -488,14 +492,18 @@ public class AWSNodeAPI implements NodeBaseAPI {
         return new SynchronousPoller().poll(poll, check, 1, 600, "wait for route53 request to be submitted");
     }
 
-    private <T> T runWithRetry(String operation, Callable<T> callable) {
+    private <T> T runWithRetry(ExecutionDetails details, String operation, Callable<T> callable, Class<? extends Exception>... exceptionsToRetry) {
         Callable<T> poll =
                 () -> {
                     try {
                         return callable.call();
                     } catch (Exception e) {
-                        log.warn(operation + " failed, retrying...", e);
-                        return null;
+                        if (Stream.of(exceptionsToRetry).anyMatch(c -> c.isInstance(e))) {
+                            NodeUtil.logWarn(details, operation + " failed, retrying...", e);
+                            return null;
+                        }
+                        log.error(operation + " failed", e);
+                        throw e;
                     }
                 };
         Predicate<T> check = Objects::nonNull;

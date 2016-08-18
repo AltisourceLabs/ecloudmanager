@@ -37,9 +37,9 @@ public class NodeUtil {
     }
 
     public static void logError(ExecutionDetails details, String message, Throwable t) {
-        details.setStatus(ExecutionDetails.StatusEnum.FAILED);
-        details.addLogItem(new LogEntry().level(LogEntry.LevelEnum.ERROR).message(message));
-        details.addLogItem(new LogEntry().level(LogEntry.LevelEnum.ERROR).message("Message: " + t.getMessage()));
+        logError(details, message);
+        logError(details, "Exception: " + t.getClass().getName());
+        logError(details, "Message: " + t.getMessage());
     }
 
     public static void logWarn(ExecutionDetails details, String s, Exception e) {
