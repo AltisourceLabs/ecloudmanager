@@ -73,8 +73,8 @@ public class NodeController {
 
     public ResponseContext deleteNode(RequestContext request, String accessKey, String secretKey, String nodeId) {
         try {
-            api.deleteNode(new SecretKey(accessKey, secretKey), nodeId);
-            return new ResponseContext().status(Status.OK);
+            ExecutionDetails details = api.deleteNode(new SecretKey(accessKey, secretKey), nodeId);
+            return new ResponseContext().status(Status.OK).entity(details);
         } catch (Exception e) {
             return new ResponseContext()
                     .status(Response.Status.INTERNAL_SERVER_ERROR)
@@ -106,8 +106,8 @@ public class NodeController {
 
     public ResponseContext updateNodeFirewallRules(RequestContext request, String accessKey, String secretKey, String nodeId, FirewallUpdate firewallUpdate) {
         try {
-            api.updateNodeFirewallRules(new SecretKey(accessKey, secretKey), nodeId, firewallUpdate);
-            return new ResponseContext().status(Status.OK);
+            ExecutionDetails details = api.updateNodeFirewallRules(new SecretKey(accessKey, secretKey), nodeId, firewallUpdate);
+            return new ResponseContext().status(Status.OK).entity(details);
         } catch (Exception e) {
             return new ResponseContext()
                     .status(Response.Status.INTERNAL_SERVER_ERROR)

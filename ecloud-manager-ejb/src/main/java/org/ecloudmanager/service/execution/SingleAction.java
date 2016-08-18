@@ -24,6 +24,7 @@
 
 package org.ecloudmanager.service.execution;
 
+import com.google.common.base.Strings;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -91,9 +92,11 @@ public class SingleAction extends Action implements Runnable {
         });
         switch (details.getStatus()) {
             case OK:
-                log.info("Action completed. " + details.getMessage());
+                log.info("Action completed. " + Strings.nullToEmpty(details.getMessage()));
+                break;
             case FAILED:
-                log.error("Action failed. " + details.getMessage());
+                log.error("Action failed. " + Strings.nullToEmpty(details.getMessage()));
+                break;
         }
     }
 

@@ -109,11 +109,14 @@ public class VmActions {
         return Action.single("Delete VM",
                 () -> {
                     String vmId = InfrastructureDeployerImpl.getVmId(vmDeployment);
+                    ExecutionDetails details;
                     if (vmId != null && !vmId.isEmpty()) {
-                        nodeAPIProvider.getAPI(apiId).deleteNode(credentials, InfrastructureDeployerImpl.getVmId(vmDeployment));
+                        details = nodeAPIProvider.getAPI(apiId).deleteNode(credentials, InfrastructureDeployerImpl.getVmId(vmDeployment));
+                    } else {
+                        details = new ExecutionDetails().status(ExecutionDetails.StatusEnum.OK).message("Nothing to delete");
                     }
                     clearVmConstraints(vmDeployment);
-                    return null;
+                    return details;
                 }, vmDeployment);
     }
 

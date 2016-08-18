@@ -271,7 +271,8 @@
             description: Execution details
             schema:
               $ref: '#/definitions/ExecutionDetails'
-      delete:
+    /node/{nodeId}/delete:
+      post:
         tags:
         - node
         summary: Delete node
@@ -328,7 +329,7 @@
             description: Invalid ID
           404:
             description: node not found
-      put:
+      post:
         tags:
         - node
         summary: Update node firewall rules
@@ -360,7 +361,7 @@
             schema:
               $ref: '#/definitions/ExecutionDetails'
     /node/{nodeId}/upload:
-      put:
+      post:
         tags:
         - ssh
         summary: Upload file to node

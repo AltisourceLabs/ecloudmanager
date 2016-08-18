@@ -44,22 +44,22 @@ public class AWSNodeAPI implements NodeBaseAPI {
                 new FirewallRule().type(FirewallRule.TypeEnum.IP).protocol(permission.getIpProtocol()).port(permission.getToPort()).from(range)).collect(Collectors.toList());
     }
 
-    private void createTags(ExecutionDetails details, String accessKey, String secretKey, String instanceId, Map<String, String> parameters, AmazonEC2 ec2) {
-        String userId;
+    private String getUserId(String accessKey, String secretKey) {
         try {
-            userId = AWS.identityManagementClient(accessKey, secretKey).getUser().getUser().getUserId();
+            return AWS.identityManagementClient(accessKey, secretKey).getUser().getUser().getUserId();
         } catch (AmazonServiceException e) {
-            userId = e.getErrorMessage().replaceAll("^[^/]*/", "").replaceAll(" is not authorized .*", "");
+            return e.getErrorMessage().replaceAll("^[^/]*/", "").replaceAll(" is not authorized .*", "");
         }
+    }
+
+    private void createTags(ExecutionDetails details, String userId, String instanceId, Map<String, String> parameters, AmazonEC2 ec2) {
         ArrayList<Tag> tags = new ArrayList<>();
         tags.add(new Tag(TAG_CREATOR, userId));
         getTagParameters().forEach(p -> {
                     if (parameters.containsKey(p.getName())) {
                         tags.add(new Tag(p.getName(), parameters.get(p.getName())));
                     }
-
-                }
-        );
+        });
         CreateTagsRequest createTagsRequest = new CreateTagsRequest()
                 .withResources(instanceId)
                 .withTags(tags);
@@ -150,8 +150,8 @@ public class AWSNodeAPI implements NodeBaseAPI {
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
         String region = parameters.get(Parameter.region.name());
-        String name = parameters.get(Parameter.name.name());
         String subnet = parameters.get(Parameter.subnet.name());
+        String name = parameters.get(Parameter.name.name());
         int storage = Integer.parseInt(parameters.get(Parameter.storage.name()));
         String image = parameters.get(Parameter.image.name());
         String instanceType = parameters.get(Parameter.instance_type.name());
@@ -189,13 +189,10 @@ public class AWSNodeAPI implements NodeBaseAPI {
             deleteSecurityGroup(ec2, securityGroupId, details);
             return new CreateNodeResponse().details(details);
         }
-        try {
+        runWithRetry("Create 'Name' tag", () -> {
             setInstanceName(ec2, nodeId, name);
-            createTags(details, accessKey, secretKey, nodeId, parameters, ec2);
-        } catch (Exception e) {
-            NodeUtil.logInfo(details, "Tags creation failed: " + e.getMessage());
-
-        }
+            return new Object();
+        });
         return new CreateNodeResponse().nodeId(region + ":" + nodeId).details(details.status(ExecutionDetails.StatusEnum.OK));
     }
 
@@ -217,7 +214,6 @@ public class AWSNodeAPI implements NodeBaseAPI {
         AmazonEC2 ec2 = AWS.ec2(accessKey, secretKey, region);
         Reservation reservation = ec2.describeInstances(new DescribeInstancesRequest().withInstanceIds(id)).getReservations().get(0);
         Instance instance = reservation.getInstances().get(0);
-        Optional<Tag> nameTag = instance.getTags().stream().filter(t -> t.getKey().equals(TAG_NAME)).findFirst();
         String vpcId = instance.getVpcId();
         String awsStatus = instance.getState().getName();
         NodeInfo.StatusEnum status;
@@ -261,7 +257,6 @@ public class AWSNodeAPI implements NodeBaseAPI {
         Instance instance = result.getReservations().get(0).getInstances().get(0);
         InstanceBlockDeviceMapping blockDeviceMapping = instance.getBlockDeviceMappings().get(0);
         String volumeId = blockDeviceMapping.getEbs().getVolumeId();
-        //blockDeviceMapping.getEbs().getVolumeId().
         DescribeVolumesResult dvr = ec2.describeVolumes(new DescribeVolumesRequest().withVolumeIds(volumeId));
         return dvr.getVolumes().get(0).getSize();
     }
@@ -291,6 +286,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
         String secretKey = ((SecretKey) credentials).getSecret();
         String region = nodeId.split(":")[0];
         String vmId = nodeId.split(":")[1];
+        String userId = getUserId(accessKey, secretKey);
         AmazonEC2 ec2 = AWS.ec2(accessKey, secretKey, region);
         AmazonRoute53 route53 = AWS.route53(accessKey, secretKey);
 
@@ -301,19 +297,21 @@ public class AWSNodeAPI implements NodeBaseAPI {
         String newName = parameters.get(Parameter.name.name());
         if (newName != null && !newName.equals(oldName)) {
             setInstanceName(ec2, vmId, newName);
+            NodeUtil.logInfo(details, "Value of tag '" + TAG_NAME + "' set to " + newName);
+
         }
-        createTags(details, accessKey, secretKey, vmId, parameters, ec2);
+        createTags(details, userId, vmId, parameters, ec2);
 
         String oldHostedZone = getInstanceHostedZone(instance);
         String newHostedZone = parameters.get(Parameter.hosted_zone.name());
         if (!StringUtils.equals(oldHostedZone, newHostedZone)) {
             setInstanceHostedZone(ec2, vmId, newHostedZone);
+            NodeUtil.logInfo(details, "Value of tag '" + TAG_HOSTED_ZONE + "' set to " + newHostedZone);
         }
         if (!StringUtils.equals(oldName, newName) ||
                 !StringUtils.equals(oldHostedZone, newHostedZone)) {
             if (oldHostedZone != null) {
                 deleteDnsRecord(details, route53, oldName, oldHostedZone);
-                NodeUtil.logInfo(details, "Deleted DNS record for " + oldName + oldHostedZone);
             }
             createDnsRecord(route53, instance.getPrivateIpAddress(), newName, newHostedZone);
             NodeUtil.logInfo(details, "Created DNS record for " + newName + "." + newHostedZone + " with IP: " + instance.getPrivateIpAddress());
@@ -436,27 +434,11 @@ public class AWSNodeAPI implements NodeBaseAPI {
         guardedChangeResourceRecordSets(route53, changeResourceRecordSetsRequest);
     }
 
-    private String getAWSHostedZone(AmazonRoute53 route53, String ip, String name) {
-        List<HostedZone> zones = route53.listHostedZones().getHostedZones().stream().filter(
-                z -> {
-                    String recordSetName = name + "." + z.getName();
-                    List<ResourceRecordSet> records = route53.listResourceRecordSets(new ListResourceRecordSetsRequest(z.getId()).withStartRecordName(recordSetName)).getResourceRecordSets();
-                    return records.stream().anyMatch(r -> r.getResourceRecords().stream().anyMatch(rr -> rr.getValue().equals(ip)));
-                }
-        ).collect(Collectors.toList());
-        if (zones == null || zones.size() == 0) {
-            return null;
-        }
-        return zones.get(0).getName();
-    }
-
     private HostedZone getHostedZone(String awsHostedZone, AmazonRoute53 route53) {
-        ListHostedZonesResult listHostedZonesResult = route53.listHostedZones();
-        HostedZone hostedZone = listHostedZonesResult.getHostedZones().stream()
+        return route53.listHostedZones().getHostedZones().stream()
                 .filter(z -> z.getName().equals(awsHostedZone))
                 .findAny()
                 .orElse(null);
-        return hostedZone;
     }
 
     private void deleteDnsRecord(ExecutionDetails details, AmazonRoute53 route53, String name, String hostedZoneName) {
@@ -473,7 +455,6 @@ public class AWSNodeAPI implements NodeBaseAPI {
         List<ResourceRecordSet> resourceRecordSets = route53.listResourceRecordSets
                 (listResourceRecordSetsRequest).getResourceRecordSets();
         List<ResourceRecordSet> filtered = resourceRecordSets.stream().filter(f -> recordSetName.equals(f.getName())).collect(Collectors.toList());
-        //.filter(r -> r.getResourceRecords().stream().anyMatch(rr -> rr.getValue().equals(ip)))
         if (filtered.size() < 1) {
             NodeUtil.logWarn(details, "Cannot delete route53 record - record not found. Skipping this step.");
             return;
@@ -483,6 +464,8 @@ public class AWSNodeAPI implements NodeBaseAPI {
                 filtered.get(0))));
         ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest = new ChangeResourceRecordSetsRequest()
                 .withHostedZoneId(hostedZone.getId()).withChangeBatch(changeBatch);
+//        ChangeResourceRecordSetsResult changeResourceRecordSetsResult =
+//                runWithRetry("Route53 request", () -> route53.changeResourceRecordSets(changeResourceRecordSetsRequest));
         ChangeResourceRecordSetsResult changeResourceRecordSetsResult =
                 guardedChangeResourceRecordSets(route53, changeResourceRecordSetsRequest);
         NodeUtil.logInfo(details, "Submitted delete recordset request " + changeResourceRecordSetsResult.getChangeInfo().toString());
@@ -505,6 +488,20 @@ public class AWSNodeAPI implements NodeBaseAPI {
         return new SynchronousPoller().poll(poll, check, 1, 600, "wait for route53 request to be submitted");
     }
 
+    private <T> T runWithRetry(String operation, Callable<T> callable) {
+        Callable<T> poll =
+                () -> {
+                    try {
+                        return callable.call();
+                    } catch (Exception e) {
+                        log.warn(operation + " failed, retrying...", e);
+                        return null;
+                    }
+                };
+        Predicate<T> check = Objects::nonNull;
+        return new SynchronousPoller().poll(poll, check, 1, 600, "wait for " + operation + " to be submitted");
+    }
+
     @Override
     public ExecutionDetails deleteNode(Credentials credentials, String nodeId) throws Exception {
         ExecutionDetails details = new ExecutionDetails();
@@ -519,8 +516,11 @@ public class AWSNodeAPI implements NodeBaseAPI {
         String name = getInstanceName(instance);
         String hostedZone = getInstanceHostedZone(instance);
         if (!Strings.isNullOrEmpty(hostedZone)) {
-            deleteDnsRecord(details, route53, name, hostedZone);
-            NodeUtil.logInfo(details, "Deleted dns record for : " + name + "." + hostedZone);
+            try {
+                deleteDnsRecord(details, route53, name, hostedZone);
+            } catch (Exception e) {
+                NodeUtil.logWarn(details, "Can't delete dns record: " + name + "." + hostedZone, e);
+            }
         }
 
         String groupIdToDelete = getSecurityGroup(ec2, id);
@@ -570,29 +570,29 @@ public class AWSNodeAPI implements NodeBaseAPI {
             try {
                 return fromFirewallRule(credentials, p);
             } catch (Exception e) {
-                e.printStackTrace();
+                NodeUtil.logWarn(details, "Can't convert rule to IpPermission: ", e);
                 return null;
             }
-        }).collect(Collectors.toList());
+        }).filter(Objects::nonNull).collect(Collectors.toList());
         if (!permissions.isEmpty()) {
             AuthorizeSecurityGroupIngressRequest req = new AuthorizeSecurityGroupIngressRequest()
                     .withGroupId(securityGroupId).withIpPermissions(permissions);
             ec2.authorizeSecurityGroupIngress(req);
-            NodeUtil.logInfo(details, "Firewall rules created:");
+            NodeUtil.logInfo(details, "Firewall rules created for node " + nodeId);
             NodeUtil.logInfo(details, firewallUpdate.getCreate().toString());
         }
         List<IpPermission> permissionsToDelete = firewallUpdate.getDelete().stream().map(p -> {
             try {
                 return fromFirewallRule(credentials, p);
             } catch (Exception e) {
-                e.printStackTrace();
+                NodeUtil.logWarn(details, "Can't convert rule to IpPermission: ", e);
                 return null;
             }
-        }).collect(Collectors.toList());
+        }).filter(Objects::nonNull).collect(Collectors.toList());
         if (!permissionsToDelete.isEmpty()) {
             RevokeSecurityGroupIngressRequest delete = new RevokeSecurityGroupIngressRequest().withGroupId(securityGroupId).withIpPermissions(permissionsToDelete);
             ec2.revokeSecurityGroupIngress(delete);
-            NodeUtil.logInfo(details, "Firewall rules deleted:");
+            NodeUtil.logInfo(details, "Firewall rules deleted for node " + nodeId);
             NodeUtil.logInfo(details, firewallUpdate.getDelete().toString());
         }
         return details.status(ExecutionDetails.StatusEnum.OK);
@@ -650,7 +650,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
     }
 
     private enum Parameter {
-        name("Node name", true, true, true, null, false, false),
+        name("Node name", false, true, true, null, false, false),
         region("AWS region", true, false, true, null, true, true),
         subnet("AWS subnet", true, false, true, null, true, true, region),
         storage("Storage size", true, true, true, "20", false, false),

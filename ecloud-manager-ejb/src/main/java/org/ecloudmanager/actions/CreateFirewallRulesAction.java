@@ -10,13 +10,15 @@ import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployer;
 import org.ecloudmanager.node.NodeAPI;
 import org.ecloudmanager.node.model.Credentials;
+import org.ecloudmanager.node.model.ExecutionDetails;
 import org.ecloudmanager.node.model.FirewallRule;
 import org.ecloudmanager.node.model.FirewallUpdate;
+import org.ecloudmanager.node.util.NodeUtil;
 import org.ecloudmanager.service.execution.Action;
 import org.ecloudmanager.service.execution.SingleAction;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -49,31 +51,27 @@ public class CreateFirewallRulesAction extends SingleAction {
                     }
                 });
             }
-            nodeAPI.updateNodeFirewallRules(credentials, InfrastructureDeployer.getVmId(deployment), new FirewallUpdate().create(rules));
-            List<Pair<DeploymentObject, Endpoint>> required = deployment.getLinkedRequiredEndpoints();
-            required.forEach(e -> {
+            ExecutionDetails details = nodeAPI.updateNodeFirewallRules(credentials, InfrastructureDeployer.getVmId(deployment), new FirewallUpdate().create(rules));
+            for (Pair<DeploymentObject, Endpoint> e : deployment.getLinkedRequiredEndpoints()) {
                 DeploymentObject d = e.getLeft();
                 if (d instanceof VMDeployment) {
                     // FIXME should be moved to 'd' vm creation?
                     VMDeployment supplier = (VMDeployment) d;
+                    String supplierId = InfrastructureDeployer.getVmId(supplier);
                     FirewallRule rule = new FirewallRule().type(FirewallRule.TypeEnum.NODE_ID).port(e.getRight().getPort()).protocol("TCP").from(InfrastructureDeployer.getVmId(deployment));
                     try {
-                        nodeAPI.updateNodeFirewallRules(credentials, InfrastructureDeployer.getVmId(supplier), new FirewallUpdate().create(Arrays.asList(rule)));
+                        ExecutionDetails ed = nodeAPI.updateNodeFirewallRules(credentials, supplierId, new FirewallUpdate().create(Collections.singletonList(rule)));
+                        details = NodeUtil.merge(details, ed);
                     } catch (Exception ex) {
-                        throw new RuntimeException(ex);
+                        NodeUtil.logError(details, "Failed to create firewall rules for: " + supplierId);
                     }
 
-//                    AuthorizeSecurityGroupEgressRequest outRule = new AuthorizeSecurityGroupEgressRequest()
-//                            .withGroupId(securityGroupId)
-//                            .withFromPort(port).withToPort(port)
-//                            .withIpProtocol("TCP")
-//                            .withCidrIp(InfrastructureDeployer.getIP(supplier) + "/32");
-//                    getAmazonEC2(deployment).authorizeSecurityGroupEgress(outRule);
                 } else {
-                    throw new RuntimeException("Unsupported endpoint:" + d);
+                    NodeUtil.logWarn(details, "Unsupported endpoint: " + d.getClass().getName());
                 }
-            });
-            return null;
+            }
+            ;
+            return details;
         });
 
     }
