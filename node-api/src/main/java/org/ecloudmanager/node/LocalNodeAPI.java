@@ -14,6 +14,11 @@ public class LocalNodeAPI extends LocalSshAPI implements NodeAPI {
     }
 
     @Override
+    public APIInfo getAPIInfo() throws Exception {
+        return nodeBaseAPI.getAPIInfo();
+    }
+
+    @Override
     public List<NodeParameter> getNodeParameters(Credentials credentials) throws Exception {
         return nodeBaseAPI.getNodeParameters(credentials);
     }

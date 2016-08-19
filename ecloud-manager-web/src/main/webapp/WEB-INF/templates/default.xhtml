@@ -61,6 +61,7 @@
                      <p:menuitem value="&nbsp; Manage Users" icon="fa fa-users fa-fw" outcome="/admin/users" rendered="#{authorizationHelper.hasAppRole('administrator')}"/>
                  </p:submenu>
                  <p:submenu label="Settings" icon="fa fa-cog" style="float: right; margin-right: 10px;">
+                     <p:menuitem value="Agents" outcome="/agents"/>
                      <p:menuitem value="SSH Configurations" outcome="/sshConfigurations"/>
                      <p:menuitem value="Chef Configurations" outcome="/chefConfigurations"/>
                      <p:menuitem value="Verizon Configuration" outcome="/verizonConfiguration"/>

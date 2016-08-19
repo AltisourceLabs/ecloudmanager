@@ -1,0 +1,130 @@
+<!--
+  ~ MIT License
+  ~
+  ~ Copyright (c) 2016  Altisource
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:components="http://java.sun.com/jsf/composite/components"
+                template="/WEB-INF/templates/default.xhtml">
+    <ui:define name="content">
+        <p:outputPanel id="out">
+            <h:panelGroup>
+                <h:form styleClass="contentForm">
+                    <p:confirmDialog global="true" showEffect="fade" hideEffect="fade">
+                        <p:commandButton value="Yes" type="button" styleClass="ui-confirmdialog-yes"
+                                         icon="ui-icon-check"/>
+                        <p:commandButton value="No" type="button" styleClass="ui-confirmdialog-no"
+                                         icon="ui-icon-close"/>
+                    </p:confirmDialog>
+
+                    <p:dataTable id="configurations" var="configuration"
+                                 value="#{nodeAPIConfigurationController.configurations}"
+                                 paginator="true" rows="10" resizableColumns="true" liveResize="true">
+
+                        <p:column headerText="Name" width="150" sortBy="#{configuration.name}">
+                            <h:outputText value="#{configuration.name}"/>
+                        </p:column>
+                        <p:column headerText="Type">
+                            <h:outputText value="#{configuration.type}"/>
+                        </p:column>
+                        <p:column style="white-space: normal;">
+                            <h:outputText value="#{nodeAPIConfigurationController.getDescription(configuration)}"/>
+                        </p:column>
+                        <p:column width="60">
+                            <p:commandButton title="Edit" icon="ui-icon-pencil"
+                                             update="dlg_edit"
+                                             action="#{nodeAPIConfigurationController.startEdit(configuration)}"
+                                             oncomplete="PF('dlg_edit').show();"/>
+                            <p:commandButton title="Delete" icon="ui-icon-close"
+                                             update="out"
+                                             action="#{nodeAPIConfigurationController.delete(configuration)}">
+                                <p:confirm header="Confirmation" message="Are you sure?" icon="ui-icon-alert"/>
+                            </p:commandButton>
+                        </p:column>
+
+                    </p:dataTable>
+                    <p:commandButton value="New" icon="ui-icon-plus"
+                                     action="#{nodeAPIConfigurationController.createConfiguration()}"
+                                     update="dlg_edit" oncomplete="PF('dlg_edit').show();"/>
+
+                    <p:growl id="messages" sticky="true" showDetail="true"/>
+                </h:form>
+            </h:panelGroup>
+            <p:dialog header="Edit Configuration" widgetVar="dlg_edit" modal="true" closeOnEscape="true"
+                      style="width: 900px; position: absolute" id="dlg_edit">
+                <p:ajax event="close" listener="#{nodeAPIConfigurationController.handleClose}"/>
+                <h:panelGroup>
+                    <h:form>
+                        <h:panelGrid columns="2" cellpadding="5" columnClasses="colLabel, colValue">
+                            <h:outputText value="Name:"/>
+                            <p:inputText value="#{nodeAPIConfigurationController.configuration.name}"/>
+                            <h:outputText value="Type:"/>
+                            <p:selectOneMenu id="type" value="#{nodeAPIConfigurationController.configuration.type}"
+                                             effect="fold">
+                                <p:ajax event="change" update="address,apiClass"/>
+                                <f:selectItem itemLabel="Select One" itemValue=""/>
+                                <f:selectItems value="#{nodeAPIConfigurationController.types}"/>
+                            </p:selectOneMenu>
+                            <h:outputText value="Address:"/>
+                            <p:inputText id="address"
+                                         disabled="#{nodeAPIConfigurationController.configuration.type ne 'REMOTE'}"
+                                         value="#{nodeAPIConfigurationController.configuration.remoteNodeAPIAddress}"/>
+                            <h:outputText value="API:"/>
+                            <p:selectOneMenu id="apiClass"
+                                             disabled="#{nodeAPIConfigurationController.configuration.type ne 'LOCAL'}"
+                                             var="c"
+                                             value="#{nodeAPIConfigurationController.configuration.nodeBaseAPIClassName}"
+                                             effect="fold">
+                                <f:selectItems value="#{nodeAPIConfigurationController.availableAPIs.entrySet()}"
+                                               var="entry"
+                                               itemLabel="#{entry.value.description.concat(' [').concat(entry.value.id).concat(']')}"
+                                               itemValue="#{entry.key}"/>
+                            </p:selectOneMenu>
+                            <h:outputText value="Credentials Key:"/>
+                            <p:inputText value="#{nodeAPIConfigurationController.configuration.credentialsKey}"
+                                         autocomplete="off" redisplay="true"/>
+                            <h:outputText value="Credentials Secret:"/>
+                            <p:inputText value="#{nodeAPIConfigurationController.configuration.credentialsSecret}"
+                                         autocomplete="off" redisplay="true"/>
+                        </h:panelGrid>
+                        <p:spacer/>
+                        <p:outputPanel styleClass="runlistPanel">
+                            <components:runlist runlistHolder="#{nodeAPIConfigurationController.configuration}"
+                                                title="Agent Specific Chef Run List"/>
+                        </p:outputPanel>
+                        <p:spacer/>
+                        <h:panelGroup>
+                            <p>
+                                <p:commandButton id="button_save" value="Save" update="out"
+                                                 action="#{nodeAPIConfigurationController.save}"/>
+                            </p>
+                        </h:panelGroup>
+                    </h:form>
+                </h:panelGroup>
+            </p:dialog>
+        </p:outputPanel>
+    </ui:define>
+</ui:composition>

@@ -34,7 +34,7 @@ import org.ecloudmanager.jeecore.service.Service;
 import org.ecloudmanager.node.NodeAPI;
 import org.ecloudmanager.node.model.FirewallRule;
 import org.ecloudmanager.node.model.FirewallUpdate;
-import org.ecloudmanager.service.NodeAPIProvider;
+import org.ecloudmanager.service.NodeAPIConfigurationService;
 import org.ecloudmanager.service.execution.Action;
 
 import javax.inject.Inject;
@@ -45,7 +45,7 @@ public class HAProxyActions {
     //    @Inject
 //    private AWSVmService vmService;
     @Inject
-    NodeAPIProvider nodeAPIProvider;
+    NodeAPIConfigurationService nodeAPIProvider;
 
     public Action getCreatePublicEndpointFirewallRulesAction(ProducedServiceDeployment producedServiceDeployment) {
         return Action.single("Create Firewall Rules for Public Endpoints", () -> {

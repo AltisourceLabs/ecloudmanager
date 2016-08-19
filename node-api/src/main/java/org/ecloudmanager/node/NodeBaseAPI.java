@@ -7,8 +7,10 @@ import java.util.Map;
 
 public interface NodeBaseAPI {
     /**
-     * @return Parameters list for node create or update
+     * @return API Info
      */
+    APIInfo getAPIInfo() throws Exception;
+
     List<NodeParameter> getNodeParameters(Credentials credentials) throws Exception;
 
     /**

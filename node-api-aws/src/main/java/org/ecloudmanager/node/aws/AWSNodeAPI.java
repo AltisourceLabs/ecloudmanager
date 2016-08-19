@@ -30,6 +30,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
     private static String TAG_NAME = "Name";
     private static String TAG_CREATOR = "Creator";
     private static String TAG_HOSTED_ZONE = "Hosted Zone";
+    private static APIInfo API_INFO = new APIInfo().id("AWS").description("Amazon EC2");
 
     private static String getSubnetLabel(com.amazonaws.services.ec2.model.Subnet subnet) {
         return subnet.getTags().stream()
@@ -42,6 +43,11 @@ public class AWSNodeAPI implements NodeBaseAPI {
     private static List<FirewallRule> fromIpPermission(IpPermission permission) {
         return permission.getIpRanges().stream().map(range ->
                 new FirewallRule().type(FirewallRule.TypeEnum.IP).protocol(permission.getIpProtocol()).port(permission.getToPort()).from(range)).collect(Collectors.toList());
+    }
+
+    @Override
+    public APIInfo getAPIInfo() {
+        return API_INFO;
     }
 
     private String getUserId(String accessKey, String secretKey) {

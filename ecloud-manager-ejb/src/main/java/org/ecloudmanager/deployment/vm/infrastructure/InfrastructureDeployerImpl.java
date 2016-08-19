@@ -34,9 +34,11 @@ import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.core.NodeAPISuggestions;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
 import org.ecloudmanager.deployment.vm.VMDeployment;
+import org.ecloudmanager.node.NodeAPI;
+import org.ecloudmanager.node.model.APIInfo;
 import org.ecloudmanager.node.model.NodeParameter;
 import org.ecloudmanager.node.model.SecretKey;
-import org.ecloudmanager.service.NodeAPIProvider;
+import org.ecloudmanager.service.NodeAPIConfigurationService;
 import org.ecloudmanager.service.execution.Action;
 
 import javax.enterprise.inject.spi.CDI;
@@ -45,24 +47,34 @@ import java.util.Map;
 
 public class InfrastructureDeployerImpl extends InfrastructureDeployer {
 
-    private NodeAPIProvider nodeAPIProvider = CDI.current().select(NodeAPIProvider.class).get();
+    private NodeAPIConfigurationService nodeAPIProvider = CDI.current().select(NodeAPIConfigurationService.class).get();
     private SecretKey credentials;
     private String apiId;
     private VmActions vmActions = CDI.current().select(VmActions.class).get();
+    private NodeAPI nodeAPI;
+    private APIInfo apiInfo;
 
-    public InfrastructureDeployerImpl(String apiId) {
-        this.apiId = apiId;
-        credentials = nodeAPIProvider.getCredentials(apiId);
+    public InfrastructureDeployerImpl(String apiName) {
+        this.apiId = apiName;
+        nodeAPI = nodeAPIProvider.getAPI(apiName);
+        try {
+            apiInfo = nodeAPI.getAPIInfo();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        credentials = nodeAPIProvider.getCredentials(apiName);
+
     }
 
-    public static DeploymentObject getConfig(VMDeployment deployment) {
+    public DeploymentObject getConfig(VMDeployment deployment) {
         ApplicationDeployment ad = (ApplicationDeployment) deployment.getTop();
-        String infra = ad.getInfrastructure();
-        return deployment.createIfMissingAndGetConfig(infra);
+        String apiName = ad.getInfrastructure();
+
+        return deployment.createIfMissingAndGetConfig(apiInfo.getId());
     }
 
-    public static Map<String, String> getNodeParameters(VMDeployment deployment) {
-        return InfrastructureDeployerImpl.getConfig(deployment).getConfigValues();
+    public Map<String, String> getNodeParameters(VMDeployment deployment) {
+        return getConfig(deployment).getConfigValues();
     }
 
 
@@ -70,7 +82,7 @@ public class InfrastructureDeployerImpl extends InfrastructureDeployer {
     public void specifyConstraints(VMDeployment vmDeployment) {
         DeploymentConstraint constraint = getConfig(vmDeployment);
         try {
-            List<NodeParameter> params = nodeAPIProvider.getAPI(apiId).getNodeParameters(credentials);
+            List<NodeParameter> params = nodeAPI.getNodeParameters(credentials);
             params.forEach(p -> {
                         constraint.addField(ConstraintField.builder().name(p.getName()).description(p.getDescription())
                                 .defaultValue(p.getDefaultValue()).required(p.getRequired())

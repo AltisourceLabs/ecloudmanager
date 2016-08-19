@@ -36,7 +36,7 @@ import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployerImpl
 import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironment;
 import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironmentDeployer;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
-import org.ecloudmanager.service.NodeAPIProvider;
+import org.ecloudmanager.service.NodeAPIConfigurationService;
 import org.jetbrains.annotations.NotNull;
 import org.mongodb.morphia.annotations.Transient;
 
@@ -104,7 +104,7 @@ public class VMDeployment extends Deployable {
 
     public List<Recipe> getRunlist() {
         List<Recipe> runlist = new ArrayList<>();
-        runlist.addAll(CDI.current().select(NodeAPIProvider.class).get().getRunlist(getInfrastructure()));
+        runlist.addAll(CDI.current().select(NodeAPIConfigurationService.class).get().getRunlist(getInfrastructure()));
         runlist.addAll(getVirtualMachineTemplate().getRunlist());
         return runlist;
     }

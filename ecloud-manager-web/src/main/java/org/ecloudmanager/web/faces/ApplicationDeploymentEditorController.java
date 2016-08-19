@@ -36,7 +36,7 @@ import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironment;
 import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
-import org.ecloudmanager.service.NodeAPIProvider;
+import org.ecloudmanager.service.NodeAPIConfigurationService;
 import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
 import org.omnifaces.cdi.Param;
 import org.omnifaces.util.Beans;
@@ -78,7 +78,7 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
     @Inject
     private transient ApplicationDeploymentService applicationDeploymentService;
     @Inject
-    private transient NodeAPIProvider nodeAPIProvider;
+    private transient NodeAPIConfigurationService nodeAPIProvider;
 
     public ApplicationDeployment getDeployment() {
         return deployment;

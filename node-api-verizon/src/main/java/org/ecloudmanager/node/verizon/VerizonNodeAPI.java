@@ -23,7 +23,13 @@ public class VerizonNodeAPI implements NodeBaseAPI {
     private static final Set<Integer> ALLOWED_CPU_VALUES = Sets.newHashSet(1, 2, 4, 8);
     private static final long VZ_TASK_TIMEOUT_SEC = 1000;
     private static Map<Pair<String, String>, CloudCachedEntityService> caches = new HashMap<>();
+    private static APIInfo API_INFO = new APIInfo().id("VERIZON").description("Verizon Terremark");
     private ObjectFactory objectFactory = new ObjectFactory();
+
+    @Override
+    public APIInfo getAPIInfo() {
+        return API_INFO;
+    }
 
     private CloudCachedEntityService getCache(String accessKey, String privateKey) {
         Pair key = Pair.of(accessKey, privateKey);

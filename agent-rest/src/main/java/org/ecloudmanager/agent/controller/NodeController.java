@@ -20,6 +20,16 @@ public class NodeController {
     // FIXME should be configurable
     private LocalNodeAPI api = new LocalNodeAPI(new AWSNodeAPI());
 
+    public ResponseContext getInfo(RequestContext request) {
+        try {
+            return new ResponseContext().status(Status.OK).entity(api.getAPIInfo());
+        } catch (Exception e) {
+            return new ResponseContext()
+                    .status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(e.getMessage());
+        }
+    }
+
     public ResponseContext getNodeParameters(RequestContext request, String accessKey, String secretKey) {
         try {
             List<NodeParameter> response = api.getNodeParameters(new SecretKey(accessKey, secretKey));

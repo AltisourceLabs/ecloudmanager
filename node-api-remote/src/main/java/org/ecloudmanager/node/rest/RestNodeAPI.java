@@ -26,6 +26,11 @@ public class RestNodeAPI implements org.ecloudmanager.node.NodeAPI {
 
 
     @Override
+    public APIInfo getAPIInfo() throws ApiException {
+        return nodeApi.getInfo();
+    }
+
+    @Override
     public List<NodeParameter> getNodeParameters(Credentials credentials) throws Exception {
         SecretKey sk = (SecretKey) credentials;
         return nodeApi.getNodeParameters(sk.getName(), sk.getSecret());

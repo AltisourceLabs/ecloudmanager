@@ -30,7 +30,7 @@ import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.deployment.GatewayRepository;
 import org.ecloudmanager.repository.template.VirtualMachineTemplateRepository;
-import org.ecloudmanager.service.NodeAPIProvider;
+import org.ecloudmanager.service.NodeAPIConfigurationService;
 import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
 import org.ecloudmanager.service.deployment.GatewayService;
 import org.primefaces.model.menu.DefaultMenuItem;
@@ -54,7 +54,7 @@ public class GatewaysController extends FacesSupport implements Serializable {
     @Inject
     private transient VirtualMachineTemplateRepository virtualMachineTemplateRepository;
     @Inject
-    private transient NodeAPIProvider nodeAPIProvider;
+    private transient NodeAPIConfigurationService nodeAPIProvider;
 
     private List<GatewayDeployment> gatewayDeployments;
 

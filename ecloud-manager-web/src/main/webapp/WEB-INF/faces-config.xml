@@ -38,6 +38,11 @@
         <component-class>org.ecloudmanager.components.cytoscape.Cytoscape</component-class>
     </component>
 
+    <converter>
+        <converter-for-class>java.lang.Enum</converter-for-class>
+        <converter-class>javax.faces.convert.EnumConverter</converter-class>
+    </converter>
+
     <application>
         <action-listener>org.primefaces.application.DialogActionListener</action-listener>
         <navigation-handler>org.primefaces.application.DialogNavigationHandler</navigation-handler>

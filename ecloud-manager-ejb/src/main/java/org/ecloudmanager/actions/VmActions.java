@@ -36,7 +36,7 @@ import org.ecloudmanager.node.model.ExecutionDetails;
 import org.ecloudmanager.node.model.NodeInfo;
 import org.ecloudmanager.node.util.NodeUtil;
 import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
-import org.ecloudmanager.service.NodeAPIProvider;
+import org.ecloudmanager.service.NodeAPIConfigurationService;
 import org.ecloudmanager.service.aws.AWSMongoCredentialsProvider;
 import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
 import org.ecloudmanager.service.execution.Action;
@@ -55,7 +55,7 @@ public class VmActions {
     @Inject
     private AWSMongoCredentialsProvider credentialsProvider;
     @Inject
-    private NodeAPIProvider nodeAPIProvider;
+    private NodeAPIConfigurationService nodeAPIProvider;
     @Inject
     private ApplicationDeploymentRepository applicationDeploymentRepository;
 
