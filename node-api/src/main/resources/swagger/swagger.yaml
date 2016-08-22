@@ -3,92 +3,6 @@
     version: 0.0.0
     title: Deployment Agent
   paths:
-    /:
-      get:
-        tags:
-        - node
-        summary: Get API info
-        operationId: getInfo
-        produces:
-        - application/json
-        responses:
-          200:
-            description: Successful
-            schema:
-              $ref: '#/definitions/APIInfo'
-
-    /nodeParameters:
-      get:
-        tags:
-        - node
-        summary: Get node parameters
-        operationId: getNodeParameters
-        produces:
-        - application/json
-        parameters:
-        - name: accessKey
-          in: header
-          required: true
-          type: string
-        - name: secretKey
-          in: header
-          required: true
-          type: string
-        responses:
-          200:
-            description: Successful
-            schema:
-              type: array
-              items:
-                $ref: '#/definitions/NodeParameter'
-
-    /nodeParameters/{parameter}:
-      get:
-        tags:
-        - node
-        summary: Get node parameter values
-        operationId: getNodeParameterValues
-        consumes:
-        - application/json
-        produces:
-        - application/json
-        parameters:
-        - name: accessKey
-          in: header
-          required: true
-          type: string
-        - name: secretKey
-          in: header
-          required: true
-          type: string
-        - name: parameter
-          in: path
-          description: Parameter name
-          required: true
-          type: string
-        - name: names
-          in: query
-          description: Comma-separated parameter names
-          type: array
-          items:
-            type: string
-          collectionFormat: csv
-          required: false
-        - name: values
-          in: query
-          description: Comma-separated parameter values
-          type: array
-          items:
-            type: string
-          collectionFormat: csv
-          required: false
-        responses:
-          200:
-            description: Successful
-            schema:
-              type: array
-              items:
-                $ref: '#/definitions/ParameterValue'
     /task:
       get:
         tags:
@@ -187,6 +101,103 @@
             description: Invalid ID
           404:
             description: Task not found
+# {
+#  "parameters": {
+#        "name":"dp-agent",
+#        "region":"us-east-1",
+#        "subnet":"subnet-e2c17e95",
+#        "storage":"20",
+#        "image":"ami-c2a818aa",
+#        "instance_type":"t2.micro",
+#        "keypair":"root"
+#}
+#}
+    /:
+      get:
+        tags:
+        - node
+        summary: Get API info 
+        operationId: getInfo
+        produces:
+        - application/json
+        responses:
+          200:
+            description: Successful
+            schema:
+              $ref: '#/definitions/APIInfo'
+
+    /nodeParameters:
+      get:
+        tags:
+        - node
+        summary: Get node parameters 
+        operationId: getNodeParameters
+        produces:
+        - application/json
+        parameters:
+        - name: accessKey
+          in: header
+          required: true
+          type: string
+        - name: secretKey
+          in: header
+          required: true
+          type: string
+        responses:
+          200:
+            description: Successful
+            schema:
+              type: array
+              items: 
+                $ref: '#/definitions/NodeParameter'
+
+    /nodeParameters/{parameter}:
+      get:
+        tags:
+        - node
+        summary: Get node parameter values 
+        operationId: getNodeParameterValues
+        consumes:
+        - application/json
+        produces:
+        - application/json
+        parameters:
+        - name: accessKey
+          in: header
+          required: true
+          type: string
+        - name: secretKey
+          in: header
+          required: true
+          type: string
+        - name: parameter
+          in: path
+          description: Parameter name
+          required: true
+          type: string
+        - name: names
+          in: query
+          description: Comma-separated parameter names
+          type: array
+          items:
+            type: string
+          collectionFormat: csv
+          required: false
+        - name: values
+          in: query
+          description: Comma-separated parameter values
+          type: array
+          items:
+            type: string
+          collectionFormat: csv
+          required: false
+        responses:
+          200:
+            description: Successful
+            schema:
+              type: array
+              items: 
+                $ref: '#/definitions/ParameterValue'
     /node:
       post:
         tags:
