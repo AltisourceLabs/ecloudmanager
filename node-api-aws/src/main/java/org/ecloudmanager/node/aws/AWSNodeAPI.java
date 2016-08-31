@@ -520,7 +520,6 @@ public class AWSNodeAPI implements NodeBaseAPI {
 
     @Override
     public void deleteNode(Credentials credentials, String nodeId) throws AWS.RegionNotExistException, ExecutionException {
-        ExecutionDetails details = new ExecutionDetails();
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
         String region = nodeId.split(":")[0];
@@ -535,7 +534,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
             try {
                 deleteDnsRecord(route53, name, hostedZone);
             } catch (Exception e) {
-                NodeUtil.logWarn(details, "Can't delete dns record: " + name + "." + hostedZone, e);
+                log.warn("Can't delete dns record: " + name + "." + hostedZone, e);
             }
         }
 
@@ -546,19 +545,19 @@ public class AWSNodeAPI implements NodeBaseAPI {
             // TODO ? need better impl
             Optional<com.amazonaws.services.ec2.model.SecurityGroup> defaultSG = sgs.stream().filter(sg -> !groupIdToDelete.equals(sg.getGroupId())).findFirst();
             if (defaultSG.isPresent()) {
-                NodeUtil.logInfo(details, "Node created with id: " + nodeId);
+                log.info("Node created with id: " + nodeId);
                 ec2.modifyInstanceAttribute(new ModifyInstanceAttributeRequest().withInstanceId(id).withGroups(defaultSG.get().getGroupId()));
                 ec2.deleteSecurityGroup(new DeleteSecurityGroupRequest().withGroupId(groupIdToDelete));
 //                runWithRetry(details, "Deleting security group", () -> ec2.deleteSecurityGroup(new DeleteSecurityGroupRequest().withGroupId(groupIdToDelete)),
 //                        AmazonServiceException.class::isInstance,
 //                        e -> AmazonServiceException.class.isInstance(e) && ! AmazonServiceException.class.cast(e).getErrorCode().equals("400")
 //                );
-                NodeUtil.logInfo(details, "Security group deleted: " + groupIdToDelete);
+                log.info("Security group deleted: " + groupIdToDelete);
             }
         }
         TerminateInstancesRequest terminateInstancesRequest = new TerminateInstancesRequest().withInstanceIds(id);
         TerminateInstancesResult result = ec2.terminateInstances(terminateInstancesRequest);
-        NodeUtil.logInfo(details, "Node terminated: " + id);
+        log.info("Node terminated: " + id);
         //return details.status(ExecutionDetails.StatusEnum.OK);
     }
 
