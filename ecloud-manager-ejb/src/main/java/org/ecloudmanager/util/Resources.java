@@ -48,4 +48,9 @@ public class Resources {
     public Logger produceLog(InjectionPoint injectionPoint) {
         return LogManager.getLogger(injectionPoint.getMember().getDeclaringClass().getName());
     }
+
+    @Produces
+    public org.slf4j.Logger produceSlf4jLog(InjectionPoint injectionPoint) {
+        return org.slf4j.LoggerFactory.getLogger(injectionPoint.getMember().getDeclaringClass().getName());
+    }
 }

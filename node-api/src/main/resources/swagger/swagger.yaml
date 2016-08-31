@@ -3,21 +3,6 @@
     version: 0.0.0
     title: Deployment Agent
   paths:
-    /task:
-      get:
-        tags:
-        - tasks
-        summary: Get list of tasks
-        description: List of tasks on tasks
-        operationId: getTasks
-        produces:
-         
-        - application/json
-        responses:
-          200:
-            description: Successful
-            schema:
-              $ref: '#/definitions/Tasks'
     /task/{taskId}:
       get:
         tags:
@@ -25,7 +10,6 @@
         summary: Get task information
         operationId: getTask
         produces:
-         
         - application/json
         parameters:
         - name: taskId
@@ -44,74 +28,27 @@
             description: Task not found
         security:
         - key: []
-      delete:
-        tags:
-        - tasks
-        summary: Delete task
-        operationId: deleteTask
-        produces:
-         
-        - application/json
-        parameters:
-        - name: taskId
-          in: path
-          description: ID of task to delete
-          required: true
-          type: string
-        responses:
-          200:
-            description: Successful
-            schema:
-              $ref: '#/definitions/TaskInfo'
-          400:
-            description: Invalid ID
-          404:
-            description: Task not found
-    /task/{taskId}/log:
+    /task/{taskId}/pollLog:
       get:
         tags:
         - tasks
-        summary: Get task's log
-        operationId: getLog
+        summary: Poll task's log
+        operationId: pollLog
         produces:
-         
         - application/json
         parameters:
         - name: taskId
           in: path
           description: ID of task to return
           required: true
-          type: integer
-        - name: skip
-          in: query
-          description: Number of records to skip
-          required: false
-          type: integer
-        - name: count
-          in: query
-          description: Number of records to return
-          required: false
-          type: integer
+          type: string
         responses:
           200:
             description: Successful
             schema:
-              $ref: '#/definitions/TaskLog'
-          400:
-            description: Invalid ID
-          404:
-            description: Task not found
-# {
-#  "parameters": {
-#        "name":"dp-agent",
-#        "region":"us-east-1",
-#        "subnet":"subnet-e2c17e95",
-#        "storage":"20",
-#        "image":"ami-c2a818aa",
-#        "instance_type":"t2.micro",
-#        "keypair":"root"
-#}
-#}
+              type: array
+              items: 
+                $ref: '#/definitions/LoggingEvent'
     /:
       get:
         tags:
@@ -461,9 +398,9 @@
           type: file
         responses:
           200:
-            description: Execution details
+            description: Task id
             schema:
-              $ref: '#/definitions/ExecutionDetails'
+              type: string
     /node/{nodeId}/execute:
       put:
         tags:
@@ -495,9 +432,9 @@
             $ref: '#/definitions/Command'
         responses:
           200:
-            description: Successful
+            description: Task id
             schema:
-              $ref: '#/definitions/CommandOutput'
+              type: string
           
   securityDefinitions:
     key:
@@ -596,18 +533,6 @@
           type: string
         description:
           type: string
-    InfrastructurePropertyRequestParameters:
-      properties:
-        properties:
-          type: object
-          additionalProperties:
-            type: string
-    InfrastructurePropertyResponce:
-      properties:
-        properties:
-          type: object
-          additionalProperties:
-            type: string
     Node:
       properties:
         parameters:
@@ -644,38 +569,33 @@
           type: integer
         from:
           type: string
-    Tasks:
-      properties:
-        tasks:
-          type: array
-          items:
-            $ref: '#/definitions/TaskInfo'
     TaskInfo:
       properties:
-        status:
-          type: string
-    Subnet:
+        done:
+          type: boolean
+        value:
+          type: object
+        exception:
+          $ref: '#/definitions/TaskException'          
+    TaskException:
       properties:
-        id:
+        type:
           type: string
-        name:  
+        message:  
           type: string
-        cidr:  
-          type: string
-    SecurityGroup:
+    LoggingEvent:
       properties:
-        id:
+        level:
           type: string
-        name:  
+        message:
           type: string
-        description:  
+        timeStamp:
+          type: integer
+          format: int64
+        logger:
           type: string
-    TaskLog:
-      properties:
-        entries:
-          type: array
-          items:
-            type: string
+        throwable:
+          type: string
     NodeInfo:
       properties:
         id:
@@ -697,14 +617,6 @@
         credentials:
             $ref: '#/definitions/SSHCredentials'          
         command:
-          type: array
-          items:
-            type: string
-    CommandOutput:
-      properties:
-        exitCode:
-          type: integer
-        output:
           type: array
           items:
             type: string

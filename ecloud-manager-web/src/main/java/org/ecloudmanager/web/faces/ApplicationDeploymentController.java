@@ -101,6 +101,9 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
     private TreeNode selectedNode;
 
     private List<SelectItem> selectItems;
+    private List<ConstraintInput> constraints = new ArrayList<>();
+    private TreeNode tree = null;
+    private String jsonString;
 
     public List<ConstraintInput> getConstraints() {
         return constraints;
@@ -109,12 +112,6 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
     public void setConstraints(List<ConstraintInput> constraints) {
         this.constraints = constraints;
     }
-
-    private List<ConstraintInput> constraints = new ArrayList<>();
-
-    private TreeNode tree = null;
-
-    private String jsonString;
 
     @PostConstruct
     public void init() {

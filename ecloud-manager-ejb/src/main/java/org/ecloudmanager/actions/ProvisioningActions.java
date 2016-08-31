@@ -26,6 +26,8 @@ package org.ecloudmanager.actions;
 
 import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.jeecore.service.Service;
+import org.ecloudmanager.node.AsyncNodeAPI;
+import org.ecloudmanager.node.model.Credentials;
 import org.ecloudmanager.service.execution.Action;
 import org.ecloudmanager.service.provisioning.GlobalProvisioningService;
 
@@ -36,12 +38,12 @@ public class ProvisioningActions {
     @Inject
     private GlobalProvisioningService globalProvisioningService;
 
-    public Action getProvisionVmAction(VMDeployment vmDeployment) {
-        return new ProvisionVmAction(vmDeployment, globalProvisioningService, false);
+    public Action getProvisionVmAction(VMDeployment vmDeployment, AsyncNodeAPI api, Credentials credentials) {
+        return new ProvisionVmAction(vmDeployment, api, credentials, globalProvisioningService, false);
     }
 
-    public Action getProvisionVmUpdateAction(VMDeployment vmDeployment) {
-        return new ProvisionVmAction(vmDeployment, globalProvisioningService, true);
+    public Action getProvisionVmUpdateAction(VMDeployment vmDeployment, AsyncNodeAPI api, Credentials credentials) {
+        return new ProvisionVmAction(vmDeployment, api, credentials, globalProvisioningService, true);
     }
 
     public boolean needUpdateProvisioning(VMDeployment before, VMDeployment after) {

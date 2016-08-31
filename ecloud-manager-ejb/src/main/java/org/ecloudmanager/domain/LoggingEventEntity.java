@@ -22,10 +22,48 @@
  * SOFTWARE.
  */
 
-package org.ecloudmanager.service.provisioning;
+package org.ecloudmanager.domain;
+
+import org.ecloudmanager.jeecore.domain.MongoObject;
+import org.ecloudmanager.node.model.LoggingEvent;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+public class LoggingEventEntity extends MongoObject {
+    private LoggingEvent event;
+    private String actionId;
+
+    LoggingEventEntity() {
+    }
+
+    public LoggingEventEntity(String actionId, LoggingEvent event) {
+        this.actionId = actionId;
+        this.event = event;
+    }
+
+    public LoggingEvent getEvent() {
+        return event;
+    }
+
+    public void setEvent(LoggingEvent event) {
+        this.event = event;
+    }
+
+    public String getActionId() {
+        return actionId;
+    }
+
+    public void setActionId(String actionId) {
+        this.actionId = actionId;
+    }
 
 
-public interface ProvisioningService {
+    public String getDate() {
+        return new SimpleDateFormat("HH:mm:ss,S").format(new Date(event.getTimeStamp()));
+    }
 
-    void provisionVm(String vmId, String provisioningType);
+    public String getUncoloredMessageStr() {
+        return event.getMessage() == null ? null : event.getMessage().replaceAll("\u001B\\[[;\\d]*m", "");
+    }
 }

@@ -31,6 +31,9 @@ import org.ecloudmanager.deployment.core.Deployer;
 import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
 import org.ecloudmanager.deployment.vm.VMDeployment;
+import org.ecloudmanager.node.AsyncNodeAPI;
+import org.ecloudmanager.node.model.SecretKey;
+import org.ecloudmanager.service.NodeAPIConfigurationService;
 import org.ecloudmanager.service.execution.Action;
 import org.jetbrains.annotations.NotNull;
 
@@ -38,9 +41,31 @@ import javax.enterprise.inject.spi.CDI;
 import java.util.List;
 
 public class ChefProvisioningDeployer implements Deployer<VMDeployment> {
+    private static final String CHEF_NODE_CONFIG_NAME = "chefNodeAttributes";
+    private final String apiName;
+    private final AsyncNodeAPI nodeAPI;
     private ProvisioningActions provisioningActions = CDI.current().select(ProvisioningActions.class).get();
     private ChefActions chefActions = CDI.current().select(ChefActions.class).get();
-    private static final String CHEF_NODE_CONFIG_NAME = "chefNodeAttributes";
+    private NodeAPIConfigurationService nodeAPIProvider = CDI.current().select(NodeAPIConfigurationService.class).get();
+    private SecretKey credentials;
+
+    public ChefProvisioningDeployer(String apiName) {
+        this.apiName = apiName;
+        nodeAPI = nodeAPIProvider.getAPI(apiName);
+        credentials = nodeAPIProvider.getCredentials(apiName);
+    }
+
+    private static String constraintDescription(Recipe r, ChefAttribute a) {
+        return "Recipe: " + r.getName() + " Chef Attribute: " + a.getName();
+    }
+
+    public static String getVersionConstraintFieldName(Recipe recipe) {
+        return recipe.getCookbookName();
+    }
+
+    public static DeploymentObject getNodeConfig(VMDeployment deployment) {
+        return deployment.createIfMissingAndGetConfig(CHEF_NODE_CONFIG_NAME);
+    }
 
     @Override
     public void specifyConstraints(VMDeployment vmDeployment) {
@@ -77,7 +102,7 @@ public class ChefProvisioningDeployer implements Deployer<VMDeployment> {
 
     @Override
     public Action getCreateAction(VMDeployment vmDeployment) {
-        return provisioningActions.getProvisionVmAction(vmDeployment);
+        return provisioningActions.getProvisionVmAction(vmDeployment, nodeAPI, credentials);
     }
 
     @Override
@@ -91,22 +116,9 @@ public class ChefProvisioningDeployer implements Deployer<VMDeployment> {
             chefActions.needUpdateChefEnvironment(after.getChefEnvironment()) ||
                 provisioningActions.needUpdateProvisioning(before, after)
             ) {
-            return provisioningActions.getProvisionVmUpdateAction(after);
+            return provisioningActions.getProvisionVmUpdateAction(after, nodeAPI, credentials);
         } else {
             return null;
         }
-    }
-
-    private static String constraintDescription(Recipe r, ChefAttribute a) {
-        return "Recipe: " + r.getName() + " Chef Attribute: " + a.getName();
-    }
-
-
-    public static String getVersionConstraintFieldName(Recipe recipe) {
-        return recipe.getCookbookName();
-    }
-
-    public static DeploymentObject getNodeConfig(VMDeployment deployment) {
-        return deployment.createIfMissingAndGetConfig(CHEF_NODE_CONFIG_NAME);
     }
 }

@@ -8,7 +8,7 @@ import org.ecloudmanager.deployment.ps.HAProxyDeployer;
 import org.ecloudmanager.deployment.ps.ProducedServiceDeployment;
 import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployer;
-import org.ecloudmanager.node.NodeAPI;
+import org.ecloudmanager.node.AsyncNodeAPI;
 import org.ecloudmanager.node.model.Credentials;
 import org.ecloudmanager.node.model.ExecutionDetails;
 import org.ecloudmanager.node.model.FirewallRule;
@@ -27,7 +27,7 @@ public class CreateFirewallRulesAction extends SingleAction {
         super();
     }
 
-    public CreateFirewallRulesAction(VMDeployment deployment, NodeAPI nodeAPI, Credentials credentials) {
+    public CreateFirewallRulesAction(VMDeployment deployment, AsyncNodeAPI nodeAPI, Credentials credentials) {
         super(null, "Create Firewall Rules", deployment);
         setCallable(() -> {
             ApplicationDeployment ad = (ApplicationDeployment) deployment.getTop();

@@ -31,8 +31,6 @@ import org.ecloudmanager.deployment.app.Link;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.core.Endpoint;
-import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployer;
-import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployerImpl;
 import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironment;
 import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironmentDeployer;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
@@ -57,9 +55,8 @@ public class VMDeployment extends Deployable {
     @NotNull
     @Override
     public VMDeployer getDeployer() {
-        if (deployer == null) {
-            InfrastructureDeployer infrastructureDeployer = new InfrastructureDeployerImpl(getInfrastructure());
-            deployer = new VMDeployer(infrastructureDeployer);
+        if (deployer == null || !deployer.getApiName().equals(getInfrastructure())) {
+            deployer = new VMDeployer(getInfrastructure());
         }
         return deployer;
     }

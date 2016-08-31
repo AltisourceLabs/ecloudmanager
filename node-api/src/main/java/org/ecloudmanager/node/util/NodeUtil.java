@@ -1,17 +1,18 @@
 package org.ecloudmanager.node.util;
 
-import org.ecloudmanager.node.NodeBaseAPI;
-import org.ecloudmanager.node.model.Credentials;
-import org.ecloudmanager.node.model.ExecutionDetails;
-import org.ecloudmanager.node.model.LogEntry;
-import org.ecloudmanager.node.model.NodeInfo;
+import ch.qos.logback.classic.pattern.ThrowableProxyConverter;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import org.ecloudmanager.node.AsyncNodeBaseAPI;
+import org.ecloudmanager.node.model.*;
 
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 
 public class NodeUtil {
-    public static NodeInfo wait(NodeBaseAPI api, Credentials credentials, String nodeId) throws Exception {
+    private static ThrowableProxyConverter converter = new ThrowableProxyConverter();
+
+    public static NodeInfo wait(AsyncNodeBaseAPI api, Credentials credentials, String nodeId) throws Exception {
         Callable<NodeInfo> poll = () -> api.getNode(credentials, nodeId);
         Predicate<NodeInfo> check =
                 (result) -> NodeInfo.StatusEnum.RUNNING.equals(result.getStatus()) && result.getIp() != null;
@@ -65,5 +66,9 @@ public class NodeUtil {
             result.getLog().addAll(second.getLog());
         }
         return result;
+    }
+
+    public static LoggingEvent fromLogback(ILoggingEvent event) {
+        return new LoggingEvent().level(event.getLevel().toString()).message(event.getFormattedMessage()).timeStamp(event.getTimeStamp()).throwable(converter.convert(event)).logger(event.getLoggerName());
     }
 }

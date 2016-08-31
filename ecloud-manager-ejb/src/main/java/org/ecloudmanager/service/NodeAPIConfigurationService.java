@@ -28,8 +28,8 @@ import org.apache.logging.log4j.Logger;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.domain.NodeAPIConfiguration;
 import org.ecloudmanager.jeecore.service.ServiceSupport;
-import org.ecloudmanager.node.LocalNodeAPI;
-import org.ecloudmanager.node.NodeAPI;
+import org.ecloudmanager.node.AsyncNodeAPI;
+import org.ecloudmanager.node.LocalAsyncNodeAPI;
 import org.ecloudmanager.node.NodeBaseAPI;
 import org.ecloudmanager.node.model.SecretKey;
 import org.ecloudmanager.node.rest.RestNodeAPI;
@@ -38,13 +38,18 @@ import org.picketlink.Identity;
 
 import javax.ejb.Stateless;
 import javax.inject.Inject;
+import javax.inject.Named;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 @Stateless
 public class NodeAPIConfigurationService extends ServiceSupport {
     @Inject
     Identity identity;
+    @Inject
+    @Named("contextExecutorService")
+    ExecutorService executorService;
     @Inject
     private Logger log;
     @Inject
@@ -67,7 +72,7 @@ public class NodeAPIConfigurationService extends ServiceSupport {
         return repository.getAllForUser(identity.getAccount().getId()).stream().filter(c -> name.equals(c.getName())).findAny().orElse(null);
     }
 
-    public NodeAPI getAPI(String name) {
+    public AsyncNodeAPI getAPI(String name) {
         NodeAPIConfiguration cfg = getConfiguration(name);
         if (cfg == null) {
             return null;
@@ -77,7 +82,7 @@ public class NodeAPIConfigurationService extends ServiceSupport {
                 try {
                     Class<? extends NodeBaseAPI> clazz = (Class<? extends NodeBaseAPI>) Class.forName(cfg.getNodeBaseAPIClassName());
                     NodeBaseAPI baseAPI = clazz.newInstance();
-                    return new LocalNodeAPI(baseAPI);
+                    return new LocalAsyncNodeAPI(baseAPI, executorService);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

@@ -31,7 +31,7 @@ import org.ecloudmanager.deployment.ps.ProducedServiceDeployment;
 import org.ecloudmanager.deployment.vm.GatewayVMDeployment;
 import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployerImpl;
 import org.ecloudmanager.jeecore.service.Service;
-import org.ecloudmanager.node.NodeAPI;
+import org.ecloudmanager.node.AsyncNodeAPI;
 import org.ecloudmanager.node.model.FirewallRule;
 import org.ecloudmanager.node.model.FirewallUpdate;
 import org.ecloudmanager.service.NodeAPIConfigurationService;
@@ -73,7 +73,7 @@ public class HAProxyActions {
                 String vmId = InfrastructureDeployerImpl.getVmId(gatewayVmDeployment);
                 String apiId = ((ApplicationDeployment) (gatewayVmDeployment.getTop())).getInfrastructure();
 
-                NodeAPI nodeAPI = nodeAPIProvider.getAPI(apiId);
+                AsyncNodeAPI nodeAPI = nodeAPIProvider.getAPI(apiId);
                 FirewallRule rule = new FirewallRule().type(FirewallRule.TypeEnum.ANY).port(port).protocol("TCP");
 
                 try {
@@ -98,7 +98,7 @@ public class HAProxyActions {
                 String vmId = InfrastructureDeployerImpl.getVmId(gatewayVmDeployment);
                 String apiId = ((ApplicationDeployment) (gatewayVmDeployment.getTop())).getInfrastructure();
                 FirewallRule rule = new FirewallRule().type(FirewallRule.TypeEnum.ANY).port(port).protocol("TCP");
-                NodeAPI nodeAPI = nodeAPIProvider.getAPI(apiId);
+                AsyncNodeAPI nodeAPI = nodeAPIProvider.getAPI(apiId);
 
                 try {
                     nodeAPI.updateNodeFirewallRules(nodeAPIProvider.getCredentials(apiId), vmId, new FirewallUpdate().create(Arrays.asList(rule)));

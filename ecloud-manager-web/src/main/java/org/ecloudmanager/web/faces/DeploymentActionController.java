@@ -33,11 +33,11 @@ import org.ecloudmanager.components.cytoscape.model.CyNode;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
-import org.ecloudmanager.domain.LogEventEntity;
+import org.ecloudmanager.domain.LoggingEventEntity;
 import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.deployment.DeploymentAttemptRepository;
-import org.ecloudmanager.repository.deployment.DeploymentLogsRepository;
+import org.ecloudmanager.repository.deployment.LoggingEventRepository;
 import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
 import org.ecloudmanager.service.execution.Action;
 import org.ecloudmanager.service.execution.ActionGroup;
@@ -187,8 +187,10 @@ public class DeploymentActionController extends FacesSupport implements Serializ
 
     @Inject
     private transient DeploymentAttemptRepository deploymentAttemptRepository;
+    //    @Inject
+//    private transient DeploymentLogsRepository deploymentLogsRepository;
     @Inject
-    private transient DeploymentLogsRepository deploymentLogsRepository;
+    private transient LoggingEventRepository deploymentLogsRepository;
 
     private CyModel cyModel;
 
@@ -329,7 +331,7 @@ public class DeploymentActionController extends FacesSupport implements Serializ
         node.setClasses(StringUtils.join(classes, " ").trim());
     }
 
-    public List<LogEventEntity> getLogs() {
+    public List<LoggingEventEntity> getLogs() {
         Action selectedAction = getSelectedAction();
         if (selectedAction != null) {
             Set<SingleAction> actions = selectedAction.stream()
@@ -363,13 +365,13 @@ public class DeploymentActionController extends FacesSupport implements Serializ
 
     public void onRowToggle(ToggleEvent event) {
         if (event.getVisibility() == Visibility.VISIBLE) {
-            expandedRows.add(((LogEventEntity) event.getData()).getId());
+            expandedRows.add(((LoggingEventEntity) event.getData()).getId());
         } else {
-            expandedRows.remove(((LogEventEntity) event.getData()).getId());
+            expandedRows.remove(((LoggingEventEntity) event.getData()).getId());
         }
     }
 
-    public boolean isLogMessageExpanded(LogEventEntity logMessage) {
+    public boolean isLogMessageExpanded(LoggingEventEntity logMessage) {
         return expandedRows.contains(logMessage.getId());
     }
 

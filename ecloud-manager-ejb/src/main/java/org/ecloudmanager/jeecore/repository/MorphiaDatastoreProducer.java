@@ -36,6 +36,7 @@ import org.ecloudmanager.deployment.ps.ProducedServiceDeployment;
 import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.monitoring.HaproxyStats;
+import org.ecloudmanager.repository.deployment.LoggingEventConverter;
 import org.ecloudmanager.repository.deployment.StackTraceElementEntityConverter;
 import org.mongodb.morphia.Datastore;
 import org.mongodb.morphia.Morphia;
@@ -112,6 +113,7 @@ public class MorphiaDatastoreProducer {
         if (morphia == null) {
             morphia = new Morphia();
             morphia.getMapper().getConverters().addConverter(StackTraceElementEntityConverter.class);
+            morphia.getMapper().getConverters().addConverter(LoggingEventConverter.class);
             morphia.mapPackageFromClass(ApplicationDeployment.class)
                     .mapPackageFromClass(DeploymentAttempt.class)
                     .mapPackageFromClass(VMDeployment.class)

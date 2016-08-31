@@ -22,8 +22,12 @@
   ~ SOFTWARE.
   -->
 
-<jboss-deployment-structure xmlns="urn:jboss:deployment-structure:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.jboss.org/schema/jbossas http://www.jboss.org/schema/jbossas/jboss-deployment-structure-1_2.xsd">
+<jboss-deployment-structure xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                            xmlns="urn:jboss:deployment-structure:1.2">
     <deployment>
+        <exclude-subsystems>
+            <subsystem name="logging"/>
+        </exclude-subsystems>
         <exclusions>
             <!-- You must configure the PicketLink dependency to your deployment. The dependency above is
             a reference to a static module from WildFly modules directory. -->
@@ -33,21 +37,25 @@
             <module name="org.picketlink.idm"/>
             <module name="org.picketlink.common"/>
             <module name="org.picketlink.idm.schema"/>
+            <module name="org.apache.commons.logging"/>
+            <module name="org.apache.log4j"/>
+            <module name="org.jboss.logging"/>
+            <module name="org.jboss.logging.jul-to-slf4j-stub"/>
+            <module name="org.jboss.logmanager"/>
+            <module name="org.jboss.logmanager.log4j"/>
+            <module name="org.slf4j"/>
+            <module name="org.slf4j.impl"/>
+            <module name="org.slf4j.jcl-over-slf4j"/>
         </exclusions>
+        <!--<dependencies>-->
+        <!--<module name="org.slf4j" />-->
+        <!--<module name="ch.qos.logback" />-->
+        <!--</dependencies>-->
     </deployment>
-    <sub-deployment name="ecloud-manager-web.war">
-        <exclusions>
-            <!-- You must configure the PicketLink dependency to your deployment. The dependency above is
-            a reference to a static module from WildFly modules directory. -->
-            <module name="org.picketlink.core.api"/>
-            <module name="org.picketlink.idm.api"/>
-            <module name="org.picketlink.core"/>
-            <module name="org.picketlink.idm"/>
-            <module name="org.picketlink.common"/>
-            <module name="org.picketlink.idm.schema"/>
-        </exclusions>
-    </sub-deployment>
     <sub-deployment name="ecloud-manager-ejb.jar">
+        <exclude-subsystems>
+            <subsystem name="logging"/>
+        </exclude-subsystems>
         <exclusions>
             <!-- You must configure the PicketLink dependency to your deployment. The dependency above is
             a reference to a static module from WildFly modules directory. -->
@@ -57,7 +65,48 @@
             <module name="org.picketlink.idm"/>
             <module name="org.picketlink.common"/>
             <module name="org.picketlink.idm.schema"/>
+            <module name="org.apache.commons.logging"/>
+            <module name="org.apache.log4j"/>
+            <module name="org.jboss.logging"/>
+            <module name="org.jboss.logging.jul-to-slf4j-stub"/>
+            <module name="org.jboss.logmanager"/>
+            <module name="org.jboss.logmanager.log4j"/>
+            <module name="org.slf4j"/>
+            <module name="org.slf4j.impl"/>
+            <module name="org.slf4j.jcl-over-slf4j"/>
         </exclusions>
+        <!--<dependencies>-->
+        <!--<module name="org.slf4j" />-->
+        <!--<module name="ch.qos.logback" />-->
+        <!--</dependencies>-->
+    </sub-deployment>
+    <sub-deployment name="ecloud-manager-web.war">
+        <exclude-subsystems>
+            <subsystem name="logging"/>
+        </exclude-subsystems>
+        <exclusions>
+            <!-- You must configure the PicketLink dependency to your deployment. The dependency above is
+            a reference to a static module from WildFly modules directory. -->
+            <module name="org.picketlink.core.api"/>
+            <module name="org.picketlink.idm.api"/>
+            <module name="org.picketlink.core"/>
+            <module name="org.picketlink.idm"/>
+            <module name="org.picketlink.common"/>
+            <module name="org.picketlink.idm.schema"/>
+            <module name="org.apache.commons.logging"/>
+            <module name="org.apache.log4j"/>
+            <module name="org.jboss.logging"/>
+            <module name="org.jboss.logging.jul-to-slf4j-stub"/>
+            <module name="org.jboss.logmanager"/>
+            <module name="org.jboss.logmanager.log4j"/>
+            <module name="org.slf4j"/>
+            <module name="org.slf4j.impl"/>
+            <module name="org.slf4j.jcl-over-slf4j"/>
+        </exclusions>
+        <!--<dependencies>-->
+        <!--<module name="org.slf4j" />-->
+        <!--<module name="ch.qos.logback" />-->
+        <!--</dependencies>-->
     </sub-deployment>
     <!--<deployment>-->
         <!--<dependencies>-->
@@ -95,4 +144,5 @@
             <!--<module name="org.picketlink.idm.schema" meta-inf="import" annotations="true"/>-->
         <!--</dependencies>-->
     <!--</sub-deployment>-->
+
 </jboss-deployment-structure>

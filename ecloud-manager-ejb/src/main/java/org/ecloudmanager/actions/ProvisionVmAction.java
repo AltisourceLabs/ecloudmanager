@@ -2,6 +2,8 @@ package org.ecloudmanager.actions;
 
 import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironment;
+import org.ecloudmanager.node.AsyncNodeAPI;
+import org.ecloudmanager.node.model.Credentials;
 import org.ecloudmanager.service.execution.Action;
 import org.ecloudmanager.service.execution.SingleAction;
 import org.ecloudmanager.service.provisioning.GlobalProvisioningService;
@@ -18,10 +20,10 @@ public class ProvisionVmAction extends SingleAction {
         super();
     }
 
-    public ProvisionVmAction(VMDeployment deployable, GlobalProvisioningService globalProvisioningService, boolean update) {
+    public ProvisionVmAction(VMDeployment deployable, AsyncNodeAPI api, Credentials credentials, GlobalProvisioningService globalProvisioningService, boolean update) {
         super(null, update ? VM_PROVISION_UPDATE_ACTION : VM_PROVISION_ACTION, deployable);
         setCallable(() -> {
-            globalProvisioningService.provisionVm(deployable, !update);
+            globalProvisioningService.provisionVm(getId(), deployable, api, credentials, !update);
             return null;
         });
     }

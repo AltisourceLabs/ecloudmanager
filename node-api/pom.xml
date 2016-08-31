@@ -29,7 +29,14 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.7.21</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -52,7 +59,6 @@
             <artifactId>swagger-annotations</artifactId>
             <version>${swagger-core-version}</version>
         </dependency>
-
     </dependencies>
     <build>
         <plugins>
@@ -91,6 +97,9 @@
                         <configuration>
                             <inputSpec>${project.basedir}/src/main/resources/swagger/swagger.yaml</inputSpec>
                             <modelPackage>org.ecloudmanager.node.model</modelPackage>
+                            <configOptions>
+                                <!--<import-mappings>LoggingEvent=org.ecloudmanager.node.model.LoggingEvent</import-mappings>-->
+                            </configOptions>
                             <language>java</language>
                         </configuration>
                     </execution>

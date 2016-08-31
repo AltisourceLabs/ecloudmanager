@@ -85,6 +85,10 @@
                             <modelPackage>org.ecloudmanager.node.model</modelPackage>
                             <apiPackage>org.ecloudmanager.node.rest.client</apiPackage>
                             <language>java</language>
+                            <configOptions>
+                                <!--<import-mappings>LoggingEvent=org.ecloudmanager.node.model.LoggingEvent</import-mappings>-->
+                            </configOptions>
+
                             <!--library>jersey2</library-->
                             <!--configOptions>
                                 <sourceFolder>generated-sources</sourceFolder>
@@ -166,6 +170,18 @@
             <groupId>org.ecloudmanager</groupId>
             <artifactId>node-api</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
         </dependency>
 
     </dependencies>

@@ -96,7 +96,7 @@
                             id="logs" widgetVar="logsTable" var="logMessage" value="#{deploymentActionController.logs}"
                             scrollable="true" resizableColumns="true"
                             expandedRow="#{deploymentActionController.isLogMessageExpanded(logMessage)}"
-                            rowStyleClass="log-#{logMessage.level} logRow"
+                            rowStyleClass="log-#{logMessage.event.level} logRow"
                     >
                         <f:facet name="header">
                             Logs for a selected action: #{deploymentActionController.selectedActionLabel}
@@ -105,23 +105,23 @@
                         </f:facet>
 
                         <p:column width="16">
-                            <p:rowToggler rendered="#{logMessage.throwableEntity != null}"/>
+                            <p:rowToggler rendered="#{logMessage.event.throwable != null}"/>
                         </p:column>
                         <p:column headerText="Time" width="70">
                             <h:outputText value="#{logMessage.date}"/>
                         </p:column>
                         <p:column headerText="Level" width="60">
-                            <h:outputText value="#{logMessage.level}"/>
+                            <h:outputText value="#{logMessage.event.level}"/>
                         </p:column>
                         <p:column headerText="Logger" width="450" styleClass="wrapWords">
-                            <h:outputText value="#{logMessage.loggerName}"/>
+                            <h:outputText value="#{logMessage.event.logger}"/>
                         </p:column>
                         <p:column headerText="Message" styleClass="wrap">
                             <h:outputText value="#{logMessage.uncoloredMessageStr}"/>
                         </p:column>
 
                         <p:rowExpansion>
-                            <h:outputText value="#{logMessage.throwableEntity}" styleClass="preformatted"/>
+                            <h:outputText value="#{logMessage.event.throwable}" styleClass="preformatted"/>
                         </p:rowExpansion>
 
                         <p:ajax event="rowToggle" listener="#{deploymentActionController.onRowToggle}"/>

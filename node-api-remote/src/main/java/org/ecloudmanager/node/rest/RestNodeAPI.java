@@ -1,27 +1,32 @@
 package org.ecloudmanager.node.rest;
 
+import org.ecloudmanager.node.LoggableFuture;
 import org.ecloudmanager.node.model.*;
 import org.ecloudmanager.node.rest.client.NodeApi;
 import org.ecloudmanager.node.rest.client.SshApi;
+import org.ecloudmanager.node.rest.client.TasksApi;
 
-import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class RestNodeAPI implements org.ecloudmanager.node.NodeAPI {
+public class RestNodeAPI implements org.ecloudmanager.node.AsyncNodeAPI {
     private NodeApi nodeApi;
     private SshApi sshApi;
+    private TasksApi tasksApi;
 
     public RestNodeAPI(String basePath) {
         ApiClient client = new ApiClient();
         client.setBasePath(basePath);
         nodeApi = new NodeApi(client);
         sshApi = new SshApi(client);
+        tasksApi = new TasksApi(client);
     }
 
 
@@ -81,17 +86,34 @@ public class RestNodeAPI implements org.ecloudmanager.node.NodeAPI {
     }
 
     @Override
-    public void uploadFile(Credentials credentials, SSHCredentials sshCredentials, String nodeId, InputStream is, String path) throws Exception {
+    public LoggableFuture<Void> uploadFile(Credentials credentials, SSHCredentials sshCredentials, String nodeId, InputStream is, String path) {
         SecretKey sk = (SecretKey) credentials;
-        File f = File.createTempFile("ssh-upload", ".tmp");
-        Files.copy(is, Paths.get(f.toURI()));
-        //sshApi.uploadFile(sk.getName(), sk.getSecret(), sshCredentials.getUsername(), sshCredentials.getPrivateKey(), path, nodeId, f);
-
+        Path filePath;
+        try {
+            filePath = Files.createTempFile("ssh-upload", ".tmp");
+            Files.copy(is, filePath, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            return LoggableFuture.failedFuture("Failed to write InputStream to temporary file", e);
+        }
+        try {
+            String taskId = sshApi.uploadFile(sk.getName(), sk.getSecret(), sshCredentials.getUsername(), sshCredentials.getPrivateKey(), path, nodeId, sshCredentials.getPrivateKeyPassphrase()
+                    , sshCredentials.getJumpHost1(), sshCredentials.getJumpHost1Username(), sshCredentials.getJumpHost1PrivateKey(), sshCredentials.getJumpHost1PrivateKeyPassphrase()
+                    , sshCredentials.getJumpHost2(), sshCredentials.getJumpHost2Username(), sshCredentials.getJumpHost2PrivateKey(), sshCredentials.getJumpHost2PrivateKeyPassphrase(),
+                    filePath.toFile());
+            return new RestLoggableFuture<>(taskId, tasksApi, Void.class);
+        } catch (ApiException e) {
+            return LoggableFuture.failedFuture("Failed to invoke 'uploadFile'", e);
+        }
     }
 
     @Override
-    public CommandOutput executeScript(Credentials credentials, SSHCredentials sshCredentials, String nodeId, Command command) throws Exception {
+    public LoggableFuture<Integer> executeScript(Credentials credentials, SSHCredentials sshCredentials, String nodeId, Command command) {
         SecretKey sk = (SecretKey) credentials;
-        return sshApi.executeScript(sk.getName(), sk.getSecret(), nodeId, command);
+        try {
+            String taskId = sshApi.executeScript(sk.getName(), sk.getSecret(), nodeId, command);
+            return new RestLoggableFuture<>(taskId, tasksApi, Integer.class);
+        } catch (ApiException e) {
+            return LoggableFuture.failedFuture("Failed to invoke 'executeScript'", e);
+        }
     }
 }

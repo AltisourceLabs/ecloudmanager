@@ -30,6 +30,7 @@ import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployer;
 import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployerImpl;
 import org.ecloudmanager.jeecore.service.Service;
+import org.ecloudmanager.node.AsyncNodeAPI;
 import org.ecloudmanager.node.model.CreateNodeResponse;
 import org.ecloudmanager.node.model.Credentials;
 import org.ecloudmanager.node.model.ExecutionDetails;
@@ -57,11 +58,11 @@ public class VmActions {
     @Inject
     private ApplicationDeploymentRepository applicationDeploymentRepository;
 
-    public Action getCreateVmAction(VMDeployment vmDeployment, String apiId, Credentials credentials, Map<String, String> parameters) {
+    public Action getCreateVmAction(VMDeployment vmDeployment, AsyncNodeAPI api, Credentials credentials, Map<String, String> parameters) {
         return Action.actionSequence("Create and Start VM",
                 Action.single("Create VM", () -> {
                     clearVmConstraints(vmDeployment);
-                    CreateNodeResponse response = nodeAPIProvider.getAPI(apiId).createNode(nodeAPIProvider.getCredentials(apiId), parameters);
+                    CreateNodeResponse response = api.createNode(credentials, parameters);
                     if (response.getDetails().getStatus().equals(ExecutionDetails.StatusEnum.OK)) {
                         InfrastructureDeployer.addVMId(vmDeployment, response.getNodeId());
                         applicationDeploymentService.update((ApplicationDeployment) vmDeployment.getTop());
@@ -70,7 +71,7 @@ public class VmActions {
                 }, vmDeployment),
                 Action.single("Wait for node to be ready", () -> {
                     try {
-                        NodeInfo info = NodeUtil.wait(nodeAPIProvider.getAPI(apiId), nodeAPIProvider.getCredentials(apiId), InfrastructureDeployer.getVmId(vmDeployment));
+                        NodeInfo info = NodeUtil.wait(api, credentials, InfrastructureDeployer.getVmId(vmDeployment));
                         return new ExecutionDetails().status(ExecutionDetails.StatusEnum.OK).message("Node started with IP: " + info.getIp());
                     } catch (Exception e) {
                         ExecutionDetails details = new ExecutionDetails();
@@ -80,7 +81,7 @@ public class VmActions {
                 }, vmDeployment),
                 Action.single("Configure VM", () -> {
                     try {
-                        return nodeAPIProvider.getAPI(apiId).configureNode(nodeAPIProvider.getCredentials(apiId), InfrastructureDeployer.getVmId(vmDeployment), parameters);
+                        return api.configureNode(credentials, InfrastructureDeployer.getVmId(vmDeployment), parameters);
                     } catch (Exception e) {
                         ExecutionDetails details = new ExecutionDetails();
                         NodeUtil.logError(details, "Can't configure node", e);
@@ -89,7 +90,7 @@ public class VmActions {
                 }, vmDeployment),
                 Action.single("Wait for node to be ready", () -> {
                     try {
-                        NodeInfo info = NodeUtil.wait(nodeAPIProvider.getAPI(apiId), nodeAPIProvider.getCredentials(apiId), InfrastructureDeployer.getVmId(vmDeployment));
+                        NodeInfo info = NodeUtil.wait(api, credentials, InfrastructureDeployer.getVmId(vmDeployment));
                         InfrastructureDeployer.addIP(vmDeployment, info.getIp());
                         applicationDeploymentService.update((ApplicationDeployment) vmDeployment.getTop());
                         return new ExecutionDetails().status(ExecutionDetails.StatusEnum.OK).message("Node started with IP: " + info.getIp());
@@ -99,17 +100,17 @@ public class VmActions {
                         return details;
                     }
                 }, vmDeployment),
-                new CreateFirewallRulesAction(vmDeployment, nodeAPIProvider.getAPI(apiId), credentials));
+                new CreateFirewallRulesAction(vmDeployment, api, credentials));
     }
 
 
-    public Action getDeleteVmAction(VMDeployment vmDeployment, String apiId, Credentials credentials) {
+    public Action getDeleteVmAction(VMDeployment vmDeployment, AsyncNodeAPI api, Credentials credentials) {
         return Action.single("Delete VM",
                 () -> {
                     String vmId = InfrastructureDeployerImpl.getVmId(vmDeployment);
                     ExecutionDetails details;
                     if (vmId != null && !vmId.isEmpty()) {
-                        details = nodeAPIProvider.getAPI(apiId).deleteNode(credentials, InfrastructureDeployerImpl.getVmId(vmDeployment));
+                        details = api.deleteNode(credentials, InfrastructureDeployerImpl.getVmId(vmDeployment));
                     } else {
                         details = new ExecutionDetails().status(ExecutionDetails.StatusEnum.OK).message("Nothing to delete");
                     }

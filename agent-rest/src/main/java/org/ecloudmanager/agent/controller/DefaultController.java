@@ -2,7 +2,9 @@ package org.ecloudmanager.agent.controller;
 
 import io.swagger.inflector.models.RequestContext;
 import io.swagger.inflector.models.ResponseContext;
-import org.ecloudmanager.node.LocalNodeAPI;
+import org.ecloudmanager.node.LocalAsyncNodeAPI;
+import org.ecloudmanager.node.LocalLoggableFuture;
+import org.ecloudmanager.node.LoggableFuture;
 import org.ecloudmanager.node.aws.AWSNodeAPI;
 import org.ecloudmanager.node.model.*;
 import org.slf4j.Logger;
@@ -10,15 +12,23 @@ import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 
 
-public class NodeController {
-    static Logger log = LoggerFactory.getLogger(NodeController.class);
+public class DefaultController {
+    private final static Map<String, LocalLoggableFuture> tasks = new ConcurrentHashMap<>();
+    static Logger log = LoggerFactory.getLogger(DefaultController.class);
     // FIXME should be configurable
-    private LocalNodeAPI api = new LocalNodeAPI(new AWSNodeAPI());
+    private LocalAsyncNodeAPI api = new LocalAsyncNodeAPI(new AWSNodeAPI(), Executors.newCachedThreadPool());
 
     public ResponseContext getInfo(RequestContext request) {
         try {
@@ -124,4 +134,55 @@ public class NodeController {
                     .entity(e.getMessage());
         }
     }
+
+    public ResponseContext executeScript(RequestContext request, String accessKey, String secretKey, String nodeId, Command command) {
+        LocalLoggableFuture<Integer> f = api.executeScript(new SecretKey(accessKey, secretKey), command.getCredentials(), nodeId, command);
+        tasks.put(f.getId(), f);
+        return new ResponseContext().status(Status.OK).entity(f.getId());
+
+    }
+
+    public ResponseContext uploadFile(RequestContext request, String accessKey, String secretKey, String username, String privateKey, String privateKeyPassphrase, String jumpHost1, String jumpHost1Username, String jumpHost1PrivateKey, String jumpHost1PrivateKeyPassphrase, String jumpHost2, String jumpHost2Username, String jumpHost2PrivateKey, String jumpHost2PrivateKeyPassphrase, String path, String nodeId, File file) {
+        SSHCredentials sshCredentials = new SSHCredentials().username(username).privateKey(privateKey).privateKeyPassphrase(privateKeyPassphrase).jumpHost1(jumpHost1).jumpHost1Username(jumpHost1Username).jumpHost1PrivateKey(jumpHost1PrivateKey).jumpHost1PrivateKeyPassphrase(jumpHost1PrivateKeyPassphrase).jumpHost2(jumpHost2).jumpHost2Username(jumpHost2Username).jumpHost2PrivateKey(jumpHost2PrivateKey).jumpHost1PrivateKeyPassphrase(jumpHost2PrivateKeyPassphrase);
+        InputStream is;
+        try {
+            is = new FileInputStream(file);
+        } catch (FileNotFoundException e) {
+            return new ResponseContext()
+                    .status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(e.getMessage());
+        }
+        LocalLoggableFuture<Void> f = api.uploadFile(new SecretKey(accessKey, secretKey), sshCredentials, nodeId, is, path);
+        tasks.put(f.getId(), f);
+        return new ResponseContext().status(Status.OK).entity(f.getId());
+
+    }
+
+    public ResponseContext getTask(RequestContext request, String taskId) {
+        LoggableFuture f = tasks.get(taskId);
+        if (f == null) {
+            return new ResponseContext().status(Status.NOT_FOUND);
+        }
+        TaskInfo response = new TaskInfo();
+        if (!f.isDone()) {
+            return new ResponseContext().status(Status.OK).entity(response.done(false));
+        }
+        try {
+            return new ResponseContext().status(Status.OK).entity(response.done(true).value(f.get()));
+        } catch (InterruptedException | ExecutionException e) {
+            TaskException taskException = new TaskException().message(e.getMessage()).type(e.getClass().getName());
+            return new ResponseContext().status(Status.OK).entity(response.done(true).exception(taskException));
+        }
+    }
+
+    public ResponseContext pollLog(RequestContext request, String taskId) {
+        LoggableFuture<?> f = tasks.get(taskId);
+        if (f == null) {
+            return new ResponseContext().status(Status.NOT_FOUND);
+        }
+        List<LoggingEvent> result = f.pollLogs();
+        log.info(result.size() + " log events polled ");
+        return new ResponseContext().status(Status.OK).entity(result);
+    }
+
 }

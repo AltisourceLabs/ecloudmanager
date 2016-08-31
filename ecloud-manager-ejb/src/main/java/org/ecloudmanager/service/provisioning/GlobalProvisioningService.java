@@ -28,12 +28,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.ChannelShell;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 import org.ecloudmanager.deployment.vm.VMDeployer;
 import org.ecloudmanager.deployment.vm.VMDeployment;
@@ -43,186 +37,103 @@ import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironmentDeployer;
 import org.ecloudmanager.domain.chef.ChefConfiguration;
 import org.ecloudmanager.domain.template.SshConfiguration;
 import org.ecloudmanager.jeecore.service.Service;
+import org.ecloudmanager.node.AsyncNodeAPI;
+import org.ecloudmanager.node.model.Command;
+import org.ecloudmanager.node.model.Credentials;
+import org.ecloudmanager.node.model.SSHCredentials;
 import org.ecloudmanager.repository.SshConfigurationRepository;
+import org.ecloudmanager.repository.deployment.LoggingEventRepository;
 import org.ecloudmanager.service.chef.ChefGenerationService;
 
-import javax.enterprise.event.Event;
 import javax.inject.Inject;
 import java.io.*;
 import java.util.HashMap;
-import java.util.Stack;
+
+import static org.ecloudmanager.node.LoggableFuture.waitFor;
 
 @Service
 public class GlobalProvisioningService {
 
     @Inject
-    private SshSessionFactory sshSessionFactory;
-
-    @Inject
     private SshConfigurationRepository sshConfigurationRepository;
-
-    @Inject
-    private Event<SshLog> logEvent;
 
     @Inject
     private ChefGenerationService chefGenerationService;
 
     @Inject
     private Logger log;
+    @Inject
+    private LoggingEventRepository loggingEventRepository;
 
-    public void provisionVm(VMDeployment deployment, boolean firstRun) {
+    public void provisionVm(String actionId, VMDeployment deployment, AsyncNodeAPI api, Credentials credentials, boolean firstRun) {
+        LoggingEventRepository.ActionLogger actionLog = loggingEventRepository.createActionLogger(GlobalProvisioningService.class, actionId);
         try {
-            provisionVmImpl(deployment, firstRun);
+            provisionVmImpl(actionLog, deployment, api, credentials, firstRun);
         } catch (Exception e) {
-            log.log(Level.ERROR, "Failed to provision VM " + deployment.getConfigValue(VMDeployer.VM_NAME), e);
+            actionLog.error("Failed to provision VM " + deployment.getConfigValue(VMDeployer.VM_NAME), e);
             throw new RuntimeException(e);
         }
     }
 
-    private void provisionVmImpl(VMDeployment deployment, boolean firstRun) throws Exception {
+    private void provisionVmImpl(LoggingEventRepository.ActionLogger actionLog, VMDeployment deployment, AsyncNodeAPI api, Credentials credentials, boolean firstRun) throws Exception {
         if (deployment == null) {
-            log.error("Provisioning without deployment object is not supported, exiting...");
-            return;
+            throw new IllegalArgumentException("Provisioning without deployment object is not supported, exiting...");
         }
 
         String nodeName = deployment.getConfigValue(VMDeployer.VM_NAME);
-        log.info("Started provisioning of vm: " + nodeName);
-
-        String ipAddress = InfrastructureDeployer.getIP(deployment);
+        String nodeId = InfrastructureDeployer.getVmId(deployment);
         String sshConfigurationName = VMDeployer.getSshConfiguration(deployment);
-        Stack<Session> sessionsChain = createSshSessionChain(sshConfigurationName, ipAddress);
+        SshConfiguration c = sshConfigurationRepository.find(sshConfigurationName);
+        if (c == null) {
+            throw new IllegalArgumentException("SSH configuration not found: " + sshConfigurationName);
+        }
+        SSHCredentials sshCredentials = new SSHCredentials().jumpHost1Username(c.getJumpHost1Username())
+                .jumpHost1(c.getJumpHost1()).jumpHost1PrivateKey(c.getJumpHost1PrivateKey()).jumpHost1PrivateKeyPassphrase(c.getJumpHost1PrivateKeyPassphrase()).jumpHost1Username(c.getJumpHost1Username())
+                .jumpHost2(c.getJumpHost2()).jumpHost2PrivateKey(c.getJumpHost2PrivateKey()).jumpHost2PrivateKeyPassphrase(c.getJumpHost2PrivateKeyPassphrase()).jumpHost2Username(c.getJumpHost2Username())
+                .username(c.getUsername()).privateKey(c.getPrivateKey()).privateKeyPassphrase(c.getPrivateKeyPassphrase());
 
-        Session session = sessionsChain.peek();
-        // Chef config files transfer
-        ChannelSftp transferChannel = (ChannelSftp) session.openChannel("sftp");
-        transferChannel.connect();
-
+        actionLog.info("Started provisioning of vm: " + nodeName);
         if (firstRun) {
             InputStream clientRbTemplateStream = this.getClass().getResourceAsStream("/client.rb.mustache");
             InputStream clientRbStream = generateClientRb(clientRbTemplateStream, deployment.getChefEnvironment(),
                 nodeName);
-            transferChannel.put(clientRbStream, "client.rb");
+            waitFor(api.uploadFile(credentials, sshCredentials, nodeId, clientRbStream, "client.rb"), actionLog);
 
             ChefConfiguration chefConfiguration = ChefEnvironmentDeployer.getChefConfiguration(deployment.getChefEnvironment());
-            transferChannel.put(new ByteArrayInputStream(chefConfiguration.getChefValidationClientSecret().getBytes()), "chef-validator.pem");
+            waitFor(api.uploadFile(credentials, sshCredentials, nodeId, new ByteArrayInputStream(chefConfiguration.getChefValidationClientSecret().getBytes()), "chef-validator.pem"), actionLog);
+
         }
 
-        InputStream nodeConfigJsonStream = generateNodeJson(deployment, "\"recipe[hostnames]\"");
-        transferChannel.put(nodeConfigJsonStream, "node-config.json");
+        waitFor(api.uploadFile(credentials, sshCredentials, nodeId, generateNodeJson(deployment, "\"recipe[hostnames]\""), "node-config.json"), actionLog);
+        waitFor(api.uploadFile(credentials, sshCredentials, nodeId, generateNodeJson(deployment), "node.json"), actionLog);
 
-        InputStream nodeJsonStream = generateNodeJson(deployment);
-        transferChannel.put(nodeJsonStream, "node.json");
-
-        transferChannel.disconnect();
-
-        // Chef prerequisites task
-        ChannelShell channel = (ChannelShell) session.openChannel("shell");
-        channel.setPty(true);
-
-        StringBuilder command = new StringBuilder();
-
-        //commands
+        Command cmd = new Command().credentials(sshCredentials);
         if (firstRun) {
-            command.append("sudo yum install -y wget;");
-            command.append("curl -L https://omnitruck.chef.io/install.sh | sudo bash -s -- -v 12.8.1;");
-            command.append("sudo mkdir /etc/chef;");
-            command.append("sudo chmod 777 /etc/chef;");
-            command.append("mv -f client.rb /etc/chef;");
-            command.append("mv -f chef-validator.pem /etc/chef;");
+            cmd
+                    .addCommandItem("sudo yum install -y wget")
+                    .addCommandItem("curl -L https://omnitruck.chef.io/install.sh | sudo bash -s -- -v 12.8.1")
+                    .addCommandItem("sudo mkdir /etc/chef")
+                    .addCommandItem("sudo chmod 777 /etc/chef")
+                    .addCommandItem("mv -f client.rb /etc/chef")
+                    .addCommandItem("mv -f chef-validator.pem /etc/chef");
         }
-        command.append("mv -f node-config.json /etc/chef;");
-        command.append("mv -f node.json /etc/chef;");
+        cmd
+                .addCommandItem("mv -f node-config.json /etc/chef")
+                .addCommandItem("mv -f node.json /etc/chef")
+                .addCommandItem("sudo chef-client -j /etc/chef/node-config.json")
+                .addCommandItem("sudo chef-client -j /etc/chef/node.json");
 
-        command.append("sudo chef-client -j /etc/chef/node-config.json;");
-        command.append("sudo chef-client -j /etc/chef/node.json;");
+        actionLog.info("Issuing the following command to " + nodeName + ": " + cmd.getCommand());
+        int exitCode = waitFor(api.executeScript(credentials, sshCredentials, nodeId, cmd), actionLog);
 
-        command.append("exit;");
-        log.info("Issuing the following command to " + nodeName + ": " + command);
+        actionLog.info("Provisioning process finished with exit status: " + exitCode);
 
-        InputStream input = channel.getInputStream();
-        OutputStream ops = channel.getOutputStream();
-        PrintStream ps = new PrintStream(ops, true);
-
-        channel.connect();
-
-        ps.println(command.toString());
-        ps.close();
-
-        byte[] tmp = new byte[1024];
-        while (true) {
-            while (input.available() > 0) {
-                int i = input.read(tmp, 0, 1024);
-                if (i < 0) break;
-                String s = new String(tmp, 0, i);
-                log.info(s);
-                // TODO - output to ui
-                //logEvent.fire(new SshLog(s));
-            }
-            if (channel.isClosed()) {
-                if (input.available() > 0) continue;
-                break;
-            }
-            try {
-                Thread.sleep(1000);
-            } catch (Exception e) {
-                log.log(Level.ERROR, "Exception in provisioning output consuming loop", e);
-            }
+        if (exitCode != 0) {
+            throw new Exception("Error provisioning VM " + nodeName + ", exit status: " + exitCode);
         }
-
-        int exitStatus = channel.getExitStatus();
-        log.info("Provisioning process finished with exit status: " + exitStatus);
-
-        channel.disconnect();
-        while (!sessionsChain.isEmpty()) {
-            sessionsChain.pop().disconnect();
-        }
-        if (exitStatus != 0) {
-            throw new RuntimeException("Error provisioning VM " + nodeName + ", exit status: " + exitStatus);
-        }
-
         log.info("Finished provisioning of vm: " + nodeName);
     }
 
-    private Stack<Session> createSshSessionChain(String sshConfigurationName, String ipAddress) throws JSchException {
-        Stack<Session> sessionsChain = new Stack<>();
-
-        SshConfiguration sshConfiguration = sshConfigurationRepository.find(sshConfigurationName);
-        if (sshConfiguration == null) {
-            throw new RuntimeException("SSH configuration not found: " + sshConfigurationName);
-        }
-
-        Session jumpSession1 = null;
-        if (!StringUtils.isEmpty(sshConfiguration.getJumpHost1())) {
-            jumpSession1 = sshSessionFactory.createSession(sshConfiguration.getJumpHost1Username(), sshConfiguration
-                    .getJumpHost1(), sshConfiguration.getJumpHost1PrivateKey(), sshConfiguration
-                    .getJumpHost1PrivateKeyPassphrase());
-            sessionsChain.push(jumpSession1);
-        }
-
-        Session jumpSession2 = null;
-        if (jumpSession1 != null && !StringUtils.isEmpty(sshConfiguration.getJumpHost2())) {
-            jumpSession2 = sshSessionFactory.createForwardingSession(jumpSession1, sshConfiguration
-                            .getJumpHost2Username(), sshConfiguration.getJumpHost2(), sshConfiguration.getJumpHost2PrivateKey(),
-                    sshConfiguration
-                            .getJumpHost2PrivateKeyPassphrase());
-            sessionsChain.push(jumpSession2);
-        }
-
-        Session vmSession;
-        if (jumpSession2 != null) {
-            vmSession = sshSessionFactory.createForwardingSession(jumpSession2, sshConfiguration.getUsername(),
-                    ipAddress, sshConfiguration.getPrivateKey(), sshConfiguration.getPrivateKeyPassphrase());
-        } else if (jumpSession1 != null) {
-            vmSession = sshSessionFactory.createForwardingSession(jumpSession1, sshConfiguration.getUsername(),
-                    ipAddress, sshConfiguration.getPrivateKey(), sshConfiguration.getPrivateKeyPassphrase());
-        } else {
-            vmSession = sshSessionFactory.createSession(sshConfiguration.getUsername(), ipAddress, sshConfiguration
-                    .getPrivateKey(), sshConfiguration.getPrivateKeyPassphrase());
-        }
-
-        sessionsChain.push(vmSession);
-        return sessionsChain;
-    }
 
     private InputStream generateClientRb(InputStream clientRbTemplate, ChefEnvironment env, String
             nodeName) {

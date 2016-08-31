@@ -188,18 +188,16 @@ public class AWSNodeAPI implements NodeBaseAPI {
         }
         String nodeId;
         try {
-            nodeId = runWithRetry(details, "Create node", () -> createNode(ec2, storage, securityGroupId, subnet, image, instanceType, keyPair), AmazonServiceException.class);
-            createNode(ec2, storage, securityGroupId, subnet, image, instanceType, keyPair);
+            nodeId = runWithRetry(details, "Create node", () -> createNode(ec2, storage, securityGroupId, subnet, image, instanceType, keyPair), AmazonServiceException.class::isInstance);
             NodeUtil.logInfo(details, "Node created with id: " + nodeId);
         } catch (Exception t) {
             NodeUtil.logError(details, "Can't create node", t);
             deleteSecurityGroup(ec2, securityGroupId, details);
             return new CreateNodeResponse().details(details);
         }
-        runWithRetry(details, "Create 'Name' tag", () -> {
-            setInstanceName(ec2, nodeId, name);
-            return new Object();
-        }, Exception.class);
+        runWithRetry(details, "Create 'Name' tag",
+                () -> setInstanceName(ec2, nodeId, name)
+                , null, null);
         return new CreateNodeResponse().nodeId(region + ":" + nodeId).details(details.status(ExecutionDetails.StatusEnum.OK));
     }
 
@@ -439,7 +437,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
         ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest = new ChangeResourceRecordSetsRequest()
                 .withHostedZoneId(hostedZone.getId()).withChangeBatch(changeBatch);
         ChangeResourceRecordSetsResult changeResourceRecordSetsResult =
-                runWithRetry(details, "Route53 request", () -> route53.changeResourceRecordSets(changeResourceRecordSetsRequest), PriorRequestNotCompleteException.class);
+                runWithRetry(details, "Route53 request", () -> route53.changeResourceRecordSets(changeResourceRecordSetsRequest), PriorRequestNotCompleteException.class::isInstance);
 
 //        guardedChangeResourceRecordSets(route53, changeResourceRecordSetsRequest);
     }
@@ -475,7 +473,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
         ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest = new ChangeResourceRecordSetsRequest()
                 .withHostedZoneId(hostedZone.getId()).withChangeBatch(changeBatch);
         ChangeResourceRecordSetsResult changeResourceRecordSetsResult =
-                runWithRetry(details, "Route53 request", () -> route53.changeResourceRecordSets(changeResourceRecordSetsRequest), PriorRequestNotCompleteException.class);
+                runWithRetry(details, "Route53 request", () -> route53.changeResourceRecordSets(changeResourceRecordSetsRequest), PriorRequestNotCompleteException.class::isInstance);
 //        ChangeResourceRecordSetsResult changeResourceRecordSetsResult =
 //                guardedChangeResourceRecordSets(route53, changeResourceRecordSetsRequest);
         NodeUtil.logInfo(details, "Submitted delete recordset request " + changeResourceRecordSetsResult.getChangeInfo().toString());
@@ -498,13 +496,31 @@ public class AWSNodeAPI implements NodeBaseAPI {
         return new SynchronousPoller().poll(poll, check, 1, 600, "wait for route53 request to be submitted");
     }
 
-    private <T> T runWithRetry(ExecutionDetails details, String operation, Callable<T> callable, Class<? extends Exception>... exceptionsToRetry) {
+    private void runWithRetry(ExecutionDetails details, String operation, Runnable runnable, Predicate<Exception> retry, Predicate<Exception> ignore) {
+        runWithRetry(details, operation, () -> {
+            runnable.run();
+            return new Object();
+        }, retry, ignore, new Object());
+    }
+
+    private <T> T runWithRetry(ExecutionDetails details, String operation, Callable<T> callable, Predicate<Exception> retry) {
+        return runWithRetry(details, operation, callable, retry, null, null);
+    }
+
+    private <T> T runWithRetry(ExecutionDetails details, String operation, Callable<T> callable, Predicate<Exception> retry, Predicate<Exception> ignore, T returnOnIgnore) {
         Callable<T> poll =
                 () -> {
                     try {
                         return callable.call();
                     } catch (Exception e) {
-                        if (Stream.of(exceptionsToRetry).anyMatch(c -> c.isInstance(e))) {
+                        if (ignore != null && ignore.test(e)) {
+                            log.warn(operation + " failed, returning default value", e);
+                            if (returnOnIgnore == null) {
+                                throw new NullPointerException();
+                            }
+                            return returnOnIgnore;
+                        }
+                        if (retry == null || retry.test(e)) {
                             NodeUtil.logWarn(details, operation + " failed, retrying...", e);
                             return null;
                         }
@@ -546,8 +562,11 @@ public class AWSNodeAPI implements NodeBaseAPI {
             if (defaultSG.isPresent()) {
                 NodeUtil.logInfo(details, "Node created with id: " + nodeId);
                 ec2.modifyInstanceAttribute(new ModifyInstanceAttributeRequest().withInstanceId(id).withGroups(defaultSG.get().getGroupId()));
-                log.info("Deleting security group");
                 ec2.deleteSecurityGroup(new DeleteSecurityGroupRequest().withGroupId(groupIdToDelete));
+//                runWithRetry(details, "Deleting security group", () -> ec2.deleteSecurityGroup(new DeleteSecurityGroupRequest().withGroupId(groupIdToDelete)),
+//                        AmazonServiceException.class::isInstance,
+//                        e -> AmazonServiceException.class.isInstance(e) && ! AmazonServiceException.class.cast(e).getErrorCode().equals("400")
+//                );
                 NodeUtil.logInfo(details, "Security group deleted: " + groupIdToDelete);
             }
         }

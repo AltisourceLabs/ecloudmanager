@@ -4,12 +4,13 @@ import org.ecloudmanager.node.model.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
-public class LocalNodeAPI extends LocalSshAPI implements NodeAPI {
+public class LocalAsyncNodeAPI extends LocalAsyncSshAPI implements AsyncNodeAPI {
     private NodeBaseAPI nodeBaseAPI;
 
-    public LocalNodeAPI(NodeBaseAPI nodeBaseAPI) {
-        super(nodeBaseAPI);
+    public LocalAsyncNodeAPI(NodeBaseAPI nodeBaseAPI, ExecutorService executorService) {
+        super(nodeBaseAPI, executorService);
         this.nodeBaseAPI = nodeBaseAPI;
     }
 

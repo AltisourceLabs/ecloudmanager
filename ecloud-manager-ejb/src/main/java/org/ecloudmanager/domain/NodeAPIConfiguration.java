@@ -25,10 +25,6 @@
 package org.ecloudmanager.domain;
 
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
-import org.ecloudmanager.node.LocalNodeAPI;
-import org.ecloudmanager.node.NodeAPI;
-import org.ecloudmanager.node.NodeBaseAPI;
-import org.ecloudmanager.node.rest.RestNodeAPI;
 import org.ecloudmanager.security.Encrypted;
 import org.ecloudmanager.security.EncryptedStringConverter;
 import org.jetbrains.annotations.NotNull;
@@ -104,20 +100,6 @@ public class NodeAPIConfiguration extends OwnedMongoObject implements Serializab
 
     public void setCredentialsSecret(String credentialsSecret) {
         this.credentialsSecret = credentialsSecret;
-    }
-
-    @SuppressWarnings("unchecked")
-    public NodeAPI getNodeAPI() throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-        switch (type) {
-            case LOCAL:
-                Class<NodeBaseAPI> apiClass = (Class<NodeBaseAPI>) Class.forName(nodeBaseAPIClassName);
-                NodeBaseAPI nodeBaseAPI = apiClass.newInstance();
-                return new LocalNodeAPI(nodeBaseAPI);
-            case REMOTE:
-                return new RestNodeAPI(remoteNodeAPIAddress);
-            default:
-                return null;
-        }
     }
 
     @NotNull

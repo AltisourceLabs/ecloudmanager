@@ -28,10 +28,8 @@ import com.google.common.base.Strings;
 import org.ecloudmanager.domain.NodeAPIConfiguration;
 import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
-import org.ecloudmanager.node.LocalNodeAPI;
 import org.ecloudmanager.node.NodeBaseAPI;
 import org.ecloudmanager.node.model.APIInfo;
-import org.ecloudmanager.node.rest.RestNodeAPI;
 import org.ecloudmanager.repository.NodeAPIConfigurationRepository;
 import org.ecloudmanager.service.NodeAPIConfigurationService;
 import org.picketlink.Identity;
@@ -90,8 +88,6 @@ public class NodeAPIConfigurationController extends FacesSupport implements Seri
             List<Class<? extends NodeBaseAPI>> availableClasses;
             availableClasses = new Reflections("org.ecloudmanager.node").getSubTypesOf(NodeBaseAPI.class).stream()
                     .filter(c -> !c.isInterface())
-                    .filter(c -> !LocalNodeAPI.class.getName().equals(c.getName()))
-                    .filter(c -> !RestNodeAPI.class.getName().equals(c.getName()))
                     .collect(Collectors.toList());
             availableAPIs = new HashMap<>();
             availableClasses.forEach(c -> {

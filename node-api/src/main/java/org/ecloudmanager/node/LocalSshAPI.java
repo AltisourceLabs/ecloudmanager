@@ -2,7 +2,10 @@ package org.ecloudmanager.node;
 
 import com.jcraft.jsch.*;
 import org.apache.commons.lang3.StringUtils;
-import org.ecloudmanager.node.model.*;
+import org.ecloudmanager.node.model.Command;
+import org.ecloudmanager.node.model.Credentials;
+import org.ecloudmanager.node.model.NodeInfo;
+import org.ecloudmanager.node.model.SSHCredentials;
 import org.ecloudmanager.node.util.SynchronousPoller;
 import org.slf4j.LoggerFactory;
 
@@ -10,22 +13,20 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.ConnectException;
-import java.util.Arrays;
 import java.util.Stack;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 
-public class LocalSshAPI implements SshAPI {
+public class LocalSshAPI {
 
     private static org.slf4j.Logger log = LoggerFactory.getLogger(LocalSshAPI.class);
     private NodeBaseAPI nodeBaseAPI;
     private SynchronousPoller synchronousPoller = new SynchronousPoller();
-
     public LocalSshAPI(NodeBaseAPI nodeBaseAPI) {
         this.nodeBaseAPI = nodeBaseAPI;
+
     }
 
-    @Override
     public void uploadFile(Credentials credentials, SSHCredentials sshCredentials, String nodeId, InputStream file, String path) throws Exception {
         NodeInfo info = nodeBaseAPI.getNode(credentials, nodeId);
         // TODO check status
@@ -36,10 +37,10 @@ public class LocalSshAPI implements SshAPI {
         transferChannel.connect();
         transferChannel.put(file, path);
         transferChannel.disconnect();
+        log.info("Uploaded file to node " + nodeId + ":" + path);
     }
 
-    @Override
-    public CommandOutput executeScript(Credentials credentials, SSHCredentials sshCredentials, String nodeId, Command command) throws Exception {
+    public int executeScript(Credentials credentials, SSHCredentials sshCredentials, String nodeId, Command command) throws Exception {
         NodeInfo info = nodeBaseAPI.getNode(credentials, nodeId);
         String ip = info.getIp();
         Stack<Session> sessionsChain = createSshSessionChain(ip, command.getCredentials());
@@ -60,14 +61,12 @@ public class LocalSshAPI implements SshAPI {
         ps.println(cmd);
 
         ps.close();
-        StringBuilder output = new StringBuilder();
         byte[] tmp = new byte[1024];
         while (true) {
             while (input.available() > 0) {
                 int i = input.read(tmp, 0, 1024);
                 if (i < 0) break;
                 String s = new String(tmp, 0, i);
-                output.append(s);
                 log.info(s);
             }
             if (channel.isClosed()) {
@@ -82,16 +81,14 @@ public class LocalSshAPI implements SshAPI {
         }
 
         int exitStatus = channel.getExitStatus();
-        log.info("Provisioning process finished with exit status: " + exitStatus);
+        log.info("Command finished with exit status: " + exitStatus);
 
         channel.disconnect();
         while (!sessionsChain.isEmpty()) {
             sessionsChain.pop().disconnect();
         }
-        String[] lines = output.toString().split("\\r?\\n");
-        return new CommandOutput().exitCode(exitStatus).output(Arrays.asList(lines));
+        return exitStatus;
     }
-
 
     private Session createSession(String username, String host, String privateKey, String passphrase) throws
             JSchException {

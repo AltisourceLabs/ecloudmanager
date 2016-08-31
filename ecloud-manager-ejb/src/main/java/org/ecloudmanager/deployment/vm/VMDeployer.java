@@ -30,6 +30,7 @@ import org.ecloudmanager.deployment.core.DeploymentConstraint;
 import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
 import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployer;
+import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployerImpl;
 import org.ecloudmanager.deployment.vm.infrastructure.SshConfigurationSuggestionsProvider;
 import org.ecloudmanager.deployment.vm.provisioning.ChefProvisioningDeployer;
 import org.ecloudmanager.service.execution.Action;
@@ -43,10 +44,13 @@ public class VMDeployer implements Deployer<VMDeployment> {
     private static final String SSH_CONFIG_NAME = "ssh";
 
     private InfrastructureDeployer infrastructureDeployer;
-    private ChefProvisioningDeployer chefProvisioningDeployer = new ChefProvisioningDeployer();
+    private ChefProvisioningDeployer chefProvisioningDeployer;
+    private String apiName;
 
-    public VMDeployer(InfrastructureDeployer infrastructureDeployer) {
-        this.infrastructureDeployer = infrastructureDeployer;
+    public VMDeployer(String apiName) {
+        this.infrastructureDeployer = new InfrastructureDeployerImpl(apiName);
+        this.chefProvisioningDeployer = new ChefProvisioningDeployer(apiName);
+        this.apiName = apiName;
     }
 
     private static DeploymentObject getSshConfig(VMDeployment deployment) {
@@ -114,4 +118,7 @@ public class VMDeployer implements Deployer<VMDeployment> {
         );
     }
 
+    public String getApiName() {
+        return apiName;
+    }
 }
