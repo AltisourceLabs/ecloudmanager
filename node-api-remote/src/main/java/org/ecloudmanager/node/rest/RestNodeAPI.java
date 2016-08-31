@@ -45,7 +45,7 @@ public class RestNodeAPI implements org.ecloudmanager.node.AsyncNodeAPI {
     public List<ParameterValue> getNodeParameterValues(Credentials credentials, String parameter, Map<String, String> parameters) throws Exception {
         SecretKey sk = (SecretKey) credentials;
         List<String> names = new ArrayList<>(parameters.keySet());
-        List<String> values = names.stream().map(k -> parameters.get(k)).collect(Collectors.toList());
+        List<String> values = names.stream().map(parameters::get).collect(Collectors.toList());
         return nodeApi.getNodeParameterValues(sk.getName(), sk.getSecret(), parameter, names, values);
     }
 
@@ -56,7 +56,7 @@ public class RestNodeAPI implements org.ecloudmanager.node.AsyncNodeAPI {
             String taskId = nodeApi.createNode(sk.getName(), sk.getSecret(), new Node().parameters(parameters));
             return new RestLoggableFuture<>(taskId, tasksApi, NodeInfo.class);
         } catch (ApiException e) {
-            return LoggableFuture.failedFuture("Failed to invoke 'executeScript'", e);
+            return LoggableFuture.failedFuture("Failed to invoke 'createNode'", e);
         }
     }
 
@@ -67,15 +67,25 @@ public class RestNodeAPI implements org.ecloudmanager.node.AsyncNodeAPI {
     }
 
     @Override
-    public ExecutionDetails configureNode(Credentials credentials, String nodeId, Map<String, String> parameters) throws Exception {
+    public LoggableFuture<NodeInfo> configureNode(Credentials credentials, String nodeId, Map<String, String> parameters) throws Exception {
         SecretKey sk = (SecretKey) credentials;
-        return nodeApi.configureNode(sk.getName(), sk.getSecret(), nodeId, new Node().parameters(parameters));
+        try {
+            String taskId = nodeApi.configureNode(sk.getName(), sk.getSecret(), nodeId, new Node().parameters(parameters));
+            return new RestLoggableFuture<>(taskId, tasksApi, NodeInfo.class);
+        } catch (ApiException e) {
+            return LoggableFuture.failedFuture("Failed to invoke 'configureNode'", e);
+        }
     }
 
     @Override
-    public ExecutionDetails deleteNode(Credentials credentials, String nodeId) throws Exception {
+    public LoggableFuture<Void> deleteNode(Credentials credentials, String nodeId) throws Exception {
         SecretKey sk = (SecretKey) credentials;
-        return nodeApi.deleteNode(sk.getName(), sk.getSecret(), nodeId);
+        try {
+            String taskId = nodeApi.deleteNode(sk.getName(), sk.getSecret(), nodeId);
+            return new RestLoggableFuture<>(taskId, tasksApi, Void.class);
+        } catch (ApiException e) {
+            return LoggableFuture.failedFuture("Failed to invoke 'deleteNode'", e);
+        }
     }
 
     @Override

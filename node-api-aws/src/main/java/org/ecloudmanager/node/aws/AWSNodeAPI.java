@@ -58,7 +58,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
         }
     }
 
-    private void createTags(ExecutionDetails details, String userId, String instanceId, Map<String, String> parameters, AmazonEC2 ec2) {
+    private void createTags(String userId, String instanceId, Map<String, String> parameters, AmazonEC2 ec2) {
         ArrayList<Tag> tags = new ArrayList<>();
         tags.add(new Tag(TAG_CREATOR, userId));
         getTagParameters().forEach(p -> {
@@ -71,8 +71,8 @@ public class AWSNodeAPI implements NodeBaseAPI {
                 .withTags(tags);
         log.info("Updating tags of AWS instance " + instanceId);
         ec2.createTags(createTagsRequest);
-        NodeUtil.logInfo(details, "Tags created:");
-        createTagsRequest.getTags().forEach(t -> NodeUtil.logInfo(details, t.toString()));
+        log.info("Tags created:");
+        createTagsRequest.getTags().forEach(t -> log.info(t.toString()));
     }
 
     private List<NodeParameter> getTagParameters() {
@@ -272,9 +272,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
     }
 
     @Override
-    public ExecutionDetails configureNode(Credentials credentials, String nodeId, Map<String, String> parameters) throws Exception {
-
-        ExecutionDetails details = new ExecutionDetails();
+    public NodeInfo configureNode(Credentials credentials, String nodeId, Map<String, String> parameters) throws Exception {
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
         String region = nodeId.split(":")[0];
@@ -290,24 +288,24 @@ public class AWSNodeAPI implements NodeBaseAPI {
         String newName = parameters.get(Parameter.name.name());
         if (newName != null && !newName.equals(oldName)) {
             setInstanceName(ec2, vmId, newName);
-            NodeUtil.logInfo(details, "Value of tag '" + TAG_NAME + "' set to " + newName);
+            log.info("Value of tag '" + TAG_NAME + "' set to " + newName);
 
         }
-        createTags(details, userId, vmId, parameters, ec2);
+        createTags(userId, vmId, parameters, ec2);
 
         String oldHostedZone = getInstanceHostedZone(instance);
         String newHostedZone = parameters.get(Parameter.hosted_zone.name());
         if (!StringUtils.equals(oldHostedZone, newHostedZone)) {
             setInstanceHostedZone(ec2, vmId, newHostedZone);
-            NodeUtil.logInfo(details, "Value of tag '" + TAG_HOSTED_ZONE + "' set to " + newHostedZone);
+            log.info("Value of tag '" + TAG_HOSTED_ZONE + "' set to " + newHostedZone);
         }
         if (!StringUtils.equals(oldName, newName) ||
                 !StringUtils.equals(oldHostedZone, newHostedZone)) {
             if (oldHostedZone != null) {
-                deleteDnsRecord(details, route53, oldName, oldHostedZone);
+                deleteDnsRecord(route53, oldName, oldHostedZone);
             }
-            createDnsRecord(details, route53, instance.getPrivateIpAddress(), newName, newHostedZone);
-            NodeUtil.logInfo(details, "Created DNS record for " + newName + "." + newHostedZone + " with IP: " + instance.getPrivateIpAddress());
+            createDnsRecord(route53, instance.getPrivateIpAddress(), newName, newHostedZone);
+            log.info("Created DNS record for " + newName + "." + newHostedZone + " with IP: " + instance.getPrivateIpAddress());
         }
 
         //createTags(instanceId, after, amazonEC2);
@@ -398,7 +396,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
                     "wait for instance " + vmId + " to become ready."
             );
         }
-        return details.status(ExecutionDetails.StatusEnum.OK);
+        return getNode(credentials, nodeId);
     }
 
     private String getInstanceHostedZone(Instance instance) {
@@ -412,7 +410,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
                 .withTags(new Tag(TAG_HOSTED_ZONE, hostedZone)));
     }
 
-    private void createDnsRecord(ExecutionDetails details, AmazonRoute53 route53, String ip, String name, String hostedZoneName) {
+    private void createDnsRecord(AmazonRoute53 route53, String ip, String name, String hostedZoneName) {
         log.info("Creating route53 record for " + name);
 
         HostedZone hostedZone = getHostedZone(hostedZoneName, route53);
@@ -437,7 +435,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
                 .orElse(null);
     }
 
-    private void deleteDnsRecord(ExecutionDetails details, AmazonRoute53 route53, String name, String hostedZoneName) {
+    private void deleteDnsRecord(AmazonRoute53 route53, String name, String hostedZoneName) {
         log.info("Deleting route53 record for " + name);
         if (StringUtils.isEmpty(name)) {
             log.error("Cannot delete route53 record - name is empty.");
@@ -452,10 +450,10 @@ public class AWSNodeAPI implements NodeBaseAPI {
                 (listResourceRecordSetsRequest).getResourceRecordSets();
         List<ResourceRecordSet> filtered = resourceRecordSets.stream().filter(f -> recordSetName.equals(f.getName())).collect(Collectors.toList());
         if (filtered.size() < 1) {
-            NodeUtil.logWarn(details, "Cannot delete route53 record - record not found. Skipping this step.");
+            log.warn("Cannot delete route53 record - record not found. Skipping this step.");
             return;
         }
-        NodeUtil.logInfo(details, "Records found:  " + filtered);
+        log.info("Records found:  " + filtered);
         ChangeBatch changeBatch = new ChangeBatch(Lists.newArrayList(new Change(ChangeAction.DELETE,
                 filtered.get(0))));
         ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest = new ChangeResourceRecordSetsRequest()
@@ -521,7 +519,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
     }
 
     @Override
-    public ExecutionDetails deleteNode(Credentials credentials, String nodeId) throws Exception {
+    public void deleteNode(Credentials credentials, String nodeId) throws AWS.RegionNotExistException, ExecutionException {
         ExecutionDetails details = new ExecutionDetails();
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
@@ -535,7 +533,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
         String hostedZone = getInstanceHostedZone(instance);
         if (!Strings.isNullOrEmpty(hostedZone)) {
             try {
-                deleteDnsRecord(details, route53, name, hostedZone);
+                deleteDnsRecord(route53, name, hostedZone);
             } catch (Exception e) {
                 NodeUtil.logWarn(details, "Can't delete dns record: " + name + "." + hostedZone, e);
             }
@@ -561,7 +559,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
         TerminateInstancesRequest terminateInstancesRequest = new TerminateInstancesRequest().withInstanceIds(id);
         TerminateInstancesResult result = ec2.terminateInstances(terminateInstancesRequest);
         NodeUtil.logInfo(details, "Node terminated: " + id);
-        return details.status(ExecutionDetails.StatusEnum.OK);
+        //return details.status(ExecutionDetails.StatusEnum.OK);
     }
 
     @Override

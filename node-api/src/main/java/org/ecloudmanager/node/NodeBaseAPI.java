@@ -31,12 +31,12 @@ public interface NodeBaseAPI {
     /**
      * @return Updates node with parameter values specified in 'node'
      */
-    ExecutionDetails configureNode(Credentials credentials, String nodeId, Map<String, String> parameters) throws Exception;
+    NodeInfo configureNode(Credentials credentials, String nodeId, Map<String, String> parameters) throws Exception;
 
     /**
      * Delete node
      */
-    ExecutionDetails deleteNode(Credentials credentials, String nodeId) throws Exception;
+    void deleteNode(Credentials credentials, String nodeId) throws Exception;
 
     /**
      * @return FirewallInfo for node with 'nodeId'

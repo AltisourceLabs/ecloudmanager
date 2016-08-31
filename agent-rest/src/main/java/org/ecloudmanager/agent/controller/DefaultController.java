@@ -76,25 +76,15 @@ public class DefaultController {
     }
 
     public ResponseContext configureNode(RequestContext request, String accessKey, String secretKey, String nodeId, Node node) {
-        try {
-            ExecutionDetails response = api.configureNode(new SecretKey(accessKey, secretKey), nodeId, node.getParameters());
-            return new ResponseContext().status(Status.OK).entity(response);
-        } catch (Exception e) {
-            return new ResponseContext()
-                    .status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(e.getMessage());
-        }
+        LocalLoggableFuture<NodeInfo> f = api.configureNode(new SecretKey(accessKey, secretKey), nodeId, node.getParameters());
+        tasks.put(f.getId(), f);
+        return new ResponseContext().status(Status.OK).entity(f.getId());
     }
 
     public ResponseContext deleteNode(RequestContext request, String accessKey, String secretKey, String nodeId) {
-        try {
-            ExecutionDetails details = api.deleteNode(new SecretKey(accessKey, secretKey), nodeId);
-            return new ResponseContext().status(Status.OK).entity(details);
-        } catch (Exception e) {
-            return new ResponseContext()
-                    .status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(e.getMessage());
-        }
+        LocalLoggableFuture<Void> f = api.deleteNode(new SecretKey(accessKey, secretKey), nodeId);
+        tasks.put(f.getId(), f);
+        return new ResponseContext().status(Status.OK).entity(f.getId());
     }
 
     public ResponseContext getNode(RequestContext request, String accessKey, String secretKey, String nodeId) {

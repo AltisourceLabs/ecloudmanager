@@ -5,6 +5,7 @@ import org.ecloudmanager.node.model.*;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class LocalAsyncNodeAPI extends LocalAsyncSshAPI implements AsyncNodeAPI {
     private NodeBaseAPI nodeBaseAPI;
@@ -41,13 +42,21 @@ public class LocalAsyncNodeAPI extends LocalAsyncSshAPI implements AsyncNodeAPI 
     }
 
     @Override
-    public ExecutionDetails configureNode(Credentials credentials, String nodeId, Map<String, String> parameters) throws Exception {
-        return nodeBaseAPI.configureNode(credentials, nodeId, parameters);
+    public LocalLoggableFuture<NodeInfo> configureNode(Credentials credentials, String nodeId, Map<String, String> parameters) {
+        return LoggableFuture.submit(() -> nodeBaseAPI.configureNode(credentials, nodeId, parameters), executor);
     }
 
     @Override
-    public ExecutionDetails deleteNode(Credentials credentials, String nodeId) throws Exception {
-        return nodeBaseAPI.deleteNode(credentials, nodeId);
+    public LocalLoggableFuture<Void> deleteNode(Credentials credentials, String nodeId) {
+        return LoggableFuture.submit(Executors.callable(() -> {
+                    try {
+                        nodeBaseAPI.deleteNode(credentials, nodeId);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                , null), executor);
+
     }
 
     @Override

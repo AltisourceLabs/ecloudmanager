@@ -16,9 +16,9 @@ public interface AsyncNodeBaseAPI {
 
     NodeInfo getNode(Credentials credentials, String nodeId) throws Exception;
 
-    ExecutionDetails configureNode(Credentials credentials, String nodeId, Map<String, String> parameters) throws Exception;
+    LoggableFuture<NodeInfo> configureNode(Credentials credentials, String nodeId, Map<String, String> parameters) throws Exception;
 
-    ExecutionDetails deleteNode(Credentials credentials, String nodeId) throws Exception;
+    LoggableFuture<Void> deleteNode(Credentials credentials, String nodeId) throws Exception;
 
     FirewallInfo getNodeFirewallRules(Credentials credentials, String nodeId) throws Exception;
 

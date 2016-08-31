@@ -207,7 +207,6 @@
         summary: Configure node
         operationId: configureNode
         produces:
-         
         - application/json
         parameters:
         - name: accessKey
@@ -230,9 +229,9 @@
             $ref: '#/definitions/Node'
         responses:
           200:
-            description: Execution details
+            description: Task id
             schema:
-              $ref: '#/definitions/ExecutionDetails'
+              type: string              
     /node/{nodeId}/delete:
       post:
         tags:
@@ -257,9 +256,9 @@
           type: string
         responses:
           200:
-            description: Execution details
+            description: Task id
             schema:
-              $ref: '#/definitions/ExecutionDetails'
+              type: string              
     /node/{nodeId}/firewall:
       get:
         tags:

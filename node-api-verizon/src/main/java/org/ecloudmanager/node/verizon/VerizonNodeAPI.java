@@ -527,7 +527,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
     }
 
     @Override
-    public ExecutionDetails configureNode(Credentials credentials, String nodeId, Map<String, String> parameters) throws Exception {
+    public NodeInfo configureNode(Credentials credentials, String nodeId, Map<String, String> parameters) throws Exception {
         ExecutionDetails details = new ExecutionDetails();
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
@@ -543,8 +543,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         Integer memory = memoryStr == null ? null : Integer.parseInt(memoryStr);
         Integer storage = storageStr == null ? null : Integer.parseInt(storageStr);
         updateHardwareConfiguration(vmId, storage, cpu, memory, registry);
-        return details.status(ExecutionDetails.StatusEnum.OK);
-
+        return getNode(credentials, nodeId);
     }
 
     private void updateVmNameAndLayout(ExecutionDetails details, CloudServicesRegistry registry, CloudCachedEntityService cache, String envStr, String vmId, String name, String group, String row) {
@@ -574,18 +573,16 @@ public class VerizonNodeAPI implements NodeBaseAPI {
     }
 
     @Override
-    public ExecutionDetails deleteNode(Credentials credentials, String nodeId) throws Exception {
-        ExecutionDetails details = new ExecutionDetails();
+    public void deleteNode(Credentials credentials, String nodeId) throws Exception {
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
         String envId = nodeId.split(":")[0];
         String id = nodeId.split(":")[1];
         CloudServicesRegistry registry = new CloudServicesRegistry(accessKey, secretKey);
         shutdownVM(id, registry);
-        NodeUtil.logInfo(details, "Shutdown vm " + id);
+        log.info("Shutdown vm " + id);
         deleteVm(id, registry);
-        NodeUtil.logInfo(details, "Delete vm " + id);
-        return details;
+        log.info("Delete vm " + id);
     }
 
     private void shutdownVM(String nodeId, CloudServicesRegistry registry) {
