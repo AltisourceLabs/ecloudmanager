@@ -25,7 +25,6 @@
 package org.ecloudmanager.service.execution;
 
 import org.ecloudmanager.deployment.core.Deployable;
-import org.ecloudmanager.node.model.ExecutionDetails;
 import org.mongodb.morphia.annotations.Transient;
 
 import java.util.*;
@@ -40,10 +39,18 @@ public abstract class Action {
     private final List<Action> depends = new ArrayList<>();
     @Transient
     private final List<Action> requiredBy = new ArrayList<>();
-    private final String id = UUID.randomUUID().toString();
+    private final String id;
     private Status status = Status.PENDING;
-
     public Action() {
+        this.id = newId();
+    }
+
+    public Action(String id) {
+        this.id = id;
+    }
+
+    public static String newId() {
+        return UUID.randomUUID().toString();
     }
 
     public static ActionGroup actionSequence(String name, Action... actions) {
@@ -81,14 +88,17 @@ public abstract class Action {
         return group;
     }
 
-    public static Action single(String description, Callable<ExecutionDetails> callable) {
+    public static Action single(String description, Callable callable) {
         return new SingleAction(callable, description);
     }
 
-    public static Action single(String description, Callable<ExecutionDetails> runnable, Deployable deployable) {
+    public static Action single(String description, Callable runnable, Deployable deployable) {
         return new SingleAction(runnable, description, deployable);
     }
 
+    public static Action single(String description, Callable runnable, Deployable deployable, String id) {
+        return new SingleAction(runnable, description, deployable, id);
+    }
     public String getId() {
         return id;
     }

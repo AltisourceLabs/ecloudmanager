@@ -1,5 +1,7 @@
 package org.ecloudmanager.node.rest;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import org.ecloudmanager.node.LoggableFuture;
 import org.ecloudmanager.node.model.LoggingEvent;
 import org.ecloudmanager.node.model.TaskException;
@@ -74,26 +76,25 @@ public class RestLoggableFuture<T> implements LoggableFuture<T> {
             throw new ExecutionException(te.getMessage() + " Exception type: " + te.getType(), new Throwable());
         }
         Object value = info.getValue();
+        JsonElement jsonElement = new Gson().toJsonTree(value);
+        return new Gson().fromJson(jsonElement, type);
 
-        if (value == null) {
-            return null;
-        }
-        if (String.class.equals(type)) {
-            return (T) value.toString();
-        }
-        if (Integer.class.equals(type)) {
-            if (Number.class.isInstance(value)) {
-                return (T) new Integer(Number.class.cast(value).intValue());
-            }
-            T result;
-            try {
-                result = (T) Integer.valueOf(value.toString());
-            } catch (NumberFormatException e) {
-                throw new ExecutionException("Can't parse result as Integer", e);
-            }
-        }
-
-        return (T) info.getValue();
+//        if (String.class.equals(type)) {
+//            return (T) value.toString();
+//        }
+//        if (Integer.class.equals(type)) {
+//            if (Number.class.isInstance(value)) {
+//                return (T) new Integer(Number.class.cast(value).intValue());
+//            }
+//            T result;
+//            try {
+//                result = (T) Integer.valueOf(value.toString());
+//            } catch (NumberFormatException e) {
+//                throw new ExecutionException("Can't parse result as Integer", e);
+//            }
+//        }
+//        if (Map.class.isInstance(value)) {
+//        return (T) info.getValue();
     }
 
     @Override

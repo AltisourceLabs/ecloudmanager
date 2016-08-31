@@ -8,10 +8,11 @@ import java.util.concurrent.ExecutorService;
 
 public class LocalAsyncNodeAPI extends LocalAsyncSshAPI implements AsyncNodeAPI {
     private NodeBaseAPI nodeBaseAPI;
-
+    private ExecutorService executor;
     public LocalAsyncNodeAPI(NodeBaseAPI nodeBaseAPI, ExecutorService executorService) {
         super(nodeBaseAPI, executorService);
         this.nodeBaseAPI = nodeBaseAPI;
+        this.executor = executorService;
     }
 
     @Override
@@ -30,8 +31,8 @@ public class LocalAsyncNodeAPI extends LocalAsyncSshAPI implements AsyncNodeAPI 
     }
 
     @Override
-    public CreateNodeResponse createNode(Credentials credentials, Map<String, String> parameters) throws Exception {
-        return nodeBaseAPI.createNode(credentials, parameters);
+    public LocalLoggableFuture<NodeInfo> createNode(Credentials credentials, Map<String, String> parameters) {
+        return LoggableFuture.submit(() -> nodeBaseAPI.createNode(credentials, parameters), executor);
     }
 
     @Override

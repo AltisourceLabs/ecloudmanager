@@ -70,14 +70,9 @@ public class DefaultController {
     }
 
     public ResponseContext createNode(RequestContext request, String accessKey, String secretKey, Node node) {
-        try {
-            CreateNodeResponse response = api.createNode(new SecretKey(accessKey, secretKey), node.getParameters());
-            return new ResponseContext().status(Status.OK).entity(response);
-        } catch (Exception e) {
-            return new ResponseContext()
-                    .status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(e.getMessage());
-        }
+        LocalLoggableFuture<NodeInfo> f = api.createNode(new SecretKey(accessKey, secretKey), node.getParameters());
+        tasks.put(f.getId(), f);
+        return new ResponseContext().status(Status.OK).entity(f.getId());
     }
 
     public ResponseContext configureNode(RequestContext request, String accessKey, String secretKey, String nodeId, Node node) {

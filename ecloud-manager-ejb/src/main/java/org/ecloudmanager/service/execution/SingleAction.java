@@ -40,7 +40,7 @@ import java.util.concurrent.Callable;
 public class SingleAction extends Action implements Runnable {
 
     @Transient
-    private Callable<ExecutionDetails> callable;
+    private Callable callable;
     @Transient
     private Callable rollback;
     @Serialized
@@ -57,13 +57,13 @@ public class SingleAction extends Action implements Runnable {
     protected SingleAction() {
     }
 
-    public SingleAction(Callable<ExecutionDetails> task, String description) {
+    public SingleAction(Callable task, String description) {
         super();
         this.callable = task;
         this.description = description;
     }
 
-    public SingleAction(Callable<ExecutionDetails> task, String description, Deployable deployable) {
+    public SingleAction(Callable task, String description, Deployable deployable) {
         super();
         this.callable = task;
         this.description = description;
@@ -71,7 +71,16 @@ public class SingleAction extends Action implements Runnable {
         this.pathToDeployable = topDeployable.relativePathTo(deployable);
     }
 
-    public SingleAction(Callable<ExecutionDetails> task, Callable rollback, String description) {
+    public SingleAction(Callable task, String description, Deployable deployable, String id) {
+        super(id);
+        this.callable = task;
+        this.description = description;
+        this.topDeployable = deployable.getTop();
+        this.pathToDeployable = topDeployable.relativePathTo(deployable);
+    }
+
+
+    public SingleAction(Callable task, Callable rollback, String description) {
         this(task, description);
         this.rollback = rollback;
     }
@@ -129,8 +138,9 @@ public class SingleAction extends Action implements Runnable {
                 ThreadContext.put("action", getId());
                 ThreadContext.put("topDeployable", topDeployable.getName());
                 ThreadContext.put("deployable", getDeployable().getName());
-                ExecutionDetails details = callable.call();
-                if (details != null) {
+                Object result = callable.call();
+                if (result != null && ExecutionDetails.class.isInstance(result)) {
+                    ExecutionDetails details = ExecutionDetails.class.cast(result);
                     logDetails(log, details);
                     switch (details.getStatus()) {
                         case OK:

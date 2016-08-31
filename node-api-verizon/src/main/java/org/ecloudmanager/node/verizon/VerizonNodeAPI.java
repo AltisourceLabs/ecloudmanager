@@ -9,6 +9,8 @@ import org.ecloudmanager.node.util.SynchronousPoller;
 import org.ecloudmanager.tmrk.cloudapi.model.*;
 import org.ecloudmanager.tmrk.cloudapi.service.device.VirtualMachineService;
 import org.ecloudmanager.tmrk.cloudapi.util.TmrkUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.xml.bind.JAXBElement;
 import java.math.BigDecimal;
@@ -22,6 +24,7 @@ import static org.ecloudmanager.tmrk.cloudapi.model.VirtualMachineStatus.NOT_DEP
 public class VerizonNodeAPI implements NodeBaseAPI {
     private static final Set<Integer> ALLOWED_CPU_VALUES = Sets.newHashSet(1, 2, 4, 8);
     private static final long VZ_TASK_TIMEOUT_SEC = 1000;
+    static Logger log = LoggerFactory.getLogger(VerizonNodeAPI.class);
     private static Map<Pair<String, String>, CloudCachedEntityService> caches = new HashMap<>();
     private static APIInfo API_INFO = new APIInfo().id("VERIZON").description("Verizon Terremark");
     private ObjectFactory objectFactory = new ObjectFactory();
@@ -125,8 +128,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
     }
 
     @Override
-    public CreateNodeResponse createNode(Credentials credentials, Map<String, String> parameters) throws Exception {
-        ExecutionDetails details = new ExecutionDetails();
+    public NodeInfo createNode(Credentials credentials, Map<String, String> parameters) {
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
 
@@ -163,22 +165,17 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         String poolId = TmrkUtils.getIdFromHref(computePools.get(0).getHref());
         ImportVirtualMachineType vm = createTmrkVm(createVm, env, cache);
         VirtualMachineType createdVm;
-        try {
-            createdVm = registry.getVirtualMachineService().importVirtualMachineFromCatalog(poolId, vm);
-        } catch (Exception e) {
-            NodeUtil.logError(details, "Can't create node", e);
-            return new CreateNodeResponse().details(details);
-        }
+        createdVm = registry.getVirtualMachineService().importVirtualMachineFromCatalog(poolId, vm);
 
         String vmId = TmrkUtils.getIdFromHref(createdVm.getHref());
-        NodeUtil.logInfo(details, "VM created with id: " + vmId);
+        log.info("VM created with id: " + vmId);
 
         // Allocate the disk space if needed
-        updateHardwareConfiguration(details, vmId, Integer.parseInt(storage), Integer.parseInt(cpu), Integer.parseInt(memory), registry);
-        NodeUtil.logInfo(details, "VM hardware configuaration updated");
+        updateHardwareConfiguration(vmId, Integer.parseInt(storage), Integer.parseInt(cpu), Integer.parseInt(memory), registry);
+        log.info("VM hardware configuaration updated");
         startupVm(vmId, registry, false);
 
-        return new CreateNodeResponse().details(details.status(ExecutionDetails.StatusEnum.OK)).nodeId(envId + ":" + vmId);
+        return getNode(credentials, envId + ":" + vmId);
     }
 
     private void startupVm(String vmId, CloudServicesRegistry registry, boolean wait) {
@@ -350,7 +347,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         return layout;
     }
 
-    private void updateHardwareConfiguration(ExecutionDetails details, String vmId, Integer storage, Integer cpu, Integer memory, CloudServicesRegistry registry) {
+    private void updateHardwareConfiguration(String vmId, Integer storage, Integer cpu, Integer memory, CloudServicesRegistry registry) {
         //log.info("Updating hardware configuration of VM " + vmId);
 
         VirtualMachineService vmService = registry.getVirtualMachineService();
@@ -359,13 +356,13 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         boolean nothingToDo = true;
         if (storage != null) {
             if (storage > 512) {
-                NodeUtil.logInfo(details, "Cannot set storage to more than 512GB, but value is: " + storage);
+                log.info("Cannot set storage to more than 512GB, but value is: " + storage);
             } else {
                 VirtualDiskType disk1 = hardwareConfiguration.getDisks().getValue().getDisk().get(0);
                 int currentStorage = disk1.getSize().getValue().intValue();
                 if (currentStorage != storage) {
                     if (currentStorage > storage) {
-                        NodeUtil.logInfo(details, "Cannot set storage to a value less than current (shrink drive). Current: " +
+                        log.info("Cannot set storage to a value less than current (shrink drive). Current: " +
                                 currentStorage + ", new: " + storage);
 
                     } else {
@@ -376,7 +373,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
             }
             if (memory != null)
                 if (memory % 4 != 0) {
-                    NodeUtil.logInfo(details, "Memory should be multiple of 4 but was: " + memory);
+                    log.info("Memory should be multiple of 4 but was: " + memory);
                 } else {
                     if (hardwareConfiguration.getMemory().getValue().getValue().intValue() != memory) {
                         needShutdown = true;
@@ -387,7 +384,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         }
         if (cpu != null) {
             if (!ALLOWED_CPU_VALUES.contains(cpu)) {
-                NodeUtil.logInfo(details, "Invalid cpu count: " + cpu);
+                log.info("Invalid cpu count: " + cpu);
             } else {
                 if (!Objects.equals(hardwareConfiguration.getProcessorCount(), cpu)) {
                     needShutdown = true;
@@ -501,7 +498,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
     }
 
     @Override
-    public NodeInfo getNode(Credentials credentials, String nodeId) throws Exception {
+    public NodeInfo getNode(Credentials credentials, String nodeId) {
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
         String envId = nodeId.split(":")[0];
@@ -545,7 +542,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         Integer cpu = cpuStr == null ? null : Integer.parseInt(cpuStr);
         Integer memory = memoryStr == null ? null : Integer.parseInt(memoryStr);
         Integer storage = storageStr == null ? null : Integer.parseInt(storageStr);
-        updateHardwareConfiguration(details, vmId, storage, cpu, memory, registry);
+        updateHardwareConfiguration(vmId, storage, cpu, memory, registry);
         return details.status(ExecutionDetails.StatusEnum.OK);
 
     }

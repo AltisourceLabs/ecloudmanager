@@ -31,19 +31,22 @@ import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployer;
 import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployerImpl;
 import org.ecloudmanager.jeecore.service.Service;
 import org.ecloudmanager.node.AsyncNodeAPI;
-import org.ecloudmanager.node.model.CreateNodeResponse;
 import org.ecloudmanager.node.model.Credentials;
 import org.ecloudmanager.node.model.ExecutionDetails;
 import org.ecloudmanager.node.model.NodeInfo;
 import org.ecloudmanager.node.util.NodeUtil;
 import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
+import org.ecloudmanager.repository.deployment.LoggingEventRepository;
 import org.ecloudmanager.service.NodeAPIConfigurationService;
 import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
 import org.ecloudmanager.service.execution.Action;
 import org.ecloudmanager.service.execution.SynchronousPoller;
+import org.ecloudmanager.service.provisioning.GlobalProvisioningService;
 
 import javax.inject.Inject;
 import java.util.Map;
+
+import static org.ecloudmanager.node.LoggableFuture.waitFor;
 
 @Service
 public class VmActions {
@@ -57,18 +60,22 @@ public class VmActions {
     private NodeAPIConfigurationService nodeAPIProvider;
     @Inject
     private ApplicationDeploymentRepository applicationDeploymentRepository;
+    @Inject
+    private LoggingEventRepository loggingEventRepository;
 
     public Action getCreateVmAction(VMDeployment vmDeployment, AsyncNodeAPI api, Credentials credentials, Map<String, String> parameters) {
+        String createActionId = Action.newId();
         return Action.actionSequence("Create and Start VM",
                 Action.single("Create VM", () -> {
+
+                    LoggingEventRepository.ActionLogger actionLog = loggingEventRepository.createActionLogger(GlobalProvisioningService.class, createActionId);
+
                     clearVmConstraints(vmDeployment);
-                    CreateNodeResponse response = api.createNode(credentials, parameters);
-                    if (response.getDetails().getStatus().equals(ExecutionDetails.StatusEnum.OK)) {
-                        InfrastructureDeployer.addVMId(vmDeployment, response.getNodeId());
-                        applicationDeploymentService.update((ApplicationDeployment) vmDeployment.getTop());
-                    }
-                    return response.getDetails();
-                }, vmDeployment),
+                    NodeInfo node = waitFor(api.createNode(credentials, parameters), actionLog);
+                    InfrastructureDeployer.addVMId(vmDeployment, node.getId());
+                    applicationDeploymentService.update((ApplicationDeployment) vmDeployment.getTop());
+                    return node;
+                }, vmDeployment, createActionId),
                 Action.single("Wait for node to be ready", () -> {
                     try {
                         NodeInfo info = NodeUtil.wait(api, credentials, InfrastructureDeployer.getVmId(vmDeployment));

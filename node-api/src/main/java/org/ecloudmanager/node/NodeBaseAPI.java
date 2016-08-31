@@ -21,7 +21,7 @@ public interface NodeBaseAPI {
     /**
      * @return Id of node created
      */
-    CreateNodeResponse createNode(Credentials credentials, Map<String, String> parameters) throws Exception;
+    NodeInfo createNode(Credentials credentials, Map<String, String> parameters) throws Exception;
 
     /**
      * @return Information for node with id 'nodeId'

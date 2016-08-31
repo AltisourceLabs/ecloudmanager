@@ -12,7 +12,7 @@ public interface AsyncNodeBaseAPI {
 
     List<ParameterValue> getNodeParameterValues(Credentials credentials, String parameter, Map<String, String> parameters) throws Exception;
 
-    CreateNodeResponse createNode(Credentials credentials, Map<String, String> parameters) throws Exception;
+    LoggableFuture<NodeInfo> createNode(Credentials credentials, Map<String, String> parameters) throws Exception;
 
     NodeInfo getNode(Credentials credentials, String nodeId) throws Exception;
 

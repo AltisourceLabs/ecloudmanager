@@ -150,9 +150,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
     }
 
     @Override
-    public CreateNodeResponse createNode(Credentials credentials, Map<String, String> parameters) {
-        ExecutionDetails details = new ExecutionDetails();
-
+    public NodeInfo createNode(Credentials credentials, Map<String, String> parameters) throws AWS.RegionNotExistException, ExecutionException {
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
         String region = parameters.get(Parameter.region.name());
@@ -163,55 +161,45 @@ public class AWSNodeAPI implements NodeBaseAPI {
         String instanceType = parameters.get(Parameter.instance_type.name());
         String keyPair = parameters.get(Parameter.keypair.name());
         log.info("Creating AWS security group " + name);
-        AmazonEC2 ec2;
-        try {
-            ec2 = AWS.ec2(accessKey, secretKey, region);
-        } catch (Exception e) {
-            NodeUtil.logError(details, "Can't connect to AWS region " + region, e);
-            return new CreateNodeResponse().details(details);
-        }
-        String securityGroupId;
-        try {
-            securityGroupId = createSecurityGroup(ec2, subnet, name);
-            NodeUtil.logInfo(details, "Security group created with name: " + name + " id: " + securityGroupId);
-        } catch (Exception t) {
-            NodeUtil.logError(details, "Can't create security group with name " + name, t);
-            return new CreateNodeResponse().details(details);
-        }
+        AmazonEC2 ec2 = AWS.ec2(accessKey, secretKey, region);
+        String securityGroupId = createSecurityGroup(ec2, subnet, name);
+        log.info("Security group created with name: " + name + " id: " + securityGroupId);
         try {
             addSshAcess(ec2, securityGroupId);
-            NodeUtil.logInfo(details, "Ssh access firewall rule added");
+            log.info("Ssh access firewall rule added");
         } catch (Exception t) {
-            NodeUtil.logError(details, "Can't add ssh access firewall rule", t);
-            deleteSecurityGroup(ec2, securityGroupId, details);
-            return new CreateNodeResponse().details(details);
+            log.error("Can't add ssh access firewall rule", t);
+            deleteSecurityGroup(ec2, securityGroupId);
+            throw t;
         }
-        String nodeId;
+        String vmId;
         try {
-            nodeId = runWithRetry(details, "Create node", () -> createNode(ec2, storage, securityGroupId, subnet, image, instanceType, keyPair), AmazonServiceException.class::isInstance);
-            NodeUtil.logInfo(details, "Node created with id: " + nodeId);
+            vmId = runWithRetry("Create node", () -> createNode(ec2, storage, securityGroupId, subnet, image, instanceType, keyPair), AmazonServiceException.class::isInstance);
+            log.info("VM created with id: " + vmId);
         } catch (Exception t) {
-            NodeUtil.logError(details, "Can't create node", t);
-            deleteSecurityGroup(ec2, securityGroupId, details);
-            return new CreateNodeResponse().details(details);
+            log.error("Can't create node", t);
+            deleteSecurityGroup(ec2, securityGroupId);
+            throw t;
         }
-        runWithRetry(details, "Create 'Name' tag",
-                () -> setInstanceName(ec2, nodeId, name)
+        runWithRetry("Create 'Name' tag",
+                () -> setInstanceName(ec2, vmId, name)
                 , null, null);
-        return new CreateNodeResponse().nodeId(region + ":" + nodeId).details(details.status(ExecutionDetails.StatusEnum.OK));
+
+
+        return getNode(credentials, region + ":" + vmId);
     }
 
-    private void deleteSecurityGroup(AmazonEC2 ec2, String id, ExecutionDetails details) {
+    private void deleteSecurityGroup(AmazonEC2 ec2, String id) {
         try {
             ec2.deleteSecurityGroup(new DeleteSecurityGroupRequest().withGroupId(id));
-            NodeUtil.logInfo(details, "Security group deleted with id: " + id);
+            log.info("Security group deleted with id: " + id);
         } catch (Exception t1) {
-            NodeUtil.logError(details, "Failed to delete security group with id: " + id, t1);
+            log.error("Failed to delete security group with id: " + id, t1);
         }
     }
 
     @Override
-    public NodeInfo getNode(Credentials credentials, String nodeId) throws Exception {
+    public NodeInfo getNode(Credentials credentials, String nodeId) throws AWS.RegionNotExistException, ExecutionException {
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
         String region = nodeId.split(":")[0];
@@ -437,7 +425,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
         ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest = new ChangeResourceRecordSetsRequest()
                 .withHostedZoneId(hostedZone.getId()).withChangeBatch(changeBatch);
         ChangeResourceRecordSetsResult changeResourceRecordSetsResult =
-                runWithRetry(details, "Route53 request", () -> route53.changeResourceRecordSets(changeResourceRecordSetsRequest), PriorRequestNotCompleteException.class::isInstance);
+                runWithRetry("Route53 request", () -> route53.changeResourceRecordSets(changeResourceRecordSetsRequest), PriorRequestNotCompleteException.class::isInstance);
 
 //        guardedChangeResourceRecordSets(route53, changeResourceRecordSetsRequest);
     }
@@ -473,10 +461,10 @@ public class AWSNodeAPI implements NodeBaseAPI {
         ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest = new ChangeResourceRecordSetsRequest()
                 .withHostedZoneId(hostedZone.getId()).withChangeBatch(changeBatch);
         ChangeResourceRecordSetsResult changeResourceRecordSetsResult =
-                runWithRetry(details, "Route53 request", () -> route53.changeResourceRecordSets(changeResourceRecordSetsRequest), PriorRequestNotCompleteException.class::isInstance);
+                runWithRetry("Route53 request", () -> route53.changeResourceRecordSets(changeResourceRecordSetsRequest), PriorRequestNotCompleteException.class::isInstance);
 //        ChangeResourceRecordSetsResult changeResourceRecordSetsResult =
 //                guardedChangeResourceRecordSets(route53, changeResourceRecordSetsRequest);
-        NodeUtil.logInfo(details, "Submitted delete recordset request " + changeResourceRecordSetsResult.getChangeInfo().toString());
+        log.info("Submitted delete recordset request " + changeResourceRecordSetsResult.getChangeInfo().toString());
     }
 
     private ChangeResourceRecordSetsResult guardedChangeResourceRecordSets(
@@ -496,18 +484,18 @@ public class AWSNodeAPI implements NodeBaseAPI {
         return new SynchronousPoller().poll(poll, check, 1, 600, "wait for route53 request to be submitted");
     }
 
-    private void runWithRetry(ExecutionDetails details, String operation, Runnable runnable, Predicate<Exception> retry, Predicate<Exception> ignore) {
-        runWithRetry(details, operation, () -> {
+    private void runWithRetry(String operation, Runnable runnable, Predicate<Exception> retry, Predicate<Exception> ignore) {
+        runWithRetry(operation, () -> {
             runnable.run();
             return new Object();
         }, retry, ignore, new Object());
     }
 
-    private <T> T runWithRetry(ExecutionDetails details, String operation, Callable<T> callable, Predicate<Exception> retry) {
-        return runWithRetry(details, operation, callable, retry, null, null);
+    private <T> T runWithRetry(String operation, Callable<T> callable, Predicate<Exception> retry) {
+        return runWithRetry(operation, callable, retry, null, null);
     }
 
-    private <T> T runWithRetry(ExecutionDetails details, String operation, Callable<T> callable, Predicate<Exception> retry, Predicate<Exception> ignore, T returnOnIgnore) {
+    private <T> T runWithRetry(String operation, Callable<T> callable, Predicate<Exception> retry, Predicate<Exception> ignore, T returnOnIgnore) {
         Callable<T> poll =
                 () -> {
                     try {
@@ -521,7 +509,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
                             return returnOnIgnore;
                         }
                         if (retry == null || retry.test(e)) {
-                            NodeUtil.logWarn(details, operation + " failed, retrying...", e);
+                            log.warn(operation + " failed, retrying...", e);
                             return null;
                         }
                         log.error(operation + " failed", e);
