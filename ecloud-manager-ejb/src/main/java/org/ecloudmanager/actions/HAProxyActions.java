@@ -42,8 +42,6 @@ import java.util.Arrays;
 
 @Service
 public class HAProxyActions {
-    //    @Inject
-//    private AWSVmService vmService;
     @Inject
     NodeAPIConfigurationService nodeAPIProvider;
 
