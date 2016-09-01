@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static org.ecloudmanager.node.LoggableFuture.submit;
 public class LocalAsyncNodeAPI extends LocalAsyncSshAPI implements AsyncNodeAPI {
     private NodeBaseAPI nodeBaseAPI;
     private ExecutorService executor;
@@ -33,7 +34,7 @@ public class LocalAsyncNodeAPI extends LocalAsyncSshAPI implements AsyncNodeAPI 
 
     @Override
     public LocalLoggableFuture<NodeInfo> createNode(Credentials credentials, Map<String, String> parameters) {
-        return LoggableFuture.submit(() -> nodeBaseAPI.createNode(credentials, parameters), executor);
+        return submit(() -> nodeBaseAPI.createNode(credentials, parameters), executor);
     }
 
     @Override
@@ -43,12 +44,12 @@ public class LocalAsyncNodeAPI extends LocalAsyncSshAPI implements AsyncNodeAPI 
 
     @Override
     public LocalLoggableFuture<NodeInfo> configureNode(Credentials credentials, String nodeId, Map<String, String> parameters) {
-        return LoggableFuture.submit(() -> nodeBaseAPI.configureNode(credentials, nodeId, parameters), executor);
+        return submit(() -> nodeBaseAPI.configureNode(credentials, nodeId, parameters), executor);
     }
 
     @Override
     public LocalLoggableFuture<Void> deleteNode(Credentials credentials, String nodeId) {
-        return LoggableFuture.submit(Executors.callable(() -> {
+        return submit(Executors.callable(() -> {
                     try {
                         nodeBaseAPI.deleteNode(credentials, nodeId);
                     } catch (Exception e) {
@@ -66,6 +67,6 @@ public class LocalAsyncNodeAPI extends LocalAsyncSshAPI implements AsyncNodeAPI 
 
     @Override
     public LocalLoggableFuture<FirewallInfo> updateNodeFirewallRules(Credentials credentials, String nodeId, FirewallUpdate firewallUpdate) throws Exception {
-        return LoggableFuture.submit(() -> nodeBaseAPI.updateNodeFirewallRules(credentials, nodeId, firewallUpdate), executor);
+        return submit(() -> nodeBaseAPI.updateNodeFirewallRules(credentials, nodeId, firewallUpdate), executor);
     }
 }

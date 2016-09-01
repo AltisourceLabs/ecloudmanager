@@ -34,77 +34,81 @@ import org.ecloudmanager.jeecore.service.Service;
 import org.ecloudmanager.node.AsyncNodeAPI;
 import org.ecloudmanager.node.model.FirewallRule;
 import org.ecloudmanager.node.model.FirewallUpdate;
+import org.ecloudmanager.repository.deployment.LoggingEventRepository;
 import org.ecloudmanager.service.NodeAPIConfigurationService;
 import org.ecloudmanager.service.execution.Action;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
+
+import static org.ecloudmanager.node.LoggableFuture.waitFor;
 
 @Service
 public class HAProxyActions {
     @Inject
     NodeAPIConfigurationService nodeAPIProvider;
+    @Inject
+    @Named("contextExecutorService")
+    ExecutorService executorService;
+    @Inject
+    private LoggingEventRepository loggingEventRepository;
 
     public Action getCreatePublicEndpointFirewallRulesAction(ProducedServiceDeployment producedServiceDeployment) {
-        return Action.single("Create Firewall Rules for Public Endpoints", () -> {
-            createFirewallRules(producedServiceDeployment);
+        String actionId = Action.newId();
+        LoggingEventRepository.ActionLogger actionLog = loggingEventRepository.createActionLogger(HAProxyActions.class, actionId);
+        return Action.single("Create Firewall Rules for Public Endpoints",
+                () -> {
+                    ApplicationDeployment ad = (ApplicationDeployment) producedServiceDeployment.getTop();
+                    // TODO - here we use the same port from endpoint both for frontend and backend. They should be different.
+                    // Create firewall rule for haproxy frontend if there's a public endpoint
+                    producedServiceDeployment.children(Endpoint.class).forEach(endpoint -> {
+                        int port = endpoint.getPort();
+                        String publicEndpointName = producedServiceDeployment.getName() + ":" + endpoint.getName();
+                        if (ad.getPublicEndpoints().contains(publicEndpointName)) {
+                            GatewayVMDeployment gatewayVmDeployment = HAProxyDeployer.getGatewayVmDeployment(producedServiceDeployment);
+                            String vmId = InfrastructureDeployerImpl.getVmId(gatewayVmDeployment);
+                            String apiId = ((ApplicationDeployment) (gatewayVmDeployment.getTop())).getInfrastructure();
+                            FirewallRule rule = new FirewallRule().type(FirewallRule.TypeEnum.ANY).port(port).protocol("TCP");
+                            AsyncNodeAPI nodeAPI = nodeAPIProvider.getAPI(apiId);
+                            try {
+                                waitFor(nodeAPI.updateNodeFirewallRules(nodeAPIProvider.getCredentials(apiId), vmId, new FirewallUpdate().create(Arrays.asList(rule))), actionLog);
+                            } catch (Exception e) {
+                                actionLog.error("Failed to create firewall rule on node " + vmId, e);
+                            }
+                        }
+                    });
             return null;
-        }, producedServiceDeployment);
+                }, producedServiceDeployment, actionId);
     }
 
     public Action getDeletePublicEndpointFirewallRulesAction(ProducedServiceDeployment producedServiceDeployment) {
+        String actionId = Action.newId();
+        LoggingEventRepository.ActionLogger actionLog = loggingEventRepository.createActionLogger(HAProxyActions.class, actionId);
         return Action.single("Delete Firewall Rules for Public Endpoints", () -> {
-            deleteFirewallRules(producedServiceDeployment);
+            ApplicationDeployment ad = (ApplicationDeployment) producedServiceDeployment.getTop();
+            // TODO - here we use the same port from endpoint both for frontend and backend. They should be different.
+            // Delete firewall rule for haproxy frontend if there's a public endpoint
+            producedServiceDeployment.children(Endpoint.class).forEach(endpoint -> {
+                int port = endpoint.getPort();
+                String publicEndpointName = producedServiceDeployment.getName() + ":" + endpoint.getName();
+                if (ad.getPublicEndpoints().contains(publicEndpointName)) {
+                    GatewayVMDeployment gatewayVmDeployment = HAProxyDeployer.getGatewayVmDeployment(producedServiceDeployment);
+                    String vmId = InfrastructureDeployerImpl.getVmId(gatewayVmDeployment);
+                    String apiId = ((ApplicationDeployment) (gatewayVmDeployment.getTop())).getInfrastructure();
+
+                    AsyncNodeAPI nodeAPI = nodeAPIProvider.getAPI(apiId);
+                    FirewallRule rule = new FirewallRule().type(FirewallRule.TypeEnum.ANY).port(port).protocol("TCP");
+                    try {
+                        waitFor(nodeAPI.updateNodeFirewallRules(nodeAPIProvider.getCredentials(apiId), vmId, new FirewallUpdate().delete(Arrays.asList(rule))), actionLog);
+                    } catch (Exception e) {
+                        actionLog.error("Failed to delete firewall rule on node " + vmId, e);
+                    }
+                }
+            });
             return null;
-        }, producedServiceDeployment);
-    }
-
-    public void deleteFirewallRules(ProducedServiceDeployment producedServiceDeployment) throws Exception {
-        ApplicationDeployment ad = (ApplicationDeployment) producedServiceDeployment.getTop();
-        // TODO - here we use the same port from endpoint both for frontend and backend. They should be different.
-        // Delete firewall rule for haproxy frontend if there's a public endpoint
-        producedServiceDeployment.children(Endpoint.class).forEach(endpoint -> {
-            int port = endpoint.getPort();
-            String publicEndpointName = producedServiceDeployment.getName() + ":" + endpoint.getName();
-            if (ad.getPublicEndpoints().contains(publicEndpointName)) {
-                GatewayVMDeployment gatewayVmDeployment = HAProxyDeployer.getGatewayVmDeployment(producedServiceDeployment);
-                String vmId = InfrastructureDeployerImpl.getVmId(gatewayVmDeployment);
-                String apiId = ((ApplicationDeployment) (gatewayVmDeployment.getTop())).getInfrastructure();
-
-                AsyncNodeAPI nodeAPI = nodeAPIProvider.getAPI(apiId);
-                FirewallRule rule = new FirewallRule().type(FirewallRule.TypeEnum.ANY).port(port).protocol("TCP");
-
-                try {
-                    nodeAPI.updateNodeFirewallRules(nodeAPIProvider.getCredentials(apiId), vmId, new FirewallUpdate().delete(Arrays.asList(rule)));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-    }
-
-    public void createFirewallRules(ProducedServiceDeployment producedServiceDeployment) {
-        ApplicationDeployment ad = (ApplicationDeployment) producedServiceDeployment.getTop();
-        // TODO - here we use the same port from endpoint both for frontend and backend. They should be different.
-        // Create firewall rule for haproxy frontend if there's a public endpoint
-        producedServiceDeployment.children(Endpoint.class).forEach(e -> {
-            int port = e.getPort();
-            String publicEndpointName = producedServiceDeployment.getName() + ":" + e.getName();
-            if (ad.getPublicEndpoints().contains(publicEndpointName)) {
-
-                GatewayVMDeployment gatewayVmDeployment = HAProxyDeployer.getGatewayVmDeployment(producedServiceDeployment);
-                String vmId = InfrastructureDeployerImpl.getVmId(gatewayVmDeployment);
-                String apiId = ((ApplicationDeployment) (gatewayVmDeployment.getTop())).getInfrastructure();
-                FirewallRule rule = new FirewallRule().type(FirewallRule.TypeEnum.ANY).port(port).protocol("TCP");
-                AsyncNodeAPI nodeAPI = nodeAPIProvider.getAPI(apiId);
-
-                try {
-                    nodeAPI.updateNodeFirewallRules(nodeAPIProvider.getCredentials(apiId), vmId, new FirewallUpdate().create(Arrays.asList(rule)));
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-            }
-        });
+        }, producedServiceDeployment, actionId);
     }
 
 }

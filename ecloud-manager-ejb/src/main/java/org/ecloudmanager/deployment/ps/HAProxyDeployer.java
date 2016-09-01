@@ -39,24 +39,30 @@ import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployer;
 import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureHAProxyDeployer;
 import org.ecloudmanager.repository.deployment.GatewayRepository;
+import org.ecloudmanager.repository.deployment.LoggingEventRepository;
 import org.ecloudmanager.service.deployment.geolite.AclOperator;
 import org.ecloudmanager.service.deployment.geolite.GeolocationExpr;
 import org.ecloudmanager.service.deployment.geolite.GeolocationRecordType;
 import org.ecloudmanager.service.execution.Action;
+import org.ecloudmanager.service.execution.context.ContextExecutorService;
 import org.ecloudmanager.service.provisioning.HAProxyConfigurator;
 import org.jetbrains.annotations.NotNull;
 
 import javax.enterprise.inject.spi.CDI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+
+import static org.ecloudmanager.node.LoggableFuture.submitAndWait;
 
 public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment> {
     public static final String PORT = "port";
     public static final String BIND_IP = "bind_ip";
     public static final String HAPROXY_MONITORING = "ha_proxy_monitoring";
     public static final String GATEWAY = "gateway";
-
+    ExecutorService executor = CDI.current().select(ContextExecutorService.class).get();
     private HAProxyConfigurator haProxyConfigurator;
+    private LoggingEventRepository loggingEventRepository = CDI.current().select(LoggingEventRepository.class).get();
 
     private static GatewayDeployment getGatewayDeployment(ProducedServiceDeployment deployment) {
         String gateway = deployment.getConfigValue(GATEWAY);
@@ -320,24 +326,34 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
 
     @Override
     public Action getAfterChildrenCreatedAction(ProducedServiceDeployment deployable) {
+        String actionId = Action.newId();
+        LoggingEventRepository.ActionLogger actionLog = loggingEventRepository.createActionLogger(HAProxyDeployer.class, actionId);
         return Action.actionGroup(
                 "Configure HAProxy",
                 Action.single("Configure HAProxy frontend/backend", () -> {
-                    configure(deployable);
+                    submitAndWait(() -> {
+                        configure(deployable);
+                        return null;
+                    }, executor, actionLog);
                     return null;
-                }, deployable),
+                }, deployable, actionId),
                 getInfrastructureHaproxyDeployer(deployable).getCreateAction(deployable)
         );
     }
 
     @Override
     public Action getAfterChildrenDeletedAction(ProducedServiceDeployment deployable) {
+        String actionId = Action.newId();
+        LoggingEventRepository.ActionLogger actionLog = loggingEventRepository.createActionLogger(HAProxyDeployer.class, actionId);
         return Action.actionGroup(
                 "Delete HAProxy Configuration",
                 Action.single("Delete HAProxy Frontend/Backend Configuration", () -> {
-                    deleteConfiguration(deployable);
+                    submitAndWait(() -> {
+                        deleteConfiguration(deployable);
+                        return null;
+                    }, executor, actionLog);
                     return null;
-                }, deployable),
+                }, deployable, actionId),
                 getInfrastructureHaproxyDeployer(deployable).getDeleteAction(deployable)
         );
     }
