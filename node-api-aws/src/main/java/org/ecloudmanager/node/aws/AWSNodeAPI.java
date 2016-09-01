@@ -12,7 +12,6 @@ import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.ecloudmanager.node.NodeBaseAPI;
 import org.ecloudmanager.node.model.*;
-import org.ecloudmanager.node.util.NodeUtil;
 import org.ecloudmanager.node.util.SynchronousPoller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -224,14 +223,18 @@ public class AWSNodeAPI implements NodeBaseAPI {
         return info;
     }
 
-    private IpPermission fromFirewallRule(Credentials credentials, FirewallRule rule) throws Exception {
+    private IpPermission fromFirewallRule(Credentials credentials, FirewallRule rule) throws IllegalArgumentException {
         String ipRange = "";
         switch (rule.getType()) {
             case IP:
                 ipRange = rule.getFrom() + "/32";
                 break;
             case NODE_ID:
-                ipRange = getNode(credentials, rule.getFrom()).getIp() + "/32";
+                try {
+                    ipRange = getNode(credentials, rule.getFrom()).getIp() + "/32";
+                } catch (AWS.RegionNotExistException | ExecutionException e) {
+                    throw new IllegalArgumentException("Can't access node " + rule.getFrom(), e);
+                }
                 break;
             case ANY:
                 ipRange = "0.0.0.0/0";
@@ -562,7 +565,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
     }
 
     @Override
-    public FirewallInfo getNodeFirewallRules(Credentials credentials, String nodeId) throws Exception {
+    public FirewallInfo getNodeFirewallRules(Credentials credentials, String nodeId) throws AWS.RegionNotExistException, ExecutionException {
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
         String region = nodeId.split(":")[0];
@@ -576,44 +579,30 @@ public class AWSNodeAPI implements NodeBaseAPI {
     }
 
     @Override
-    public ExecutionDetails updateNodeFirewallRules(Credentials credentials, String nodeId, FirewallUpdate firewallUpdate) throws Exception {
-        ExecutionDetails details = new ExecutionDetails();
+    public FirewallInfo updateNodeFirewallRules(Credentials credentials, String nodeId, FirewallUpdate firewallUpdate) throws AWS.RegionNotExistException, ExecutionException {
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
         String region = nodeId.split(":")[0];
         String id = nodeId.split(":")[1];
         AmazonEC2 ec2 = AWS.ec2(accessKey, secretKey, region);
         String securityGroupId = getSecurityGroup(ec2, id);
-        List<IpPermission> permissions = firewallUpdate.getCreate().stream().map(p -> {
-            try {
-                return fromFirewallRule(credentials, p);
-            } catch (Exception e) {
-                NodeUtil.logWarn(details, "Can't convert rule to IpPermission: ", e);
-                return null;
-            }
-        }).filter(Objects::nonNull).collect(Collectors.toList());
+        List<IpPermission> permissions = firewallUpdate.getCreate().stream().map(p -> fromFirewallRule(credentials, p)).filter(Objects::nonNull).collect(Collectors.toList());
+        List<IpPermission> permissionsToDelete = firewallUpdate.getDelete().stream().map(p -> fromFirewallRule(credentials, p)).filter(Objects::nonNull).collect(Collectors.toList());
         if (!permissions.isEmpty()) {
             AuthorizeSecurityGroupIngressRequest req = new AuthorizeSecurityGroupIngressRequest()
                     .withGroupId(securityGroupId).withIpPermissions(permissions);
             ec2.authorizeSecurityGroupIngress(req);
-            NodeUtil.logInfo(details, "Firewall rules created for node " + nodeId);
-            NodeUtil.logInfo(details, firewallUpdate.getCreate().toString());
+            log.info("Firewall rules created for node " + nodeId);
+            log.info(firewallUpdate.getCreate().toString());
         }
-        List<IpPermission> permissionsToDelete = firewallUpdate.getDelete().stream().map(p -> {
-            try {
-                return fromFirewallRule(credentials, p);
-            } catch (Exception e) {
-                NodeUtil.logWarn(details, "Can't convert rule to IpPermission: ", e);
-                return null;
-            }
-        }).filter(Objects::nonNull).collect(Collectors.toList());
+
         if (!permissionsToDelete.isEmpty()) {
             RevokeSecurityGroupIngressRequest delete = new RevokeSecurityGroupIngressRequest().withGroupId(securityGroupId).withIpPermissions(permissionsToDelete);
             ec2.revokeSecurityGroupIngress(delete);
-            NodeUtil.logInfo(details, "Firewall rules deleted for node " + nodeId);
-            NodeUtil.logInfo(details, firewallUpdate.getDelete().toString());
+            log.info("Firewall rules deleted for node " + nodeId);
+            log.info(firewallUpdate.getDelete().toString());
         }
-        return details.status(ExecutionDetails.StatusEnum.OK);
+        return getNodeFirewallRules(credentials, nodeId);
     }
 
     private String getSecurityGroup(AmazonEC2 ec2, String nodeInternalId) {

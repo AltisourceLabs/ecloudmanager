@@ -22,5 +22,5 @@ public interface AsyncNodeBaseAPI {
 
     FirewallInfo getNodeFirewallRules(Credentials credentials, String nodeId) throws Exception;
 
-    ExecutionDetails updateNodeFirewallRules(Credentials credentials, String nodeId, FirewallUpdate firewallUpdate) throws Exception;
+    LoggableFuture<FirewallInfo> updateNodeFirewallRules(Credentials credentials, String nodeId, FirewallUpdate firewallUpdate) throws Exception;
 }

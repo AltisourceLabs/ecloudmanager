@@ -318,9 +318,9 @@
             $ref: '#/definitions/FirewallUpdate'
         responses:
           200:
-            description: Execution details
+            description: Task id
             schema:
-              $ref: '#/definitions/ExecutionDetails'
+              type: string
     /node/{nodeId}/upload:
       post:
         tags:
@@ -446,30 +446,6 @@
       name: secret_key
       in: header
   definitions:
-    LogEntry:
-      properties:
-        level:
-          type: string
-          enum:
-           - INFO
-           - ERROR
-           - WARNING
-        message:
-          type: string
-    ExecutionDetails:
-      properties:
-        status:
-          type: string
-          enum:
-           - OK
-           - FAILED
-        message:
-          type: string
-        log:
-          type: array
-          items:
-            $ref: '#/definitions/LogEntry'  
-       
     SSHCredentials:
       properties:
         username:

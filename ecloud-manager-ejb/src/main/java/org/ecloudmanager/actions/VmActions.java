@@ -32,7 +32,6 @@ import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployerImpl
 import org.ecloudmanager.jeecore.service.Service;
 import org.ecloudmanager.node.AsyncNodeAPI;
 import org.ecloudmanager.node.model.Credentials;
-import org.ecloudmanager.node.model.ExecutionDetails;
 import org.ecloudmanager.node.model.NodeInfo;
 import org.ecloudmanager.node.util.NodeUtil;
 import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
@@ -65,6 +64,8 @@ public class VmActions {
     public Action getCreateVmAction(VMDeployment vmDeployment, AsyncNodeAPI api, Credentials credentials, Map<String, String> parameters) {
         String createActionId = Action.newId();
         String configureActionId = Action.newId();
+        String wait1ActionId = Action.newId();
+        String wait2ActionId = Action.newId();
 
         return Action.actionSequence("Create and Start VM",
                 Action.single("Create VM", () -> {
@@ -79,14 +80,14 @@ public class VmActions {
                 }, vmDeployment, createActionId),
                 Action.single("Wait for node to be ready", () -> {
                     try {
-                        NodeInfo info = NodeUtil.wait(api, credentials, InfrastructureDeployer.getVmId(vmDeployment));
-                        return new ExecutionDetails().status(ExecutionDetails.StatusEnum.OK).message("Node started with IP: " + info.getIp());
+                        LoggingEventRepository.ActionLogger actionLog = loggingEventRepository.createActionLogger(VmActions.class, wait1ActionId);
+                        NodeInfo node = NodeUtil.wait(api, credentials, InfrastructureDeployer.getVmId(vmDeployment));
+                        actionLog.info("Node IP: " + node.getIp());
+                        return node;
                     } catch (Exception e) {
-                        ExecutionDetails details = new ExecutionDetails();
-                        NodeUtil.logError(details, "Can't obtain node IP address ", e);
-                        return details;
+                        throw new RuntimeException(e);
                     }
-                }, vmDeployment),
+                }, vmDeployment, wait1ActionId),
                 Action.single("Configure VM", () -> {
                     LoggingEventRepository.ActionLogger actionLog = loggingEventRepository.createActionLogger(VmActions.class, configureActionId);
                     NodeInfo node = waitFor(api.configureNode(credentials, InfrastructureDeployer.getVmId(vmDeployment), parameters), actionLog);
@@ -94,17 +95,17 @@ public class VmActions {
                 }, vmDeployment, configureActionId),
                 Action.single("Wait for node to be ready", () -> {
                     try {
-                        NodeInfo info = NodeUtil.wait(api, credentials, InfrastructureDeployer.getVmId(vmDeployment));
-                        InfrastructureDeployer.addIP(vmDeployment, info.getIp());
+                        LoggingEventRepository.ActionLogger actionLog = loggingEventRepository.createActionLogger(VmActions.class, wait2ActionId);
+                        NodeInfo node = NodeUtil.wait(api, credentials, InfrastructureDeployer.getVmId(vmDeployment));
+                        actionLog.info("Node IP: " + node.getIp());
+                        InfrastructureDeployer.addIP(vmDeployment, node.getIp());
                         applicationDeploymentService.update((ApplicationDeployment) vmDeployment.getTop());
-                        return new ExecutionDetails().status(ExecutionDetails.StatusEnum.OK).message("Node started with IP: " + info.getIp());
+                        return node;
                     } catch (Exception e) {
-                        ExecutionDetails details = new ExecutionDetails();
-                        NodeUtil.logError(details, "Can't obtain node IP address ", e);
-                        return details;
+                        throw new RuntimeException(e);
                     }
-                }, vmDeployment),
-                new CreateFirewallRulesAction(vmDeployment, api, credentials));
+                }, vmDeployment, wait2ActionId),
+                new CreateFirewallRulesAction(vmDeployment, api, credentials, loggingEventRepository));
     }
 
 

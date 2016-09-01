@@ -24,13 +24,11 @@
 
 package org.ecloudmanager.service.execution;
 
-import com.google.common.base.Strings;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.DeploymentObject;
-import org.ecloudmanager.node.model.ExecutionDetails;
 import org.mongodb.morphia.annotations.Reference;
 import org.mongodb.morphia.annotations.Serialized;
 import org.mongodb.morphia.annotations.Transient;
@@ -85,30 +83,6 @@ public class SingleAction extends Action implements Runnable {
         this.rollback = rollback;
     }
 
-    private static void logDetails(Logger log, ExecutionDetails details) {
-        details.getLog().forEach(e -> {
-            switch (e.getLevel()) {
-                case INFO:
-                    log.info(e.getMessage());
-                    break;
-                case ERROR:
-                    log.error(e.getMessage());
-                    break;
-                case WARNING:
-                    log.warn(e.getMessage());
-                    break;
-            }
-        });
-        switch (details.getStatus()) {
-            case OK:
-                log.info("Action completed. " + Strings.nullToEmpty(details.getMessage()));
-                break;
-            case FAILED:
-                log.error("Action failed. " + Strings.nullToEmpty(details.getMessage()));
-                break;
-        }
-    }
-
     public String getDescription() {
         return description;
     }
@@ -139,20 +113,7 @@ public class SingleAction extends Action implements Runnable {
                 ThreadContext.put("topDeployable", topDeployable.getName());
                 ThreadContext.put("deployable", getDeployable().getName());
                 Object result = callable.call();
-                if (result != null && ExecutionDetails.class.isInstance(result)) {
-                    ExecutionDetails details = ExecutionDetails.class.cast(result);
-                    logDetails(log, details);
-                    switch (details.getStatus()) {
-                        case OK:
-                            setStatus(Status.SUCCESSFUL);
-                            break;
-                        case FAILED:
-                            setStatus(Status.FAILED);
-                            break;
-                    }
-                } else {
-                    setStatus(Status.SUCCESSFUL);
-                }
+                setStatus(Status.SUCCESSFUL);
                 ThreadContext.clearAll();
             } catch (Exception t) {
                 failure = t;

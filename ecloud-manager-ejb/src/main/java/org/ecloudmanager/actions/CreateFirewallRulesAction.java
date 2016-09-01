@@ -10,10 +10,10 @@ import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployer;
 import org.ecloudmanager.node.AsyncNodeAPI;
 import org.ecloudmanager.node.model.Credentials;
-import org.ecloudmanager.node.model.ExecutionDetails;
+import org.ecloudmanager.node.model.FirewallInfo;
 import org.ecloudmanager.node.model.FirewallRule;
 import org.ecloudmanager.node.model.FirewallUpdate;
-import org.ecloudmanager.node.util.NodeUtil;
+import org.ecloudmanager.repository.deployment.LoggingEventRepository;
 import org.ecloudmanager.service.execution.Action;
 import org.ecloudmanager.service.execution.SingleAction;
 
@@ -22,13 +22,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static org.ecloudmanager.node.LoggableFuture.waitFor;
+
 public class CreateFirewallRulesAction extends SingleAction {
     private CreateFirewallRulesAction() {
         super();
     }
 
-    public CreateFirewallRulesAction(VMDeployment deployment, AsyncNodeAPI nodeAPI, Credentials credentials) {
+    public CreateFirewallRulesAction(VMDeployment deployment, AsyncNodeAPI nodeAPI, Credentials credentials, LoggingEventRepository loggingEventRepository) {
         super(null, "Create Firewall Rules", deployment);
+        LoggingEventRepository.ActionLogger actionLog = loggingEventRepository.createActionLogger(CreateFirewallRulesAction.class, getId());
         setCallable(() -> {
             ApplicationDeployment ad = (ApplicationDeployment) deployment.getTop();
             List<FirewallRule> rules = new ArrayList<FirewallRule>();
@@ -51,7 +54,8 @@ public class CreateFirewallRulesAction extends SingleAction {
                     }
                 });
             }
-            ExecutionDetails details = nodeAPI.updateNodeFirewallRules(credentials, InfrastructureDeployer.getVmId(deployment), new FirewallUpdate().create(rules));
+            FirewallInfo firewalls = waitFor(nodeAPI.updateNodeFirewallRules(credentials, InfrastructureDeployer.getVmId(deployment), new FirewallUpdate().create(rules)), actionLog);
+
             for (Pair<DeploymentObject, Endpoint> e : deployment.getLinkedRequiredEndpoints()) {
                 DeploymentObject d = e.getLeft();
                 if (d instanceof VMDeployment) {
@@ -59,19 +63,12 @@ public class CreateFirewallRulesAction extends SingleAction {
                     VMDeployment supplier = (VMDeployment) d;
                     String supplierId = InfrastructureDeployer.getVmId(supplier);
                     FirewallRule rule = new FirewallRule().type(FirewallRule.TypeEnum.NODE_ID).port(e.getRight().getPort()).protocol("TCP").from(InfrastructureDeployer.getVmId(deployment));
-                    try {
-                        ExecutionDetails ed = nodeAPI.updateNodeFirewallRules(credentials, supplierId, new FirewallUpdate().create(Collections.singletonList(rule)));
-                        details = NodeUtil.merge(details, ed);
-                    } catch (Exception ex) {
-                        NodeUtil.logError(details, "Failed to create firewall rules for: " + supplierId);
-                    }
-
+                    FirewallInfo fw = waitFor(nodeAPI.updateNodeFirewallRules(credentials, supplierId, new FirewallUpdate().create(Collections.singletonList(rule))), actionLog);
                 } else {
-                    NodeUtil.logWarn(details, "Unsupported endpoint: " + d.getClass().getName());
+                    actionLog.error("Unsupported endpoint: " + d.getClass().getName());
                 }
             }
-            ;
-            return details;
+            return firewalls;
         });
 
     }

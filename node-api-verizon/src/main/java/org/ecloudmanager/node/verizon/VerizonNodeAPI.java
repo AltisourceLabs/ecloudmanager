@@ -1,10 +1,10 @@
 package org.ecloudmanager.node.verizon;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.tuple.Pair;
 import org.ecloudmanager.node.NodeBaseAPI;
 import org.ecloudmanager.node.model.*;
-import org.ecloudmanager.node.util.NodeUtil;
 import org.ecloudmanager.node.util.SynchronousPoller;
 import org.ecloudmanager.tmrk.cloudapi.model.*;
 import org.ecloudmanager.tmrk.cloudapi.service.device.VirtualMachineService;
@@ -528,14 +528,13 @@ public class VerizonNodeAPI implements NodeBaseAPI {
 
     @Override
     public NodeInfo configureNode(Credentials credentials, String nodeId, Map<String, String> parameters) throws Exception {
-        ExecutionDetails details = new ExecutionDetails();
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
         String envId = nodeId.split(":")[0];
         String vmId = nodeId.split(":")[1];
         CloudCachedEntityService cache = getCache(accessKey, secretKey);
         CloudServicesRegistry registry = new CloudServicesRegistry(accessKey, secretKey);
-        updateVmNameAndLayout(details, registry, cache, envId, vmId, parameters.get(Parameter.name.name()), parameters.get(Parameter.group.name()), parameters.get(Parameter.row.name()));
+        updateVmNameAndLayout(registry, cache, envId, vmId, parameters.get(Parameter.name.name()), parameters.get(Parameter.group.name()), parameters.get(Parameter.row.name()));
         String cpuStr = parameters.get(Parameter.cpu.name());
         String memoryStr = parameters.get(Parameter.memory.name());
         String storageStr = parameters.get(Parameter.storage.name());
@@ -546,17 +545,17 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         return getNode(credentials, nodeId);
     }
 
-    private void updateVmNameAndLayout(ExecutionDetails details, CloudServicesRegistry registry, CloudCachedEntityService cache, String envStr, String vmId, String name, String group, String row) {
+    private void updateVmNameAndLayout(CloudServicesRegistry registry, CloudCachedEntityService cache, String envStr, String vmId, String name, String group, String row) {
         VirtualMachineType vm = registry.getVirtualMachineService().getVirtualMachineById(vmId);
 
         if (name != null && !vm.getName().equals(name)) {
-            NodeUtil.logInfo(details, "Renaming VM " + vmId + " from " + vm.getName() + " to " + name);
+            log.info("Renaming VM " + vmId + " from " + vm.getName() + " to " + name);
 
             vm.setName(name);
             TaskType task = registry.getVirtualMachineService().editVirtualMachine(vmId, vm);
             task.setName("edit virtual machine");
             waitUntilTaskNotFinished(task, registry);
-            NodeUtil.logInfo(details, "VM renamed");
+            log.info("VM renamed");
         }
         String currentGroup = vm.getLayout().getValue().getGroup().getValue().getName();
         String currentRow = vm.getLayout().getValue().getRow().getValue().getName();
@@ -565,9 +564,9 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         if (!currentGroup.equals(toGroup) || !currentRow.equals(toRow)) {
             EnvironmentType env = cache.getByHrefOrName(EnvironmentType.class, envStr);
             LayoutRequestType layoutRequest = createLayoutRequest(toRow, toGroup, env, cache);
-            NodeUtil.logInfo(details, "Moving VM " + vmId);
-            NodeUtil.logInfo(details, "From group: " + currentGroup + " row: " + currentRow);
-            NodeUtil.logInfo(details, "To group: " + toGroup + " row: " + toRow);
+            log.info("Moving VM " + vmId);
+            log.info("From group: " + currentGroup + " row: " + currentRow);
+            log.info("To group: " + toGroup + " row: " + toRow);
             registry.getVirtualMachineService().moveVirtualMachine(vmId, layoutRequest);
         }
     }
@@ -616,35 +615,33 @@ public class VerizonNodeAPI implements NodeBaseAPI {
     }
 
     @Override
-    public FirewallInfo getNodeFirewallRules(Credentials credentials, String nodeId) throws Exception {
+    public FirewallInfo getNodeFirewallRules(Credentials credentials, String nodeId) {
+        // TODO implement
         return null;
     }
 
     @Override
-    public ExecutionDetails updateNodeFirewallRules(Credentials credentials, String nodeId, FirewallUpdate firewallUpdate) throws Exception {
+    public FirewallInfo updateNodeFirewallRules(Credentials credentials, String nodeId, FirewallUpdate firewallUpdate) {
 
 
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
         String envId = nodeId.split(":")[0];
         String vmId = nodeId.split(":")[1];
-        ExecutionDetails details = new ExecutionDetails();
         CloudServicesRegistry registry = new CloudServicesRegistry(accessKey, secretKey);
         CloudCachedEntityService cache = getCache(accessKey, secretKey);
 
-        String detectedIp = getIpAddress(vmId, 180, registry);
-        if (detectedIp != null) {
-            NodeUtil.logInfo(details, "VM started with ip " + detectedIp);
-        } else {
-            NodeUtil.logError(details, "Can't detect IP address ");
-            return details.status(ExecutionDetails.StatusEnum.FAILED);
+        String ip = getNode(credentials, nodeId).getIp();
+        if (Strings.isNullOrEmpty(ip)) {
+            throw new IllegalStateException("No ip address on node " + nodeId);
         }
+        log.info("VM " + vmId + " ip address: " + ip);
         VirtualMachineType vm = registry.getVirtualMachineService().getVirtualMachineById(vmId);
         boolean assigned = vm.getIpAddresses().getValue().getAssignedIpAddresses().getValue().getNetworks().getValue().getNetwork().stream()
-                .flatMap(dnt -> dnt.getIpAddresses().getValue().getIpAddress().stream()).anyMatch(detectedIp::equals);
+                .flatMap(dnt -> dnt.getIpAddresses().getValue().getIpAddress().stream()).anyMatch(ip::equals);
         if (!assigned) {
-            assignIp(vmId, getNetwork(registry, vmId), detectedIp, cache, registry);
-            NodeUtil.logInfo(details, "IP " + detectedIp + " assigned to VM " + vmId);
+            assignIp(vmId, getNetwork(registry, vmId), ip, cache, registry);
+            log.info("Ip " + ip + " assigned to VM " + vmId);
         }
 
         FirewallAclEndpointType dest = firewallAclEndpointType(registry, vmId);
@@ -666,9 +663,9 @@ public class VerizonNodeAPI implements NodeBaseAPI {
             }
 
             createFirewallRule(registry, envId, source, dest, r.getPort());
-            NodeUtil.logInfo(details, "Created firewall rule " + source);
+            log.info("Created firewall rule " + source);
         });
-        return details;
+        return getNodeFirewallRules(credentials, nodeId);
 
 
     }

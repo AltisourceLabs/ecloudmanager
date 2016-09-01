@@ -46,5 +46,5 @@ public interface NodeBaseAPI {
     /**
      * Updates Firewall rules for specified node
      */
-    ExecutionDetails updateNodeFirewallRules(Credentials credentials, String nodeId, FirewallUpdate firewallUpdate) throws Exception;
+    FirewallInfo updateNodeFirewallRules(Credentials credentials, String nodeId, FirewallUpdate firewallUpdate) throws Exception;
 }

@@ -111,8 +111,9 @@ public class DefaultController {
 
     public ResponseContext updateNodeFirewallRules(RequestContext request, String accessKey, String secretKey, String nodeId, FirewallUpdate firewallUpdate) {
         try {
-            ExecutionDetails details = api.updateNodeFirewallRules(new SecretKey(accessKey, secretKey), nodeId, firewallUpdate);
-            return new ResponseContext().status(Status.OK).entity(details);
+            LocalLoggableFuture<FirewallInfo> f = api.updateNodeFirewallRules(new SecretKey(accessKey, secretKey), nodeId, firewallUpdate);
+            tasks.put(f.getId(), f);
+            return new ResponseContext().status(Status.OK).entity(f.getId());
         } catch (Exception e) {
             return new ResponseContext()
                     .status(Response.Status.INTERNAL_SERVER_ERROR)

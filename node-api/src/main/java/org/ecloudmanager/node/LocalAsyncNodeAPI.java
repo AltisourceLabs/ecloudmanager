@@ -65,7 +65,7 @@ public class LocalAsyncNodeAPI extends LocalAsyncSshAPI implements AsyncNodeAPI 
     }
 
     @Override
-    public ExecutionDetails updateNodeFirewallRules(Credentials credentials, String nodeId, FirewallUpdate firewallUpdate) throws Exception {
-        return nodeBaseAPI.updateNodeFirewallRules(credentials, nodeId, firewallUpdate);
+    public LocalLoggableFuture<FirewallInfo> updateNodeFirewallRules(Credentials credentials, String nodeId, FirewallUpdate firewallUpdate) throws Exception {
+        return LoggableFuture.submit(() -> nodeBaseAPI.updateNodeFirewallRules(credentials, nodeId, firewallUpdate), executor);
     }
 }

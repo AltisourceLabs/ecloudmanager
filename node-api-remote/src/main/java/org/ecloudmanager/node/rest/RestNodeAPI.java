@@ -95,9 +95,14 @@ public class RestNodeAPI implements org.ecloudmanager.node.AsyncNodeAPI {
     }
 
     @Override
-    public ExecutionDetails updateNodeFirewallRules(Credentials credentials, String nodeId, FirewallUpdate firewallUpdate) throws Exception {
+    public LoggableFuture<FirewallInfo> updateNodeFirewallRules(Credentials credentials, String nodeId, FirewallUpdate firewallUpdate) throws Exception {
         SecretKey sk = (SecretKey) credentials;
-        return nodeApi.updateNodeFirewallRules(sk.getName(), sk.getSecret(), nodeId, firewallUpdate);
+        try {
+            String taskId = nodeApi.updateNodeFirewallRules(sk.getName(), sk.getSecret(), nodeId, firewallUpdate);
+            return new RestLoggableFuture<>(taskId, tasksApi, FirewallInfo.class);
+        } catch (ApiException e) {
+            return LoggableFuture.failedFuture("Failed to invoke 'deleteNode'", e);
+        }
     }
 
     @Override
