@@ -51,7 +51,6 @@ import org.jetbrains.annotations.NotNull;
 import javax.enterprise.inject.spi.CDI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 
 import static org.ecloudmanager.node.LoggableFuture.submitAndWait;
 
@@ -60,7 +59,6 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
     public static final String BIND_IP = "bind_ip";
     public static final String HAPROXY_MONITORING = "ha_proxy_monitoring";
     public static final String GATEWAY = "gateway";
-    ExecutorService executor = CDI.current().select(ContextExecutorService.class).get();
     private HAProxyConfigurator haProxyConfigurator;
     private LoggingEventRepository loggingEventRepository = CDI.current().select(LoggingEventRepository.class).get();
 
@@ -334,7 +332,7 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
                     submitAndWait(() -> {
                         configure(deployable);
                         return null;
-                    }, executor, actionLog);
+                    }, CDI.current().select(ContextExecutorService.class).get(), actionLog);
                     return null;
                 }, deployable, actionId),
                 getInfrastructureHaproxyDeployer(deployable).getCreateAction(deployable)
@@ -351,7 +349,7 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
                     submitAndWait(() -> {
                         deleteConfiguration(deployable);
                         return null;
-                    }, executor, actionLog);
+                    }, CDI.current().select(ContextExecutorService.class).get(), actionLog);
                     return null;
                 }, deployable, actionId),
                 getInfrastructureHaproxyDeployer(deployable).getDeleteAction(deployable)
