@@ -105,7 +105,7 @@
                         </f:facet>
 
                         <p:column width="16">
-                            <p:rowToggler rendered="#{logMessage.event.throwable != null}"/>
+                            <p:rowToggler rendered="#{not empty logMessage.event.throwable}"/>
                         </p:column>
                         <p:column headerText="Time" width="70">
                             <h:outputText value="#{logMessage.date}"/>
