@@ -25,6 +25,7 @@
 package org.ecloudmanager.deployment.ps;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.deltaspike.core.api.literal.NamedLiteral;
 import org.ecloudmanager.deployment.core.AbstractDeployer;
 import org.ecloudmanager.deployment.core.ConstraintField;
 import org.ecloudmanager.deployment.core.Endpoint;
@@ -332,7 +333,7 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
                     submitAndWait(() -> {
                         configure(deployable);
                         return null;
-                    }, CDI.current().select(ExecutorService.class).get(), actionLog);
+                    }, CDI.current().select(ExecutorService.class, new NamedLiteral("contextExecutorService")).get(), actionLog);
                     return null;
                 }, deployable, actionId),
                 getInfrastructureHaproxyDeployer(deployable).getCreateAction(deployable)
@@ -349,7 +350,7 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
                     submitAndWait(() -> {
                         deleteConfiguration(deployable);
                         return null;
-                    }, CDI.current().select(ExecutorService.class).get(), actionLog);
+                    }, CDI.current().select(ExecutorService.class, new NamedLiteral("contextExecutorService")).get(), actionLog);
                     return null;
                 }, deployable, actionId),
                 getInfrastructureHaproxyDeployer(deployable).getDeleteAction(deployable)
