@@ -4,6 +4,7 @@ import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironment;
 import org.ecloudmanager.node.AsyncNodeAPI;
 import org.ecloudmanager.node.model.Credentials;
+import org.ecloudmanager.repository.deployment.ActionLogger;
 import org.ecloudmanager.service.execution.Action;
 import org.ecloudmanager.service.execution.SingleAction;
 import org.ecloudmanager.service.provisioning.GlobalProvisioningService;
@@ -11,6 +12,7 @@ import org.ecloudmanager.service.provisioning.GlobalProvisioningService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 
 public class ProvisionVmAction extends SingleAction {
     private static String VM_PROVISION_ACTION = "VM Provision";
@@ -22,8 +24,8 @@ public class ProvisionVmAction extends SingleAction {
 
     public ProvisionVmAction(VMDeployment deployable, AsyncNodeAPI api, Credentials credentials, GlobalProvisioningService globalProvisioningService, boolean update) {
         super(null, update ? VM_PROVISION_UPDATE_ACTION : VM_PROVISION_ACTION, deployable);
-        setCallable(() -> {
-            globalProvisioningService.provisionVm(getId(), deployable, api, credentials, !update);
+        setCallable((ExecutorService executor, ActionLogger actionLog) -> {
+            globalProvisioningService.provisionVm(actionLog, deployable, api, credentials, !update);
             return null;
         });
     }

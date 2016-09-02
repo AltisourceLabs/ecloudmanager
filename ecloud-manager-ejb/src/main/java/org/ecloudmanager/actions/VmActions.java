@@ -34,6 +34,7 @@ import org.ecloudmanager.node.AsyncNodeAPI;
 import org.ecloudmanager.node.model.Credentials;
 import org.ecloudmanager.node.model.NodeInfo;
 import org.ecloudmanager.node.util.NodeUtil;
+import org.ecloudmanager.repository.deployment.ActionLogger;
 import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
 import org.ecloudmanager.repository.deployment.LoggingEventRepository;
 import org.ecloudmanager.service.NodeAPIConfigurationService;
@@ -43,6 +44,7 @@ import org.ecloudmanager.service.execution.SynchronousPoller;
 
 import javax.inject.Inject;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 import static org.ecloudmanager.node.LoggableFuture.waitFor;
 
@@ -62,40 +64,31 @@ public class VmActions {
     private LoggingEventRepository loggingEventRepository;
 
     public Action getCreateVmAction(VMDeployment vmDeployment, AsyncNodeAPI api, Credentials credentials, Map<String, String> parameters) {
-        String createActionId = Action.newId();
-        String configureActionId = Action.newId();
-        String wait1ActionId = Action.newId();
-        String wait2ActionId = Action.newId();
 
         return Action.actionSequence("Create and Start VM",
-                Action.single("Create VM", () -> {
-
-                    LoggingEventRepository.ActionLogger actionLog = loggingEventRepository.createActionLogger(VmActions.class, createActionId);
-
+                Action.single("Create VM", (ExecutorService executor, ActionLogger actionLog) -> {
                     clearVmConstraints(vmDeployment);
                     NodeInfo node = waitFor(api.createNode(credentials, parameters), actionLog);
                     InfrastructureDeployer.addVMId(vmDeployment, node.getId());
                     applicationDeploymentService.update((ApplicationDeployment) vmDeployment.getTop());
                     return node;
-                }, vmDeployment, createActionId),
-                Action.single("Wait for node to be ready", () -> {
+                }, vmDeployment),
+                Action.single("Wait for node to be ready", (ExecutorService executor, ActionLogger actionLog) -> {
                     try {
-                        LoggingEventRepository.ActionLogger actionLog = loggingEventRepository.createActionLogger(VmActions.class, wait1ActionId);
                         NodeInfo node = NodeUtil.wait(api, credentials, InfrastructureDeployer.getVmId(vmDeployment));
                         actionLog.info("Node IP: " + node.getIp());
                         return node;
                     } catch (Exception e) {
+
                         throw new RuntimeException(e);
                     }
-                }, vmDeployment, wait1ActionId),
-                Action.single("Configure VM", () -> {
-                    LoggingEventRepository.ActionLogger actionLog = loggingEventRepository.createActionLogger(VmActions.class, configureActionId);
+                }, vmDeployment),
+                Action.single("Configure VM", (ExecutorService executor, ActionLogger actionLog) -> {
                     NodeInfo node = waitFor(api.configureNode(credentials, InfrastructureDeployer.getVmId(vmDeployment), parameters), actionLog);
                     return node;
-                }, vmDeployment, configureActionId),
-                Action.single("Wait for node to be ready", () -> {
+                }, vmDeployment),
+                Action.single("Wait for node to be ready", (ExecutorService executor, ActionLogger actionLog) -> {
                     try {
-                        LoggingEventRepository.ActionLogger actionLog = loggingEventRepository.createActionLogger(VmActions.class, wait2ActionId);
                         NodeInfo node = NodeUtil.wait(api, credentials, InfrastructureDeployer.getVmId(vmDeployment));
                         actionLog.info("Node IP: " + node.getIp());
                         InfrastructureDeployer.addIP(vmDeployment, node.getIp());
@@ -104,16 +97,14 @@ public class VmActions {
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
-                }, vmDeployment, wait2ActionId),
+                }, vmDeployment),
                 new CreateFirewallRulesAction(vmDeployment, api, credentials, loggingEventRepository));
     }
 
 
     public Action getDeleteVmAction(VMDeployment vmDeployment, AsyncNodeAPI api, Credentials credentials) {
-        String deleteActionId = Action.newId();
         return Action.single("Delete VM",
-                () -> {
-                    LoggingEventRepository.ActionLogger actionLog = loggingEventRepository.createActionLogger(VmActions.class, deleteActionId);
+                (ExecutorService executor, ActionLogger actionLog) -> {
                     String nodeId = InfrastructureDeployerImpl.getVmId(vmDeployment);
                     if (nodeId == null || nodeId.isEmpty()) {
                         actionLog.info("No node id, nothing to do");
@@ -122,11 +113,11 @@ public class VmActions {
                     Void result = waitFor(api.deleteNode(credentials, nodeId), actionLog);
                     clearVmConstraints(vmDeployment);
                     return result;
-                }, vmDeployment, deleteActionId);
+                }, vmDeployment);
     }
 
     public Action getUpdateVmAction(VMDeployment before, VMDeployment after) {
-        return Action.single("Update VM", () -> {
+        return Action.single("Update VM", (ExecutorService executor, ActionLogger actionLog) -> {
             String vmId = InfrastructureDeployer.getVmId(before);
             //vmService.updateVm(before, after, vmId);
             return null;

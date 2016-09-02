@@ -13,6 +13,7 @@ import org.ecloudmanager.node.model.Credentials;
 import org.ecloudmanager.node.model.FirewallInfo;
 import org.ecloudmanager.node.model.FirewallRule;
 import org.ecloudmanager.node.model.FirewallUpdate;
+import org.ecloudmanager.repository.deployment.ActionLogger;
 import org.ecloudmanager.repository.deployment.LoggingEventRepository;
 import org.ecloudmanager.service.execution.Action;
 import org.ecloudmanager.service.execution.SingleAction;
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 
 import static org.ecloudmanager.node.LoggableFuture.waitFor;
 
@@ -31,8 +33,7 @@ public class CreateFirewallRulesAction extends SingleAction {
 
     public CreateFirewallRulesAction(VMDeployment deployment, AsyncNodeAPI nodeAPI, Credentials credentials, LoggingEventRepository loggingEventRepository) {
         super(null, "Create Firewall Rules", deployment);
-        LoggingEventRepository.ActionLogger actionLog = loggingEventRepository.createActionLogger(CreateFirewallRulesAction.class, getId());
-        setCallable(() -> {
+        setCallable((ExecutorService executor, ActionLogger actionLog) -> {
             ApplicationDeployment ad = (ApplicationDeployment) deployment.getTop();
             List<FirewallRule> rules = new ArrayList<FirewallRule>();
             if (deployment.getTop() == deployment.getParent()) {

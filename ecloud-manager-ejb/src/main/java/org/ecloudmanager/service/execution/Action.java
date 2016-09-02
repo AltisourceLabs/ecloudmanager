@@ -28,7 +28,6 @@ import org.ecloudmanager.deployment.core.Deployable;
 import org.mongodb.morphia.annotations.Transient;
 
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -45,11 +44,7 @@ public abstract class Action {
         this.id = newId();
     }
 
-    public Action(String id) {
-        this.id = id;
-    }
-
-    public static String newId() {
+    private static String newId() {
         return UUID.randomUUID().toString();
     }
 
@@ -88,17 +83,10 @@ public abstract class Action {
         return group;
     }
 
-    public static Action single(String description, Callable callable) {
-        return new SingleAction(callable, description);
-    }
-
-    public static Action single(String description, Callable runnable, Deployable deployable) {
+    public static Action single(String description, ActionCallable runnable, Deployable deployable) {
         return new SingleAction(runnable, description, deployable);
     }
 
-    public static Action single(String description, Callable runnable, Deployable deployable, String id) {
-        return new SingleAction(runnable, description, deployable, id);
-    }
     public String getId() {
         return id;
     }
@@ -114,8 +102,6 @@ public abstract class Action {
     }
 
     public abstract SingleAction getAvailableAction(Action fullAction);
-
-    public abstract SingleAction getAvailableRollbackAction();
 
     public synchronized Status getStatus() {
         return status;
@@ -151,18 +137,6 @@ public abstract class Action {
         return result;
     }
 
-    protected boolean isRollbackReady() {
-        if (!isDone()) {
-            return false;
-        }
-        for (Action action : requiredBy) {
-            if (action.getStatus() != Status.PENDING) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     public Stream<Action> stream() {
         return Stream.of(this);
     }
@@ -187,7 +161,6 @@ public abstract class Action {
     public enum Status {
         PENDING,
         RUNNING,
-        ROLLBACK_RUNNING,
         SUCCESSFUL,
         FAILED,
         NOT_RUN     // has FAILED dependencies

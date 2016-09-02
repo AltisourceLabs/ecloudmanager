@@ -25,7 +25,6 @@
 package org.ecloudmanager.deployment.ps;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.deltaspike.core.api.literal.NamedLiteral;
 import org.ecloudmanager.deployment.core.AbstractDeployer;
 import org.ecloudmanager.deployment.core.ConstraintField;
 import org.ecloudmanager.deployment.core.Endpoint;
@@ -39,6 +38,7 @@ import org.ecloudmanager.deployment.vm.VMDeployer;
 import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployer;
 import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureHAProxyDeployer;
+import org.ecloudmanager.repository.deployment.ActionLogger;
 import org.ecloudmanager.repository.deployment.GatewayRepository;
 import org.ecloudmanager.repository.deployment.LoggingEventRepository;
 import org.ecloudmanager.service.deployment.geolite.AclOperator;
@@ -325,34 +325,30 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
 
     @Override
     public Action getAfterChildrenCreatedAction(ProducedServiceDeployment deployable) {
-        String actionId = Action.newId();
-        LoggingEventRepository.ActionLogger actionLog = loggingEventRepository.createActionLogger(HAProxyDeployer.class, actionId);
         return Action.actionGroup(
                 "Configure HAProxy",
-                Action.single("Configure HAProxy frontend/backend", () -> {
+                Action.single("Configure HAProxy frontend/backend", (ExecutorService executor, ActionLogger actionLog) -> {
                     submitAndWait(() -> {
                         configure(deployable);
                         return null;
-                    }, CDI.current().select(ExecutorService.class, new NamedLiteral("contextExecutorService")).get(), actionLog);
+                    }, executor, actionLog);
                     return null;
-                }, deployable, actionId),
+                }, deployable),
                 getInfrastructureHaproxyDeployer(deployable).getCreateAction(deployable)
         );
     }
 
     @Override
     public Action getAfterChildrenDeletedAction(ProducedServiceDeployment deployable) {
-        String actionId = Action.newId();
-        LoggingEventRepository.ActionLogger actionLog = loggingEventRepository.createActionLogger(HAProxyDeployer.class, actionId);
         return Action.actionGroup(
                 "Delete HAProxy Configuration",
-                Action.single("Delete HAProxy Frontend/Backend Configuration", () -> {
+                Action.single("Delete HAProxy Frontend/Backend Configuration", (ExecutorService executor, ActionLogger actionLog) -> {
                     submitAndWait(() -> {
                         deleteConfiguration(deployable);
                         return null;
-                    }, CDI.current().select(ExecutorService.class, new NamedLiteral("contextExecutorService")).get(), actionLog);
+                    }, executor, actionLog);
                     return null;
-                }, deployable, actionId),
+                }, deployable),
                 getInfrastructureHaproxyDeployer(deployable).getDeleteAction(deployable)
         );
     }

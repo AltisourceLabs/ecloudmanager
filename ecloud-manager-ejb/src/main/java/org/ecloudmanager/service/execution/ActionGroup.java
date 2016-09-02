@@ -65,28 +65,12 @@ public class ActionGroup extends Action {
     }
 
     @Override
-    public synchronized SingleAction getAvailableRollbackAction() {
-        if (!isRollbackReady() && getStatus() != Status.ROLLBACK_RUNNING) {
-            return null;
-        }
-        for (Action a : actions) {
-            SingleAction result = a.getAvailableRollbackAction();
-            if (result != null) {
-                return result;
-            }
-        }
-        return null;
-    }
-
-    @Override
     public synchronized Status getStatus() {
         boolean hasFailed = false;
         boolean hasFinished = false;
         boolean hasNotFinished = false;
         boolean hasRunning = false;
-        boolean hasRollback = false;
         Status oldStatus = super.getStatus();
-
         if (oldStatus == Status.NOT_RUN) {
             return oldStatus;
         }
@@ -99,9 +83,6 @@ public class ActionGroup extends Action {
                 case RUNNING:
                     hasRunning = true;
                     break;
-                case ROLLBACK_RUNNING:
-                    hasRollback = true;
-                    break;
                 case SUCCESSFUL:
                     hasFinished = true;
                     break;
@@ -111,15 +92,10 @@ public class ActionGroup extends Action {
                     hasFailed = true;
                     break;
             }
-            if (hasFinished && hasNotFinished && (oldStatus == Status.ROLLBACK_RUNNING || oldStatus == Status
-                .RUNNING)) {
+            if (hasFinished && hasNotFinished && oldStatus == Status.RUNNING) {
                 return oldStatus;
             }
 
-            if (hasRollback) {
-                setStatus(Status.ROLLBACK_RUNNING);
-                return super.getStatus();
-            }
             if (hasRunning) {
                 setStatus(Status.RUNNING);
                 return super.getStatus();

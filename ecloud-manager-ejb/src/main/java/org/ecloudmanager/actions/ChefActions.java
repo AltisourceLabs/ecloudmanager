@@ -27,12 +27,11 @@ package org.ecloudmanager.actions;
 import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironment;
 import org.ecloudmanager.jeecore.service.Service;
-import org.ecloudmanager.repository.deployment.LoggingEventRepository;
+import org.ecloudmanager.repository.deployment.ActionLogger;
 import org.ecloudmanager.service.chef.ChefService;
 import org.ecloudmanager.service.execution.Action;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import java.util.concurrent.ExecutorService;
 
 import static org.ecloudmanager.node.LoggableFuture.submitAndWait;
@@ -41,53 +40,43 @@ import static org.ecloudmanager.node.LoggableFuture.submitAndWait;
 public class ChefActions {
     public static String CREATE_ENVIRONMENT_ACTION = "Create Chef Environment";
     @Inject
-    @Named("contextExecutorService")
-    ExecutorService executorService;
-    @Inject
     private ChefService chefService;
-    @Inject
-    private LoggingEventRepository loggingEventRepository;
 
     public Action getCreateChefEnvironmentAction(ChefEnvironment chefEnvironment) {
-        String actionId = Action.newId();
-        LoggingEventRepository.ActionLogger actionLog = loggingEventRepository.createActionLogger(ChefActions.class, actionId);
         return Action.single(CREATE_ENVIRONMENT_ACTION,
-                () -> {
+                (ExecutorService executor, ActionLogger actionLog) -> {
                     submitAndWait(() -> {
                         chefService.createEnvironment(chefEnvironment);
+
                         return null;
-                    }, executorService, actionLog);
+                    }, executor, actionLog);
                     return null;
                 },
-                chefEnvironment, actionId);
+                chefEnvironment);
     }
 
     public Action getDeleteChefEnvironmentAction(ChefEnvironment chefEnvironment) {
-        String actionId = Action.newId();
-        LoggingEventRepository.ActionLogger actionLog = loggingEventRepository.createActionLogger(ChefActions.class, actionId);
         return Action.single("Delete Chef Environment",
-                () -> {
+                (ExecutorService executor, ActionLogger actionLog) -> {
                     submitAndWait(() -> {
                         chefService.deleteEnvironment(chefEnvironment);
                         return null;
-                    }, executorService, actionLog);
+                    }, executor, actionLog);
                     return null;
                 },
-                chefEnvironment, actionId);
+                chefEnvironment);
     }
 
     public Action getDeleteChefNodeAndClientAction(VMDeployment vmDeployment) {
-        String actionId = Action.newId();
-        LoggingEventRepository.ActionLogger actionLog = loggingEventRepository.createActionLogger(ChefActions.class, actionId);
         return Action.single("Delete Chef Node and Client",
-                () -> {
+                (ExecutorService executor, ActionLogger actionLog) -> {
                     submitAndWait(() -> {
                     chefService.deleteNodeAndClient(vmDeployment);
                     return null;
-                    }, executorService, actionLog);
+                    }, executor, actionLog);
                     return null;
                 },
-                vmDeployment, actionId);
+                vmDeployment);
     }
 
     public boolean needUpdateChefEnvironment(ChefEnvironment deployment) {

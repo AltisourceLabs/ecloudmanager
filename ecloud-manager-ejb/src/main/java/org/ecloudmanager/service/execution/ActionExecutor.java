@@ -69,18 +69,6 @@ public class ActionExecutor {
         });
     }
 
-    public void rollback(Action action) throws InterruptedException {
-        while (action.getStatus() != Action.Status.PENDING) {
-            SingleAction a = action.getAvailableRollbackAction();
-            if (a != null) {
-                a.setStatus(Action.Status.ROLLBACK_RUNNING);
-                executorService.execute(a);
-            } else {
-                Thread.sleep(1000);
-            }
-            System.out.println(action);
-        }
-    }
 
     public void shutdown() {
         executorService.shutdown();

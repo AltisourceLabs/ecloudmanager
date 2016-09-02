@@ -24,27 +24,24 @@
 
 package org.ecloudmanager.service.execution;
 
+import org.apache.deltaspike.core.api.literal.NamedLiteral;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.DeploymentObject;
+import org.ecloudmanager.repository.deployment.ActionLogger;
+import org.ecloudmanager.repository.deployment.LoggingEventRepository;
 import org.mongodb.morphia.annotations.Reference;
-import org.mongodb.morphia.annotations.Serialized;
 import org.mongodb.morphia.annotations.Transient;
 
-import java.util.concurrent.Callable;
+import javax.enterprise.inject.spi.CDI;
+import java.util.concurrent.ExecutorService;
 
 public class SingleAction extends Action implements Runnable {
 
     @Transient
-    private Callable callable;
-    @Transient
-    private Callable rollback;
-    @Serialized
-    private Throwable failure;
-    @Serialized
-    private Throwable rollbackFailure;
+    private ActionCallable actionCallable;
     private String description;
     @Reference
     private DeploymentObject topDeployable;
@@ -55,34 +52,19 @@ public class SingleAction extends Action implements Runnable {
     protected SingleAction() {
     }
 
-    public SingleAction(Callable task, String description) {
-        super();
-        this.callable = task;
-        this.description = description;
-    }
 
-    public SingleAction(Callable task, String description, Deployable deployable) {
-        super();
-        this.callable = task;
+    public SingleAction(ActionCallable task, String description, Deployable deployable) {
+        this.actionCallable = task;
         this.description = description;
         this.topDeployable = deployable.getTop();
         this.pathToDeployable = topDeployable.relativePathTo(deployable);
+//        super(id);
+//        this.callable = task;
+//        this.description = description;
+//        this.topDeployable = deployable.getTop();
+//        this.pathToDeployable = topDeployable.relativePathTo(deployable);
+
     }
-
-    public SingleAction(Callable task, String description, Deployable deployable, String id) {
-        super(id);
-        this.callable = task;
-        this.description = description;
-        this.topDeployable = deployable.getTop();
-        this.pathToDeployable = topDeployable.relativePathTo(deployable);
-    }
-
-
-    public SingleAction(Callable task, Callable rollback, String description) {
-        this(task, description);
-        this.rollback = rollback;
-    }
-
     public String getDescription() {
         return description;
     }
@@ -95,52 +77,24 @@ public class SingleAction extends Action implements Runnable {
         return null;
     }
 
-    @Override
-    public SingleAction getAvailableRollbackAction() {
-        if (!isRollbackReady()) {
-            return null;
-        }
-        return this;
-    }
 
     @Override
     public void run() {
         Status status = getStatus();
         if (status == Status.RUNNING) {
+            ActionLogger actionLog = CDI.current().select(LoggingEventRepository.class).get().createActionLogger(SingleAction.class, getId());
+            ExecutorService executor = CDI.current().select(ExecutorService.class, new NamedLiteral("contextExecutorService")).get();
             try {
-                ThreadContext.clearAll();
-                ThreadContext.put("action", getId());
-                ThreadContext.put("topDeployable", topDeployable.getName());
-                ThreadContext.put("deployable", getDeployable().getName());
-                Object result = callable.call();
+                Object result = actionCallable.apply(executor, actionLog);
                 setStatus(Status.SUCCESSFUL);
-                ThreadContext.clearAll();
             } catch (Exception t) {
-                failure = t;
-                log.error("Failed to execute action " + getLabel() + ": ", t);
+                actionLog.error("Failed to execute action " + getLabel() + ": ", t);
                 setStatus(Status.FAILED);
                 ThreadContext.clearAll();
             }
-        } else if (status == Status.ROLLBACK_RUNNING) {
-            try {
-                System.out.println("Rollback : " + toString());
-                if (rollback != null) {
-                    rollback.call();
-                }
-                setStatus(Status.PENDING);
-            } catch (Exception t) {
-                rollbackFailure = t;
-                // PENDING ????
-                setStatus(Status.PENDING);
-            }
-
         } else {
-            throw new RuntimeException("Invalid action state " + toString());
+            throw new IllegalStateException("Invalid action state " + toString());
         }
-    }
-
-    public Throwable getFailure() {
-        return failure;
     }
 
     public Deployable getDeployable() {
@@ -159,11 +113,7 @@ public class SingleAction extends Action implements Runnable {
 
     public String toString() {
         String result = description +
-            (getDeployable() == null ? "" : "[" + getDeployable().getName() + "]") +
-            (rollback != null ? "|" + rollback.toString() : "") + " " + getStatus();
-        if (getFailure() != null) {
-            result = result + " " + getFailure().getMessage();
-        }
+                (getDeployable() == null ? "" : "[" + getDeployable().getName() + "] ") + getStatus();
 //        List<Action> depends = dependsOn();
 //        if (!depends.isEmpty()) {
 //            result = result + " Depends:" + dependsOn();
@@ -171,8 +121,8 @@ public class SingleAction extends Action implements Runnable {
         return result;
     }
 
-    public void setCallable(Callable callable) {
-        this.callable = callable;
+    public void setCallable(ActionCallable callable) {
+        this.actionCallable = callable;
     }
 
 }

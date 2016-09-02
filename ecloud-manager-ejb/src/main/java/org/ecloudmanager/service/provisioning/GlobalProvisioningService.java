@@ -42,6 +42,7 @@ import org.ecloudmanager.node.model.Command;
 import org.ecloudmanager.node.model.Credentials;
 import org.ecloudmanager.node.model.SSHCredentials;
 import org.ecloudmanager.repository.SshConfigurationRepository;
+import org.ecloudmanager.repository.deployment.ActionLogger;
 import org.ecloudmanager.repository.deployment.LoggingEventRepository;
 import org.ecloudmanager.service.chef.ChefGenerationService;
 
@@ -65,8 +66,7 @@ public class GlobalProvisioningService {
     @Inject
     private LoggingEventRepository loggingEventRepository;
 
-    public void provisionVm(String actionId, VMDeployment deployment, AsyncNodeAPI api, Credentials credentials, boolean firstRun) {
-        LoggingEventRepository.ActionLogger actionLog = loggingEventRepository.createActionLogger(GlobalProvisioningService.class, actionId);
+    public void provisionVm(ActionLogger actionLog, VMDeployment deployment, AsyncNodeAPI api, Credentials credentials, boolean firstRun) {
         try {
             provisionVmImpl(actionLog, deployment, api, credentials, firstRun);
         } catch (Exception e) {
@@ -75,7 +75,7 @@ public class GlobalProvisioningService {
         }
     }
 
-    private void provisionVmImpl(LoggingEventRepository.ActionLogger actionLog, VMDeployment deployment, AsyncNodeAPI api, Credentials credentials, boolean firstRun) throws Exception {
+    private void provisionVmImpl(ActionLogger actionLog, VMDeployment deployment, AsyncNodeAPI api, Credentials credentials, boolean firstRun) throws Exception {
         if (deployment == null) {
             throw new IllegalArgumentException("Provisioning without deployment object is not supported, exiting...");
         }
