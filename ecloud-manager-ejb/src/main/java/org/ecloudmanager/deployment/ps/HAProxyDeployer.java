@@ -51,9 +51,6 @@ import org.jetbrains.annotations.NotNull;
 import javax.enterprise.inject.spi.CDI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-
-import static org.ecloudmanager.node.LoggableFuture.submitAndWait;
 
 public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment> {
     public static final String PORT = "port";
@@ -327,11 +324,11 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
     public Action getAfterChildrenCreatedAction(ProducedServiceDeployment deployable) {
         return Action.actionGroup(
                 "Configure HAProxy",
-                Action.single("Configure HAProxy frontend/backend", (ExecutorService executor, ActionLogger actionLog) -> {
-                    submitAndWait(() -> {
+                Action.single("Configure HAProxy frontend/backend", (ActionLogger actionLog) -> {
+                    actionLog.submitAndWait(() -> {
                         configure(deployable);
                         return null;
-                    }, executor, actionLog);
+                    });
                     return null;
                 }, deployable),
                 getInfrastructureHaproxyDeployer(deployable).getCreateAction(deployable)
@@ -342,11 +339,11 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
     public Action getAfterChildrenDeletedAction(ProducedServiceDeployment deployable) {
         return Action.actionGroup(
                 "Delete HAProxy Configuration",
-                Action.single("Delete HAProxy Frontend/Backend Configuration", (ExecutorService executor, ActionLogger actionLog) -> {
-                    submitAndWait(() -> {
+                Action.single("Delete HAProxy Frontend/Backend Configuration", (ActionLogger actionLog) -> {
+                    actionLog.submitAndWait(() -> {
                         deleteConfiguration(deployable);
                         return null;
-                    }, executor, actionLog);
+                    });
                     return null;
                 }, deployable),
                 getInfrastructureHaproxyDeployer(deployable).getDeleteAction(deployable)

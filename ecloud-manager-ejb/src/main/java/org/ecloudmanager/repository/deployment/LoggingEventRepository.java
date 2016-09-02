@@ -30,12 +30,19 @@ import org.ecloudmanager.jeecore.repository.Repository;
 import org.ecloudmanager.service.execution.Action;
 import org.ecloudmanager.service.execution.SingleAction;
 
+import javax.inject.Inject;
+import javax.inject.Named;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 @Repository
 public class LoggingEventRepository extends MongoDBRepositorySupport<LoggingEventEntity> {
+    @Inject
+    @Named("contextExecutorService")
+    ExecutorService executorService;
+
     public List<LoggingEventEntity> findForActions(Collection<SingleAction> actions) {
         Collection<String> actionIds = actions.stream().map(Action::getId).collect(Collectors.toSet());
         return datastore.createQuery(getEntityType())
@@ -46,7 +53,7 @@ public class LoggingEventRepository extends MongoDBRepositorySupport<LoggingEven
     }
 
     public ActionLogger createActionLogger(Class caller, String actionId) {
-        return new ActionLogger(caller, actionId, this);
+        return new ActionLogger(caller, actionId, this, executorService);
     }
 
 }

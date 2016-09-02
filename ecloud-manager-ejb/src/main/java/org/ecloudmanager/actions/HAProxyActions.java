@@ -40,7 +40,6 @@ import org.ecloudmanager.service.execution.Action;
 
 import javax.inject.Inject;
 import java.util.Arrays;
-import java.util.concurrent.ExecutorService;
 
 import static org.ecloudmanager.node.LoggableFuture.waitFor;
 
@@ -51,7 +50,7 @@ public class HAProxyActions {
 
     public Action getCreatePublicEndpointFirewallRulesAction(ProducedServiceDeployment producedServiceDeployment) {
         return Action.single("Create Firewall Rules for Public Endpoints",
-                (ExecutorService executor, ActionLogger actionLog) -> {
+                (ActionLogger actionLog) -> {
                     ApplicationDeployment ad = (ApplicationDeployment) producedServiceDeployment.getTop();
                     // TODO - here we use the same port from endpoint both for frontend and backend. They should be different.
                     // Create firewall rule for haproxy frontend if there's a public endpoint
@@ -76,7 +75,7 @@ public class HAProxyActions {
     }
 
     public Action getDeletePublicEndpointFirewallRulesAction(ProducedServiceDeployment producedServiceDeployment) {
-        return Action.single("Delete Firewall Rules for Public Endpoints", (ExecutorService executor, ActionLogger actionLog) -> {
+        return Action.single("Delete Firewall Rules for Public Endpoints", (ActionLogger actionLog) -> {
             ApplicationDeployment ad = (ApplicationDeployment) producedServiceDeployment.getTop();
             // TODO - here we use the same port from endpoint both for frontend and backend. They should be different.
             // Delete firewall rule for haproxy frontend if there's a public endpoint

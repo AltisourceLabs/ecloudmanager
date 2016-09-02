@@ -2,6 +2,7 @@ package org.ecloudmanager.repository.deployment;
 
 import ch.qos.logback.classic.Level;
 import org.ecloudmanager.domain.LoggingEventEntity;
+import org.ecloudmanager.node.LoggableFuture;
 import org.ecloudmanager.node.LoggingEventListener;
 import org.ecloudmanager.node.model.LoggingEvent;
 import org.ecloudmanager.node.util.NodeUtil;
@@ -9,6 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 public class ActionLogger implements LoggingEventListener {
@@ -16,12 +20,18 @@ public class ActionLogger implements LoggingEventListener {
     LoggingEventRepository repository;
     private String actionId;
     private String fqcn;
+    private ExecutorService executor;
 
-    ActionLogger(Class caller, String actionId, LoggingEventRepository repository) {
+    ActionLogger(Class caller, String actionId, LoggingEventRepository repository, ExecutorService executor) {
         this.actionId = actionId;
         this.fqcn = caller.getName();
         logger = LoggerFactory.getLogger(fqcn);
         this.repository = repository;
+        this.executor = executor;
+    }
+
+    public <V> V submitAndWait(Callable<V> c) throws ExecutionException, InterruptedException {
+        return LoggableFuture.waitFor(LoggableFuture.submit(c, executor), this);
     }
 
     @Override

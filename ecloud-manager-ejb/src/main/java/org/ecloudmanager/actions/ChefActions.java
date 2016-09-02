@@ -32,9 +32,6 @@ import org.ecloudmanager.service.chef.ChefService;
 import org.ecloudmanager.service.execution.Action;
 
 import javax.inject.Inject;
-import java.util.concurrent.ExecutorService;
-
-import static org.ecloudmanager.node.LoggableFuture.submitAndWait;
 
 @Service
 public class ChefActions {
@@ -44,12 +41,12 @@ public class ChefActions {
 
     public Action getCreateChefEnvironmentAction(ChefEnvironment chefEnvironment) {
         return Action.single(CREATE_ENVIRONMENT_ACTION,
-                (ExecutorService executor, ActionLogger actionLog) -> {
-                    submitAndWait(() -> {
+                (ActionLogger actionLog) -> {
+                    actionLog.submitAndWait(() -> {
                         chefService.createEnvironment(chefEnvironment);
 
                         return null;
-                    }, executor, actionLog);
+                    });
                     return null;
                 },
                 chefEnvironment);
@@ -57,11 +54,11 @@ public class ChefActions {
 
     public Action getDeleteChefEnvironmentAction(ChefEnvironment chefEnvironment) {
         return Action.single("Delete Chef Environment",
-                (ExecutorService executor, ActionLogger actionLog) -> {
-                    submitAndWait(() -> {
+                (ActionLogger actionLog) -> {
+                    actionLog.submitAndWait(() -> {
                         chefService.deleteEnvironment(chefEnvironment);
                         return null;
-                    }, executor, actionLog);
+                    });
                     return null;
                 },
                 chefEnvironment);
@@ -69,11 +66,11 @@ public class ChefActions {
 
     public Action getDeleteChefNodeAndClientAction(VMDeployment vmDeployment) {
         return Action.single("Delete Chef Node and Client",
-                (ExecutorService executor, ActionLogger actionLog) -> {
-                    submitAndWait(() -> {
+                (ActionLogger actionLog) -> {
+                    actionLog.submitAndWait(() -> {
                     chefService.deleteNodeAndClient(vmDeployment);
                     return null;
-                    }, executor, actionLog);
+                    });
                     return null;
                 },
                 vmDeployment);

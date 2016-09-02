@@ -63,9 +63,6 @@ public interface LoggableFuture<T> extends Future<T> {
         return future.get();
     }
 
-    static <V> V submitAndWait(Callable<V> c, ExecutorService e, LoggingEventListener... listeners) throws ExecutionException, InterruptedException {
-        return waitFor(submit(c, e), listeners);
-    }
 
     static <V> LocalLoggableFuture<V> submit(Callable<V> c, ExecutorService e) {
         String id = LocalTaskLogs.createID();

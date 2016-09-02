@@ -24,7 +24,6 @@
 
 package org.ecloudmanager.service.execution;
 
-import org.apache.deltaspike.core.api.literal.NamedLiteral;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
@@ -36,7 +35,6 @@ import org.mongodb.morphia.annotations.Reference;
 import org.mongodb.morphia.annotations.Transient;
 
 import javax.enterprise.inject.spi.CDI;
-import java.util.concurrent.ExecutorService;
 
 public class SingleAction extends Action implements Runnable {
 
@@ -83,9 +81,8 @@ public class SingleAction extends Action implements Runnable {
         Status status = getStatus();
         if (status == Status.RUNNING) {
             ActionLogger actionLog = CDI.current().select(LoggingEventRepository.class).get().createActionLogger(SingleAction.class, getId());
-            ExecutorService executor = CDI.current().select(ExecutorService.class, new NamedLiteral("contextExecutorService")).get();
             try {
-                Object result = actionCallable.apply(executor, actionLog);
+                Object result = actionCallable.apply(actionLog);
                 setStatus(Status.SUCCESSFUL);
             } catch (Exception t) {
                 actionLog.error("Failed to execute action " + getLabel() + ": ", t);

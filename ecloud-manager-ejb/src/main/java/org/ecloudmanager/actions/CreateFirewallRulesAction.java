@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
 
 import static org.ecloudmanager.node.LoggableFuture.waitFor;
 
@@ -33,7 +32,7 @@ public class CreateFirewallRulesAction extends SingleAction {
 
     public CreateFirewallRulesAction(VMDeployment deployment, AsyncNodeAPI nodeAPI, Credentials credentials, LoggingEventRepository loggingEventRepository) {
         super(null, "Create Firewall Rules", deployment);
-        setCallable((ExecutorService executor, ActionLogger actionLog) -> {
+        setCallable((ActionLogger actionLog) -> {
             ApplicationDeployment ad = (ApplicationDeployment) deployment.getTop();
             List<FirewallRule> rules = new ArrayList<FirewallRule>();
             if (deployment.getTop() == deployment.getParent()) {
