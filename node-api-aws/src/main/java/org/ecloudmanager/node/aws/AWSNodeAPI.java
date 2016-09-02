@@ -548,7 +548,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
             // TODO ? need better impl
             Optional<com.amazonaws.services.ec2.model.SecurityGroup> defaultSGOptional = sgs.stream().filter(sg -> !groupIdToDelete.equals(sg.getGroupId())).findFirst();
             if (defaultSGOptional.isPresent()) {
-                SecurityGroup defaultSG = defaultSGOptional.get();
+                com.amazonaws.services.ec2.model.SecurityGroup defaultSG = defaultSGOptional.get();
                 log.info("Assigning " + nodeId + " to security group id: " + defaultSG.getGroupId() + " name: " + defaultSG.getGroupName());
                 ec2.modifyInstanceAttribute(new ModifyInstanceAttributeRequest().withInstanceId(id).withGroups(defaultSG.getGroupId()));
                 log.info("Node " + nodeId + " assigned to security group id: " + defaultSG.getGroupId() + " name: " + defaultSG.getGroupName());
