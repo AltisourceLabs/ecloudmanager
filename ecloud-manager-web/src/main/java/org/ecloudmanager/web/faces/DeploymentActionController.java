@@ -26,7 +26,6 @@ package org.ecloudmanager.web.faces;
 
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.Logger;
 import org.bson.types.ObjectId;
 import org.ecloudmanager.components.cytoscape.model.CyModel;
 import org.ecloudmanager.components.cytoscape.model.CyNode;
@@ -181,9 +180,6 @@ public class DeploymentActionController extends FacesSupport implements Serializ
 
     @Inject
     private transient ApplicationDeploymentService applicationDeploymentService;
-
-    @Inject
-    private Logger log;
 
     @Inject
     private transient DeploymentAttemptRepository deploymentAttemptRepository;

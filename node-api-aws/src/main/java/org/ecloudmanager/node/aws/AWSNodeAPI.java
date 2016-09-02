@@ -546,10 +546,13 @@ public class AWSNodeAPI implements NodeBaseAPI {
             log.info("Deassociating security group");
             List<com.amazonaws.services.ec2.model.SecurityGroup> sgs = ec2.describeSecurityGroups(new DescribeSecurityGroupsRequest().withFilters(new Filter("vpc-id").withValues(vpcId))).getSecurityGroups();
             // TODO ? need better impl
-            Optional<com.amazonaws.services.ec2.model.SecurityGroup> defaultSG = sgs.stream().filter(sg -> !groupIdToDelete.equals(sg.getGroupId())).findFirst();
-            if (defaultSG.isPresent()) {
-                log.info("Node created with id: " + nodeId);
-                ec2.modifyInstanceAttribute(new ModifyInstanceAttributeRequest().withInstanceId(id).withGroups(defaultSG.get().getGroupId()));
+            Optional<com.amazonaws.services.ec2.model.SecurityGroup> defaultSGOptional = sgs.stream().filter(sg -> !groupIdToDelete.equals(sg.getGroupId())).findFirst();
+            if (defaultSGOptional.isPresent()) {
+                SecurityGroup defaultSG = defaultSGOptional.get();
+                log.info("Assigning " + nodeId + " to security group id: " + defaultSG.getGroupId() + " name: " + defaultSG.getGroupName());
+                ec2.modifyInstanceAttribute(new ModifyInstanceAttributeRequest().withInstanceId(id).withGroups(defaultSG.getGroupId()));
+                log.info("Node " + nodeId + " assigned to security group id: " + defaultSG.getGroupId() + " name: " + defaultSG.getGroupName());
+                log.info("Deleting security group " + groupIdToDelete);
                 ec2.deleteSecurityGroup(new DeleteSecurityGroupRequest().withGroupId(groupIdToDelete));
 //                runWithRetry(details, "Deleting security group", () -> ec2.deleteSecurityGroup(new DeleteSecurityGroupRequest().withGroupId(groupIdToDelete)),
 //                        AmazonServiceException.class::isInstance,

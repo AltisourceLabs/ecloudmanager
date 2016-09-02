@@ -268,25 +268,20 @@
             <artifactId>annotations</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-api</artifactId>
-            <version>2.5</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-            <version>2.5</version>
-        </dependency>
+        <!--<dependency>-->
+        <!--<groupId>org.apache.logging.log4j</groupId>-->
+        <!--<artifactId>log4j-api</artifactId>-->
+        <!--<version>2.5</version>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+        <!--<groupId>org.apache.logging.log4j</groupId>-->
+        <!--<artifactId>log4j-core</artifactId>-->
+        <!--<version>2.5</version>-->
+        <!--</dependency>-->
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongo-java-driver</artifactId>
             <version>3.2.2</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-nosql</artifactId>
-            <version>2.5</version>
         </dependency>
 
         <dependency>
@@ -315,34 +310,6 @@
             <artifactId>rrd4j</artifactId>
             <version>2.2.1</version>
         </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-        </dependency>
-        <!--dependency>
-            <groupId>org.ecloudmanager.agent</groupId>
-            <artifactId>client</artifactId>
-            <version>${project.version}</version>
-        </dependency-->
-
-        <!--<dependency>-->
-            <!--<groupId>org.mongodb</groupId>-->
-            <!--<artifactId>mongo-java-driver</artifactId>-->
-            <!--<version>3.2.2</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-            <!--<groupId>org.log4mongo</groupId>-->
-            <!--<artifactId>log4mongo-java</artifactId>-->
-            <!--<version>0.7.4</version>-->
-        <!--</dependency>-->
     </dependencies>
     <build>
         <finalName>${project.artifactId}</finalName>

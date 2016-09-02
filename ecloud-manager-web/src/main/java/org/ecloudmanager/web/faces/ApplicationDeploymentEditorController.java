@@ -24,7 +24,6 @@
 
 package org.ecloudmanager.web.faces;
 
-import org.apache.logging.log4j.Logger;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.DeploymentObject;
@@ -71,8 +70,7 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
     @Inject
     @Param
     private Boolean createNewDeployment;
-    @Inject
-    private Logger log;
+
     @Inject
     private transient ApplicationDeploymentRepository applicationDeploymentRepository;
     @Inject

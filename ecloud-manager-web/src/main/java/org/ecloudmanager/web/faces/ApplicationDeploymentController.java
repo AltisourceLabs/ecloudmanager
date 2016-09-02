@@ -26,7 +26,6 @@ package org.ecloudmanager.web.faces;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import org.apache.logging.log4j.Logger;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.core.*;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
@@ -82,9 +81,6 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
     @Inject
     @Param
     private String gatewayName;
-
-    @Inject
-    private Logger log;
 
     @Inject
     private transient ApplicationDeploymentService applicationDeploymentService;
