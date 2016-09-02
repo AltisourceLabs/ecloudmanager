@@ -44,13 +44,13 @@ import org.ecloudmanager.service.deployment.geolite.AclOperator;
 import org.ecloudmanager.service.deployment.geolite.GeolocationExpr;
 import org.ecloudmanager.service.deployment.geolite.GeolocationRecordType;
 import org.ecloudmanager.service.execution.Action;
-import org.ecloudmanager.service.execution.context.ContextExecutorService;
 import org.ecloudmanager.service.provisioning.HAProxyConfigurator;
 import org.jetbrains.annotations.NotNull;
 
 import javax.enterprise.inject.spi.CDI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 import static org.ecloudmanager.node.LoggableFuture.submitAndWait;
 
@@ -332,7 +332,7 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
                     submitAndWait(() -> {
                         configure(deployable);
                         return null;
-                    }, CDI.current().select(ContextExecutorService.class).get(), actionLog);
+                    }, CDI.current().select(ExecutorService.class).get(), actionLog);
                     return null;
                 }, deployable, actionId),
                 getInfrastructureHaproxyDeployer(deployable).getCreateAction(deployable)
@@ -349,7 +349,7 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
                     submitAndWait(() -> {
                         deleteConfiguration(deployable);
                         return null;
-                    }, CDI.current().select(ContextExecutorService.class).get(), actionLog);
+                    }, CDI.current().select(ExecutorService.class).get(), actionLog);
                     return null;
                 }, deployable, actionId),
                 getInfrastructureHaproxyDeployer(deployable).getDeleteAction(deployable)
