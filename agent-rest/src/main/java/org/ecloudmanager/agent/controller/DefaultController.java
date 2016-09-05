@@ -5,8 +5,9 @@ import io.swagger.inflector.models.ResponseContext;
 import org.ecloudmanager.node.LocalAsyncNodeAPI;
 import org.ecloudmanager.node.LocalLoggableFuture;
 import org.ecloudmanager.node.LoggableFuture;
-import org.ecloudmanager.node.aws.AWSNodeAPI;
+import org.ecloudmanager.node.NodeBaseAPI;
 import org.ecloudmanager.node.model.*;
+import org.ecloudmanager.node.util.NodeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,9 +27,30 @@ import java.util.concurrent.Executors;
 
 public class DefaultController {
     private final static Map<String, LocalLoggableFuture> tasks = new ConcurrentHashMap<>();
-    static Logger log = LoggerFactory.getLogger(DefaultController.class);
-    // FIXME should be configurable
-    private LocalAsyncNodeAPI api = new LocalAsyncNodeAPI(new AWSNodeAPI(), Executors.newCachedThreadPool());
+    private static Logger log = LoggerFactory.getLogger(DefaultController.class);
+    private LocalAsyncNodeAPI api = new LocalAsyncNodeAPI(getNodeBaseAPI(), Executors.newCachedThreadPool());
+
+    private static NodeBaseAPI getNodeBaseAPI() {
+        Map<String, APIInfo> apis = NodeUtil.getAvailableAPIs();
+        if (apis.isEmpty()) {
+            log.error("NodeBaseAPI implementation not found");
+            throw new RuntimeException("NodeBaseAPI implementation not found");
+        }
+        log.info("NodeBaseAPI implementations found:");
+        apis.entrySet().forEach(entry -> log.info(entry.getKey() + " id: " + entry.getValue().getId() + " description: " + entry.getValue().getDescription()));
+        if (apis.size() > 1) {
+            throw new RuntimeException("More than one NodeBaseAPI implementation found");
+        }
+        String className = apis.keySet().toArray(new String[1])[0];
+        try {
+            return (NodeBaseAPI) Class.forName(className).newInstance();
+
+        } catch (Exception e) {
+            log.error("Can't instantiate " + className, e);
+            throw new RuntimeException(e);
+        }
+    }
+
 
     public ResponseContext getInfo(RequestContext request) {
         try {

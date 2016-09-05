@@ -14,7 +14,7 @@
     <build>
         <defaultGoal>install</defaultGoal>
         <directory>target</directory>
-        <finalName>${project.artifactId}-${project.version}</finalName>
+        <finalName>${warPrefix}-${project.artifactId}-${project.version}</finalName>
         <plugins>
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
@@ -28,26 +28,27 @@
                             <outputDirectory>${project.build.directory}/lib</outputDirectory>
                         </configuration>
                     </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
                     <execution>
-                        <id>unpack</id>
                         <phase>package</phase>
-                        <goals>
-                            <goal>unpack</goal>
-                        </goals>
                         <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>org.ecloudmanager</groupId>
-                                    <artifactId>node-api</artifactId>
-                                    <version>${project.version}</version>
-                                    <overWrite>false</overWrite>
-                                </artifactItem>
-                            </artifactItems>
-                            <includes>**\/swagger.yaml</includes>
-                            <outputDirectory>${project.build.directory}</outputDirectory>
-                            <overWriteReleases>false</overWriteReleases>
-                            <overWriteSnapshots>true</overWriteSnapshots>
+                            <tasks>
+                                <unjar src="${project.build.directory}/lib/node-api-${project.version}.jar"
+                                       dest="${project.build.directory}/classes">
+                                    <patternset>
+                                        <include name="swagger/swagger.yaml"/>
+                                    </patternset>
+                                    <mapper type="flatten"/>
+                                </unjar>
+                            </tasks>
                         </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>
@@ -77,8 +78,8 @@
 
                     <!--monitoredDirName>.</monitoredDirName-->
                     <scanTargets>
-                        <scanTarget>inflector.yaml</scanTarget>
-                        <scanTarget>${project.build.directory}/swagger/swagger.yaml</scanTarget>
+                        <scanTarget>${project.build.directory}/classes/inflector.yaml</scanTarget>
+                        <scanTarget>${project.build.directory}/classes/swagger.yaml</scanTarget>
                     </scanTargets>
                     <scanIntervalSeconds>1</scanIntervalSeconds>
                     <contextHandlers>
@@ -93,10 +94,6 @@
                     <webApp>
                         <contextPath>/*</contextPath>
                     </webApp>
-                    <httpConnector>
-                        <port>8080</port>
-                        <idleTimeout>60000</idleTimeout>
-                    </httpConnector>
                 </configuration>
             </plugin>
         </plugins>
@@ -113,13 +110,38 @@
             <artifactId>node-api</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.ecloudmanager</groupId>
-            <artifactId>node-api-aws</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
     </dependencies>
+    <profiles>
+        <profile>
+            <id>aws</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <warPrefix>aws</warPrefix>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.ecloudmanager</groupId>
+                    <artifactId>node-api-aws</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>verizon</id>
+            <properties>
+                <warPrefix>verizon</warPrefix>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.ecloudmanager</groupId>
+                    <artifactId>node-api-verizon</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
     <properties>
         <jetty-version>9.2.9.v20150224</jetty-version>
         <inflector-version>1.0.8</inflector-version>

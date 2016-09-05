@@ -28,23 +28,20 @@ import com.google.common.base.Strings;
 import org.ecloudmanager.domain.NodeAPIConfiguration;
 import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
-import org.ecloudmanager.node.NodeBaseAPI;
 import org.ecloudmanager.node.model.APIInfo;
+import org.ecloudmanager.node.util.NodeUtil;
 import org.ecloudmanager.repository.NodeAPIConfigurationRepository;
 import org.ecloudmanager.service.NodeAPIConfigurationService;
 import org.picketlink.Identity;
 import org.primefaces.event.CloseEvent;
-import org.reflections.Reflections;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Named;
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Controller
 @Named("nodeAPIConfigurationController")
@@ -85,18 +82,7 @@ public class NodeAPIConfigurationController extends FacesSupport implements Seri
 
     public Map<String, APIInfo> getAvailableAPIs() {
         if (availableAPIs == null || availableAPIs.isEmpty()) {
-            List<Class<? extends NodeBaseAPI>> availableClasses;
-            availableClasses = new Reflections("org.ecloudmanager.node").getSubTypesOf(NodeBaseAPI.class).stream()
-                    .filter(c -> !c.isInterface())
-                    .collect(Collectors.toList());
-            availableAPIs = new HashMap<>();
-            availableClasses.forEach(c -> {
-                try {
-                    availableAPIs.put(c.getName(), c.newInstance().getAPIInfo());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            });
+            availableAPIs = NodeUtil.getAvailableAPIs();
         }
         return availableAPIs;
     }

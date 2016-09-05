@@ -1,0 +1,8 @@
+controllerPackage: org.ecloudmanager.agent.controller
+modelPackage: org.ecloudmanager.node.model
+swaggerUrl: swagger.yaml
+environment: development
+entityProcessors:
+  - json
+  - xml
+  - yaml
