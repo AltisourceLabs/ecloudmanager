@@ -547,13 +547,7 @@
         value:
           type: object
         exception:
-          $ref: '#/definitions/TaskException'          
-    TaskException:
-      properties:
-        type:
-          type: string
-        message:  
-          type: string
+          $ref: '#/definitions/LoggingEvent'          
     LoggingEvent:
       properties:
         level:

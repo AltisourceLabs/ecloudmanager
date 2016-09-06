@@ -2,9 +2,9 @@ package org.ecloudmanager.node.rest;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import org.ecloudmanager.node.LogException;
 import org.ecloudmanager.node.LoggableFuture;
 import org.ecloudmanager.node.model.LoggingEvent;
-import org.ecloudmanager.node.model.TaskException;
 import org.ecloudmanager.node.model.TaskInfo;
 import org.ecloudmanager.node.rest.client.TasksApi;
 
@@ -65,15 +65,15 @@ public class RestLoggableFuture<T> implements LoggableFuture<T> {
     }
 
     @Override
-    public T get() throws InterruptedException, ExecutionException {
+    public T get() throws InterruptedException, LogException {
         TaskInfo info = call(() -> tasksApi.getTask(taskId));
         while (!info.getDone()) {
             Thread.sleep(500); //FIXME
             info = call(() -> tasksApi.getTask(taskId));
         }
-        TaskException te = info.getException();
-        if (te != null) {
-            throw new ExecutionException(te.getMessage() + " Exception type: " + te.getType(), new Throwable());
+        LoggingEvent error = info.getException();
+        if (error != null) {
+            throw new LogException().error(error);
         }
         Object value = info.getValue();
         JsonElement jsonElement = new Gson().toJsonTree(value);

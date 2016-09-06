@@ -2,6 +2,7 @@ package org.ecloudmanager.agent.controller;
 
 import io.swagger.inflector.models.RequestContext;
 import io.swagger.inflector.models.ResponseContext;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.ecloudmanager.node.LocalAsyncNodeAPI;
 import org.ecloudmanager.node.LocalLoggableFuture;
 import org.ecloudmanager.node.LoggableFuture;
@@ -21,7 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
 
@@ -177,9 +177,11 @@ public class DefaultController {
         }
         try {
             return new ResponseContext().status(Status.OK).entity(response.done(true).value(f.get()));
-        } catch (InterruptedException | ExecutionException e) {
-            TaskException taskException = new TaskException().message(e.getMessage()).type(e.getClass().getName());
-            return new ResponseContext().status(Status.OK).entity(response.done(true).exception(taskException));
+        } catch (Exception e) {
+            LoggingEvent loggingEvent = new LoggingEvent().level("ERROR").logger(DefaultController.class.getName())
+                    .message("Task " + taskId + " failed").timeStamp(System.currentTimeMillis())
+                    .throwable(ExceptionUtils.getStackTrace(e));
+            return new ResponseContext().status(Status.OK).entity(response.done(true).exception(loggingEvent));
         }
     }
 

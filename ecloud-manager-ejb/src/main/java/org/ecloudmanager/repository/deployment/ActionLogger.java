@@ -1,11 +1,10 @@
 package org.ecloudmanager.repository.deployment;
 
-import ch.qos.logback.classic.Level;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.ecloudmanager.domain.LoggingEventEntity;
 import org.ecloudmanager.node.LoggableFuture;
 import org.ecloudmanager.node.LoggingEventListener;
 import org.ecloudmanager.node.model.LoggingEvent;
-import org.ecloudmanager.node.util.NodeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,22 +38,25 @@ public class ActionLogger implements LoggingEventListener {
         repository.saveAll(events.stream().map(e -> new LoggingEventEntity(actionId, e)).collect(Collectors.toList()));
     }
 
+    public void log(LoggingEvent event) {
+        repository.save(new LoggingEventEntity(actionId, event));
+    }
 
-    private void recordEvent(Level level, String msg, Object[] args, Throwable throwable) {
-        ch.qos.logback.classic.spi.LoggingEvent logbackEvent = new ch.qos.logback.classic.spi.LoggingEvent(fqcn, (ch.qos.logback.classic.Logger) logger, level, msg, throwable, args);
-
-        repository.save(new LoggingEventEntity(actionId, NodeUtil.fromLogback(logbackEvent)));
+    private void recordEvent(String level, String msg, Throwable throwable) {
+        repository.save(new LoggingEventEntity(actionId, new LoggingEvent().level(level).logger(fqcn).message(msg)
+                .throwable(throwable == null ? null : ExceptionUtils.getStackTrace(throwable))
+                .timeStamp(System.currentTimeMillis())));
     }
 
     public void error(String msg, Throwable t) {
-        recordEvent(Level.ERROR, msg, null, t);
+        recordEvent("ERROR", msg, t);
     }
 
     public void error(String msg) {
-        recordEvent(Level.ERROR, msg, null, null);
+        recordEvent("ERROR", msg, null);
     }
 
     public void info(String msg) {
-        recordEvent(Level.INFO, msg, null, null);
+        recordEvent("INFO", msg, null);
     }
 }

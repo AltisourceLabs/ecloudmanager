@@ -163,16 +163,16 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         List<ComputePoolReferenceType> computePools = cache
                 .getComputePools(envId).getComputePool();
         String poolId = TmrkUtils.getIdFromHref(computePools.get(0).getHref());
-        ImportVirtualMachineType vm = createTmrkVm(createVm, env, cache);
+        ImportVirtualMachineType vm = createTmrkVm(createVm, env, cache, registry);
         VirtualMachineType createdVm;
         createdVm = registry.getVirtualMachineService().importVirtualMachineFromCatalog(poolId, vm);
 
         String vmId = TmrkUtils.getIdFromHref(createdVm.getHref());
         log.info("VM created with id: " + vmId);
 
-        // Allocate the disk space if needed
-        updateHardwareConfiguration(vmId, Integer.parseInt(storage), Integer.parseInt(cpu), Integer.parseInt(memory), registry);
-        log.info("VM hardware configuaration updated");
+//        // Allocate the disk space if needed
+//        updateHardwareConfiguration(vmId, Integer.parseInt(storage), Integer.parseInt(cpu), Integer.parseInt(memory), registry);
+//        log.info("VM hardware configuaration updated");
         startupVm(vmId, registry, false);
 
         return getNode(credentials, envId + ":" + vmId);
@@ -200,7 +200,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         DeviceNetworkType dn = objectFactory.createDeviceNetworkType();
         DeviceNetworksType dnt = objectFactory.createDeviceNetworksType();
         dn.setName(network);
-        NetworksType networks = cache.getByHrefOrName(NetworksType.class, network);
+        NetworksType networks = cache.getByHrefOrName(NetworksType.class, "/cloudapi/ecloud/networks/" + network);
 
         String networkHref = networks.getHref();
         dn.setHref(networkHref);
@@ -255,7 +255,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         return selectedVmIpAddress;
     }
 
-    private ImportVirtualMachineType createTmrkVm(CreateVm cmd, EnvironmentType env, CloudCachedEntityService cache) {
+    private ImportVirtualMachineType createTmrkVm(CreateVm cmd, EnvironmentType env, CloudCachedEntityService cache, CloudServicesRegistry registry) {
         ImportVirtualMachineType vm = new ImportVirtualMachineType();
 
         /*
@@ -285,8 +285,9 @@ public class VerizonNodeAPI implements NodeBaseAPI {
          * set vm catalog
          */
         ReferenceType catalogRef = new ReferenceType();
-        CatalogEntryType catalog = cache.getByHrefOrName(CatalogEntryType.class, cmd.getCatalog());
-        catalogRef.setHref(catalog.getHref());
+//        CatalogEntryType catalog = cache.getByHrefOrName(CatalogEntryType.class, cmd.getCatalog());
+        catalogRef.setHref(cache.getHref(CatalogEntryType.class, cmd.getCatalog()));
+        CatalogEntryConfigurationType catEntryConfig = registry.getCatalogService().getCatalogEntryConfigurationByCatalogId(TmrkUtils.getIdFromHref(catalogRef.getHref()));
         vm.setCatalogEntry(catalogRef);
 
         /*
@@ -294,9 +295,9 @@ public class VerizonNodeAPI implements NodeBaseAPI {
          */
         ImportNetworkMappingsType importNetMap = new ImportNetworkMappingsType();
 
-        CatalogEntryConfigurationType catEntryConfig =
-                cache.getByHrefOrName(CatalogEntryConfigurationType.class, catalog.getConfiguration().getValue()
-                        .getHref());
+//        CatalogEntryConfigurationType catEntryConfig =
+//                cache.getByHrefOrName(CatalogEntryConfigurationType.class, catalog.getConfiguration().getValue()
+//                        .getHref());
         CatalogNetworkMappingsType networkMappingsType = catEntryConfig.getNetworkMappings().getValue();
         List<CatalogNetworkMappingType> networkMappings = networkMappingsType.getNetworkMapping();
         ImportNetworkMappingType networkMapping;
@@ -637,7 +638,8 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         }
         log.info("VM " + vmId + " ip address: " + ip);
         VirtualMachineType vm = registry.getVirtualMachineService().getVirtualMachineById(vmId);
-        boolean assigned = vm.getIpAddresses().getValue().getAssignedIpAddresses().getValue().getNetworks().getValue().getNetwork().stream()
+        JAXBElement<DeviceNetworksType> element = vm.getIpAddresses().getValue().getAssignedIpAddresses().getValue().getNetworks();
+        boolean assigned = element != null && element.getValue().getNetwork().stream()
                 .flatMap(dnt -> dnt.getIpAddresses().getValue().getIpAddress().stream()).anyMatch(ip::equals);
         if (!assigned) {
             assignIp(vmId, getNetwork(registry, vmId), ip, cache, registry);

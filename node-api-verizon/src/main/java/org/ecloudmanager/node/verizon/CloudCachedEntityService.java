@@ -326,7 +326,9 @@ public class CloudCachedEntityService {
         return null;
     }
 
-
+    public String getHref(Class type, String name) {
+        return nameToHrefMap.get(type).get(name);
+    }
     /**
      * Wrapper TypedCached over Guava LoadingCache
      *

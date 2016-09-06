@@ -26,9 +26,9 @@ package org.ecloudmanager.service.execution;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.ThreadContext;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.DeploymentObject;
+import org.ecloudmanager.node.LogException;
 import org.ecloudmanager.repository.deployment.ActionLogger;
 import org.ecloudmanager.repository.deployment.LoggingEventRepository;
 import org.mongodb.morphia.annotations.Reference;
@@ -84,10 +84,11 @@ public class SingleAction extends Action implements Runnable {
             try {
                 Object result = actionCallable.apply(actionLog);
                 setStatus(Status.SUCCESSFUL);
+            } catch (LogException e) {
+                actionLog.log(e.getError());
             } catch (Exception t) {
                 actionLog.error("Failed to execute action " + getLabel() + ": ", t);
                 setStatus(Status.FAILED);
-                ThreadContext.clearAll();
             }
         } else {
             throw new IllegalStateException("Invalid action state " + toString());
