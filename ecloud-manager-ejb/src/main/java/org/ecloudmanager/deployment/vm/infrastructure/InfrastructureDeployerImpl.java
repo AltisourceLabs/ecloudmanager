@@ -60,7 +60,7 @@ public class InfrastructureDeployerImpl extends InfrastructureDeployer {
         try {
             apiInfo = nodeAPI.getAPIInfo();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Can't get node API info", e);
         }
         credentials = nodeAPIProvider.getCredentials(apiName);
 
@@ -107,7 +107,7 @@ public class InfrastructureDeployerImpl extends InfrastructureDeployer {
 
     @Override
     public Action getUpdateAction(DeploymentAttempt lastAttempt, VMDeployment before, VMDeployment after) {
-        return vmActions.getUpdateVmAction(before, after);
+        return vmActions.getUpdateVmAction(before, after, nodeAPI, credentials, getNodeParameters(after));
     }
 
     @Override

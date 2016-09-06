@@ -42,6 +42,8 @@ import org.omnifaces.util.Beans;
 import org.primefaces.context.RequestContext;
 
 import javax.annotation.PostConstruct;
+import javax.faces.application.FacesMessage;
+import javax.faces.context.FacesContext;
 import javax.inject.Inject;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -96,7 +98,11 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
     }
 
     public void save() {
-        deployment.specifyConstraints();
+        try {
+            deployment.specifyConstraints();
+        } catch (Exception e) {
+            FacesContext.getCurrentInstance().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, "Can't specify deployment constraints", e.getMessage()));
+        }
         if (deployment.isNew()) {
             applicationDeploymentService.save(deployment);
         } else {

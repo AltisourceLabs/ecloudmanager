@@ -115,11 +115,10 @@ public class VmActions {
                 }, vmDeployment);
     }
 
-    public Action getUpdateVmAction(VMDeployment before, VMDeployment after) {
+    public Action getUpdateVmAction(VMDeployment before, VMDeployment after, AsyncNodeAPI api, Credentials credentials, Map<String, String> parameters) {
         return Action.single("Update VM", (ActionLogger actionLog) -> {
-            String vmId = InfrastructureDeployer.getVmId(before);
-            //vmService.updateVm(before, after, vmId);
-            return null;
+            NodeInfo node = waitFor(api.configureNode(credentials, InfrastructureDeployer.getVmId(before), parameters), actionLog);
+            return node;
         }, after);
     }
 

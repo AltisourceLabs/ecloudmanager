@@ -18,7 +18,7 @@ public class LocalAsyncNodeAPI extends LocalAsyncSshAPI implements AsyncNodeAPI 
     }
 
     @Override
-    public APIInfo getAPIInfo() throws Exception {
+    public APIInfo getAPIInfo() {
         return nodeBaseAPI.getAPIInfo();
     }
 

@@ -9,7 +9,7 @@ public interface NodeBaseAPI {
     /**
      * @return API Info
      */
-    APIInfo getAPIInfo() throws Exception;
+    APIInfo getAPIInfo();
 
     List<NodeParameter> getNodeParameters(Credentials credentials) throws Exception;
 
