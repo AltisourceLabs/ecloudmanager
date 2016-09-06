@@ -390,3 +390,8 @@ form > button.ui-button {
 .comboAndButton.ui-selectonemenu {
     width: 200px;
 }
+
+.menubutton {
+    margin-top: 10px;
+    margin-right: 5px;
+}

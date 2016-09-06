@@ -31,12 +31,14 @@ import org.ecloudmanager.deployment.core.Deployer;
 import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.ps.cg.ComponentGroupDeployment;
 import org.jetbrains.annotations.NotNull;
+import org.mongodb.morphia.annotations.Entity;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @JsonIgnoreProperties({"parent"})
+@Entity
 public class ProducedServiceDeployment extends Deployable {
 
     private HAProxyFrontendConfig haProxyFrontendConfig = new HAProxyFrontendConfig();

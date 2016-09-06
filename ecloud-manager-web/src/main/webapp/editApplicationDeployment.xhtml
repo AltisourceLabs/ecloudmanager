@@ -67,7 +67,7 @@
                                     </p:commandButton>
                                 </p:column>
                             </p:dataTable>
-                            <p:menuButton value="New...">
+                            <p:menuButton value="New..." styleClass="menubutton">
                                 <p:menuitem value="ProducedService"
                                             action="#{applicationDeploymentEditorController.newProducedService}">
                                 </p:menuitem>
@@ -79,6 +79,13 @@
                                 >
                                 </p:menuitem>
                             </p:menuButton>
+                            <p:commandButton value="&#160;Import..."
+                                             icon="fa fa-cart-arrow-down fa-lg"
+                                             action="#{applicationDeploymentEditorController.startImportDeployable()}">
+                                <p:ajax event="dialogReturn" listener="#{applicationDeploymentEditorController.onImportDeployableReturn}"
+                                        update="@form"/>
+                            </p:commandButton>
+
                             <p>Connections:</p>
                             <p:dataTable id="links" var="link"
                                          value="#{applicationDeploymentEditorController.deployment.links}"
@@ -178,8 +185,15 @@
                                             </p:commandButton>
                                         </p:column>
                                     </p:dataTable>
+                                    <p:spacer height="5" style="display: block"/>
                                     <p:commandButton value="New" icon="ui-icon-plus"
                                                  action="#{producedServiceDeploymentController.newComponentGroup()}"/>
+                                    <p:commandButton value="&#160;Import..."
+                                                     icon="fa fa-cart-arrow-down fa-lg"
+                                                     action="#{producedServiceDeploymentController.startImportComponentGroup()}">
+                                        <p:ajax event="dialogReturn" listener="#{producedServiceDeploymentController.onImportComponentGroupReturn}"
+                                                update="@form"/>
+                                    </p:commandButton>
                                 </p:panel>
 
                                 <p:outputLabel value="HAProxy Frontend Configuration:"/>
@@ -188,6 +202,7 @@
                                                      widgetVar="v_frontend_config_preview"
                                                      value="#{producedServiceDeploymentController.generateHaproxyFrontendConfig()}"
                                                      converter="stringListConverter"/>
+                                    <p:spacer height="5" style="display: block"/>
                                     <p:commandButton value="Configure Frontend..."
                                                      oncomplete="PF('dlg_configure_frontend').show()"
                                                      update="@widgetVar(dlg_configure_frontend)"
@@ -202,11 +217,11 @@
                             </p:panelGrid>
                             <p:panelGrid id="attr_buttons" columns="2" style="margin-bottom:10px"
                                          styleClass="ui-panelgrid-blank" cellpadding="5">
-                                <p:commandButton id="attr_button_save" value="save"
+                                <p:commandButton id="attr_button_save" value="Save"
                                                  action="#{applicationDeploymentEditorController.saveChild(producedServiceDeploymentController.value)}"
                                                  update="out"
                                 />
-                                <p:commandButton id="attr_button_cancel" value="cancel" immediate="true"
+                                <p:commandButton id="attr_button_cancel" value="Cancel" immediate="true"
                                                  action="#{applicationDeploymentEditorController.cancelChildEditing(producedServiceDeploymentController.value)}"
                                                  update="out"
                                 />

@@ -22,38 +22,24 @@
  * SOFTWARE.
  */
 
-package org.ecloudmanager.deployment.core;
+package org.ecloudmanager.util;
 
-public class ObjectRef {
-    private DeploymentObject owner;
-    private DeploymentObject object;
+import java.util.Set;
+import java.util.UUID;
 
-    public ObjectRef(DeploymentObject owner, DeploymentObject object) {
-        this.owner = owner;
-        this.object = object;
-    }
-
-    public ObjectRef(DeploymentObject object) {
-        this(object, object);
-    }
-
-    public DeploymentObject getDeployment() {
-        return owner == null ? null : owner.getTop();
-    }
-
-    public String getPath() {
-        return owner == null ? "" : owner.getPath(":");
-    }
-
-    public DeploymentObject getObject() {
-        return object;
-    }
-
-    public String getId() {
-        if (owner != null) {
-            return owner.getTop().getId() + ":" + owner.getPath(":") + ":" + object.getName();
-        } else {
-            return object.getId().toString();
+public class NameUtil {
+    public static String getUniqueName(String hint, Set<String> usedNames) {
+        if (!usedNames.contains(hint)) {
+            return hint;
         }
+
+        for (int i = 1; i < Integer.MAX_VALUE; i++) {
+            String candidate = hint + i;
+            if (!usedNames.contains(candidate)) {
+                return candidate;
+            }
+        }
+
+        return hint + UUID.randomUUID().toString();
     }
 }

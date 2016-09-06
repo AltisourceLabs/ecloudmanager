@@ -29,6 +29,7 @@ import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
 import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
+import org.ecloudmanager.service.deployment.ImportDeployableService;
 
 import javax.annotation.PostConstruct;
 import javax.faces.context.ExternalContext;
@@ -64,6 +65,8 @@ public class ApplicationDeploymentsController extends FacesSupport implements Se
     private transient ApplicationDeploymentService applicationDeploymentService;
     @Inject
     private transient ApplicationDeploymentRepository applicationDeploymentRepository;
+    @Inject
+    private transient ImportDeployableService importService;
 
     private List<ApplicationDeployment> applicationDeployments;
 
@@ -107,7 +110,7 @@ public class ApplicationDeploymentsController extends FacesSupport implements Se
     }
 
     public void copyDeployment() {
-        applicationDeploymentService.copyDeployment(sourceForCopy, newDeploymentName, includeConstraints);
+        importService.copyDeployment(sourceForCopy, newDeploymentName, includeConstraints);
         refresh();
     }
 

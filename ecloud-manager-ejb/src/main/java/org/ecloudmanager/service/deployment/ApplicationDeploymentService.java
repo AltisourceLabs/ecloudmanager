@@ -29,17 +29,12 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import com.rits.cloning.Cloner;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Logger;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.core.Deployable;
-import org.ecloudmanager.deployment.core.DeploymentConstraint;
 import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
-import org.ecloudmanager.deployment.ps.cg.ComponentGroupDeployment;
-import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
-import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.jeecore.service.ServiceSupport;
 import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
 import org.ecloudmanager.repository.deployment.DeploymentAttemptRepository;
@@ -54,9 +49,6 @@ import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.inject.Inject;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Stateless
 public class ApplicationDeploymentService extends ServiceSupport {
@@ -141,41 +133,5 @@ public class ApplicationDeploymentService extends ServiceSupport {
         }
 
         return false;
-    }
-
-    public void copyDeployment(ApplicationDeployment source, String name, boolean keepConstraints) {
-        Cloner cloner = new Cloner();
-        ApplicationDeployment newDeployment = cloner.deepClone(source);
-        newDeployment.setId(null);
-        newDeployment.setName(name);
-        newDeployment.stream().forEach(DeploymentObject::fixChildren);
-        if (!keepConstraints) {
-            newDeployment.stream().forEach(DeploymentConstraint::clear);
-            newDeployment.stream(ComponentGroupDeployment.class).forEach(componentGroupDeployment -> {
-                DeploymentObject cfg = componentGroupDeployment.getChildByName(ComponentGroupDeployment.VM_CONFIG);
-                if (cfg != null) {
-                    cfg.children().clear(); // Children will be recreated with specifyConstraints
-                }
-            });
-            newDeployment.specifyConstraints();
-        }
-
-        // Save the deployment before importing recipes to be able to create recipe owner references
-        applicationDeploymentRepository.save(newDeployment);
-
-        // Copy all the recipes from src to dst deployment. Create a dummy VM template with all the recipes and "import" it
-        List<Recipe> srcDeploymentRecipes = recipeRepository.getAll(source);
-        VirtualMachineTemplate dummySrc = new VirtualMachineTemplate();
-        dummySrc.getRunlist().addAll(srcDeploymentRecipes);
-        VirtualMachineTemplate dummyDst = new VirtualMachineTemplate();
-        virtualMachineTemplateService.importVm(dummySrc, dummyDst, newDeployment);
-
-        // Fix runlists in VM templates
-        Map<String, Recipe> recipeMap = dummyDst.getRunlist().stream().collect(Collectors.toMap(Recipe::getName, r -> r));
-        newDeployment.stream(VirtualMachineTemplate.class).forEach(vmt -> {
-            vmt.getRunlist().replaceAll(r -> recipeMap.get(r.getName()));
-        });
-
-        applicationDeploymentRepository.save(newDeployment);
     }
 }

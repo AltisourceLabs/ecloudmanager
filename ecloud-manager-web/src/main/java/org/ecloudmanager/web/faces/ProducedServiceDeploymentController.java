@@ -24,6 +24,8 @@
 
 package org.ecloudmanager.web.faces;
 
+import org.apache.commons.lang3.StringUtils;
+import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.ps.BackendWeight;
 import org.ecloudmanager.deployment.ps.HAProxyDeployer;
 import org.ecloudmanager.deployment.ps.ProducedServiceDeployment;
@@ -31,13 +33,16 @@ import org.ecloudmanager.deployment.ps.cg.ComponentGroupDeployment;
 import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
+import org.ecloudmanager.service.deployment.ImportDeployableService;
 import org.omnifaces.util.Beans;
 import org.primefaces.context.RequestContext;
 import org.primefaces.event.CloseEvent;
+import org.primefaces.event.SelectEvent;
 
 import javax.inject.Inject;
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 @Controller
@@ -48,6 +53,8 @@ public class ProducedServiceDeploymentController extends FacesSupport implements
 
     @Inject
     private transient VmTemplateController vmTemplateController;
+    @Inject
+    private transient ImportDeployableService importDeployableService;
 
     public ProducedServiceDeployment getValue() {
         return value;
@@ -142,5 +149,27 @@ public class ProducedServiceDeploymentController extends FacesSupport implements
 
     public List<String> generateHaproxyFrontendConfig() {
         return value == null ? Collections.emptyList() : HAProxyDeployer.generateHAProxyFrontendConfig(value.getName(), value.getHaProxyFrontendConfig());
+    }
+
+    public void startImportComponentGroup() {
+        HashMap<String, Object> options = new HashMap<>();
+        options.put("width", 640);
+        options.put("modal", true);
+        HashMap<String, List<String>> params = new HashMap<>();
+        params.put("classes", Collections.singletonList(ComponentGroupDeployment.class.getName()));
+        params.put("recursive", Collections.singletonList("true"));
+
+        RequestContext.getCurrentInstance().openDialog("importDeployable", options, params);
+    }
+
+    public void onImportComponentGroupReturn(SelectEvent event) {
+        ImportDeployableController.ImportDeployableDialogResult result = (ImportDeployableController.ImportDeployableDialogResult) event.getObject();
+        if (result != null) {
+            Deployable deployable = (Deployable) result.getObject();
+            if (deployable != null) {
+                String name = StringUtils.isEmpty(result.getName()) ? deployable.getName() : result.getName();
+                importDeployableService.copyDeploymentObject(deployable, value, name, result.getIncludeConstraints());
+            }
+        }
     }
 }

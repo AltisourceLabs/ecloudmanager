@@ -29,11 +29,11 @@ import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.jeecore.service.ServiceSupport;
 import org.ecloudmanager.repository.template.RecipeRepository;
+import org.ecloudmanager.util.NameUtil;
 
 import javax.ejb.Stateless;
 import javax.inject.Inject;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Stateless
@@ -71,17 +71,6 @@ public class RecipeService extends ServiceSupport {
 
     private String getUniqueRecipeName(String hint, ApplicationDeployment owner) {
         Set<String> usedNames = recipeRepository.getAll(owner).stream().map(Recipe::getName).collect(Collectors.toSet());
-        if (!usedNames.contains(hint)) {
-            return hint;
-        }
-
-        for (int i = 1; i < Integer.MAX_VALUE; i++) {
-            String candidate = hint + i;
-            if (!usedNames.contains(candidate)) {
-                return candidate;
-            }
-        }
-
-        return hint + UUID.randomUUID().toString();
+        return NameUtil.getUniqueName(hint, usedNames);
     }
 }

@@ -24,6 +24,8 @@
 
 package org.ecloudmanager.web.faces;
 
+import com.google.common.collect.ImmutableList;
+import org.apache.commons.lang3.StringUtils;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.DeploymentObject;
@@ -37,19 +39,19 @@ import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
 import org.ecloudmanager.service.NodeAPIConfigurationService;
 import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
+import org.ecloudmanager.service.deployment.ImportDeployableService;
+import org.ecloudmanager.web.faces.ImportDeployableController.ImportDeployableDialogResult;
 import org.omnifaces.cdi.Param;
 import org.omnifaces.util.Beans;
 import org.primefaces.context.RequestContext;
+import org.primefaces.event.SelectEvent;
 
 import javax.annotation.PostConstruct;
 import javax.faces.application.FacesMessage;
 import javax.faces.context.FacesContext;
 import javax.inject.Inject;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller
@@ -79,6 +81,8 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
     private transient ApplicationDeploymentService applicationDeploymentService;
     @Inject
     private transient NodeAPIConfigurationService nodeAPIProvider;
+    @Inject
+    private transient ImportDeployableService importDeployableService;
 
     public ApplicationDeployment getDeployment() {
         return deployment;
@@ -92,7 +96,7 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
     public void init() {
         if (createNewDeployment != null && createNewDeployment) {
             deployment = new ApplicationDeployment();
-            deployment.setName("New Deployment");
+            deployment.setName("NewDeployment");
             applicationDeploymentService.save(deployment);
         }
     }
@@ -214,5 +218,28 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
         return deployment.children().stream()
                 .filter(c -> !(c instanceof ChefEnvironment))
                 .collect(Collectors.toList());
+    }
+
+    public void startImportDeployable() {
+        HashMap<String, Object> options = new HashMap<>();
+        options.put("width", 640);
+        options.put("modal", true);
+
+        HashMap<String, List<String>> params = new HashMap<>();
+        params.put("classes", ImmutableList.of(ProducedServiceDeployment.class.getName(), VMDeployment.class.getName()));
+        params.put("recursive", Collections.singletonList("false"));
+
+        RequestContext.getCurrentInstance().openDialog("importDeployable", options, params);
+    }
+
+    public void onImportDeployableReturn(SelectEvent event) {
+        ImportDeployableDialogResult result = (ImportDeployableDialogResult) event.getObject();
+        if (result != null) {
+            Deployable deployable = (Deployable) result.getObject();
+            if (deployable != null) {
+                String name = StringUtils.isEmpty(result.getName()) ? deployable.getName() : result.getName();
+                importDeployableService.copyDeploymentObject(deployable, deployment, name, result.getIncludeConstraints());
+            }
+        }
     }
 }
