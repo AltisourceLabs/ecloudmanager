@@ -55,6 +55,8 @@ public class ProducedServiceDeploymentController extends FacesSupport implements
     private transient VmTemplateController vmTemplateController;
     @Inject
     private transient ImportDeployableService importDeployableService;
+    @Inject
+    ApplicationDeploymentEditorController applicationDeploymentEditorController;
 
     public ProducedServiceDeployment getValue() {
         return value;

@@ -26,6 +26,7 @@ package org.ecloudmanager.web.faces;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ecloudmanager.deployment.core.Deployable;
+import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.ps.ProducedServiceDeployment;
 import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
@@ -49,6 +50,8 @@ public class CommonProducedServicesController extends FacesSupport implements Se
     private transient ProducedServiceRepository producedServiceRepository;
     @Inject
     private transient ImportDeployableService importDeployableService;
+    @Inject
+    private transient ProducedServiceDeploymentController producedServiceDeploymentController;
 
     @PostConstruct
     private void init() {
@@ -64,6 +67,14 @@ public class CommonProducedServicesController extends FacesSupport implements Se
     }
 
     public void startEdit(ProducedServiceDeployment producedServiceDeployment) {
+        if (producedServiceDeployment == null) {
+            producedServiceDeployment = new ProducedServiceDeployment();
+            producedServiceDeployment.children().add(new Endpoint());
+        }
+        producedServiceDeploymentController.setValue(producedServiceDeployment);
+        RequestContext ctx = RequestContext.getCurrentInstance();
+        ctx.update(ProducedServiceDeploymentController.DIALOG_EDIT);
+        ctx.execute("PF('" + ProducedServiceDeploymentController.DIALOG_EDIT + "').show()");
     }
 
     public void delete(ProducedServiceDeployment entity) {
@@ -96,4 +107,11 @@ public class CommonProducedServicesController extends FacesSupport implements Se
         }
     }
 
+    public void save(ProducedServiceDeployment producedServiceDeployment) {
+        producedServiceRepository.save(producedServiceDeployment);
+        refresh();
+        RequestContext ctx = RequestContext.getCurrentInstance();
+        ctx.execute("PF('" + ProducedServiceDeploymentController.DIALOG_EDIT + "').hide()");
+        ctx.update("out");
+    }
 }

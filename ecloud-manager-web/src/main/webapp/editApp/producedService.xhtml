@@ -103,10 +103,17 @@
                                                  id="endpoint"/>
                         </p:panel>
                     </p:panelGrid>
+
+                    <p:remoteCommand name="saveProducedService"
+                                     action="#{applicationDeploymentEditorController.saveChild(producedServiceDeploymentController.value)}"
+                                     rendered="#{applicationDeploymentEditorController.deployment ne null}"/>
+                    <p:remoteCommand name="saveProducedService"
+                                     action="#{commonProducedServicesController.save(producedServiceDeploymentController.value)}"
+                                     rendered="#{applicationDeploymentEditorController.deployment eq null}"/>
                     <p:panelGrid id="attr_buttons" columns="2" style="margin-bottom:10px"
                                  styleClass="ui-panelgrid-blank" cellpadding="5">
                         <p:commandButton id="attr_button_save" value="Save"
-                                         action="#{applicationDeploymentEditorController.saveChild(producedServiceDeploymentController.value)}"
+                                         onclick="saveProducedService()"
                                          update="out"
                         />
                         <p:commandButton id="attr_button_cancel" value="Cancel" immediate="true"
