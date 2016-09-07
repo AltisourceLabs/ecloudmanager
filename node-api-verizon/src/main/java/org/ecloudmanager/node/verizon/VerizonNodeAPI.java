@@ -51,7 +51,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
     }
 
     @Override
-    public List<ParameterValue> getNodeParameterValues(Credentials credentials, String parameter, Map<String, String> parameters) throws Exception {
+    public List<ParameterValue> getNodeParameterValues(Credentials credentials, String parameter, Map<String, String> parameters) {
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
         Parameter p = Parameter.valueOf(parameter);
@@ -306,14 +306,14 @@ public class VerizonNodeAPI implements NodeBaseAPI {
             networkMapping.setName(networkMap.getName().getValue());
             importNetMap.getNetworkMapping().add(networkMapping);
         }
+        String networksHRef = cache.getHref(NetworksType.class, cmd.getNetwork());
 
-        NetworksType networks = cache.getByHrefOrName(NetworksType.class, cmd.getNetwork());
         ReferenceType rtNet = null;
         List<ImportNetworkMappingType> inmt = importNetMap.getNetworkMapping();
         for (ImportNetworkMappingType impNetMap : inmt) {
             rtNet = new ReferenceType();
-            rtNet.setHref(networks.getHref());
-            rtNet.setName(networks.getName());
+            rtNet.setHref(networksHRef);
+            rtNet.setName(cmd.getNetwork());
             impNetMap.setNetwork(rtNet);
         }
 

@@ -3,9 +3,9 @@ package org.ecloudmanager.agent.controller;
 import io.swagger.inflector.models.RequestContext;
 import io.swagger.inflector.models.ResponseContext;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.ecloudmanager.node.LocalAsyncNodeAPI;
 import org.ecloudmanager.node.LocalLoggableFuture;
-import org.ecloudmanager.node.LoggableFuture;
 import org.ecloudmanager.node.NodeBaseAPI;
 import org.ecloudmanager.node.model.*;
 import org.ecloudmanager.node.util.NodeUtil;
@@ -26,7 +26,9 @@ import java.util.concurrent.Executors;
 
 
 public class DefaultController {
-    private final static Map<String, LocalLoggableFuture> tasks = new ConcurrentHashMap<>();
+    private final static Map<String, Pair<Credentials, LocalLoggableFuture<?>>> tasks = new ConcurrentHashMap<>();
+
+
     private static Logger log = LoggerFactory.getLogger(DefaultController.class);
     private LocalAsyncNodeAPI api = new LocalAsyncNodeAPI(getNodeBaseAPI(), Executors.newCachedThreadPool());
 
@@ -93,20 +95,20 @@ public class DefaultController {
 
     public ResponseContext createNode(RequestContext request, String accessKey, String secretKey, Node node) {
         LocalLoggableFuture<NodeInfo> f = api.createNode(new SecretKey(accessKey, secretKey), node.getParameters());
-        tasks.put(f.getId(), f);
-        return new ResponseContext().status(Status.OK).entity(f.getId());
+        tasks.put(f.getId(), Pair.of(new SecretKey(accessKey, secretKey), f));
+        return new ResponseContext().status(Status.ACCEPTED).entity(f.getId());
     }
 
     public ResponseContext configureNode(RequestContext request, String accessKey, String secretKey, String nodeId, Node node) {
         LocalLoggableFuture<NodeInfo> f = api.configureNode(new SecretKey(accessKey, secretKey), nodeId, node.getParameters());
-        tasks.put(f.getId(), f);
-        return new ResponseContext().status(Status.OK).entity(f.getId());
+        tasks.put(f.getId(), Pair.of(new SecretKey(accessKey, secretKey), f));
+        return new ResponseContext().status(Status.ACCEPTED).entity(f.getId());
     }
 
     public ResponseContext deleteNode(RequestContext request, String accessKey, String secretKey, String nodeId) {
         LocalLoggableFuture<Void> f = api.deleteNode(new SecretKey(accessKey, secretKey), nodeId);
-        tasks.put(f.getId(), f);
-        return new ResponseContext().status(Status.OK).entity(f.getId());
+        tasks.put(f.getId(), Pair.of(new SecretKey(accessKey, secretKey), f));
+        return new ResponseContext().status(Status.ACCEPTED).entity(f.getId());
     }
 
     public ResponseContext getNode(RequestContext request, String accessKey, String secretKey, String nodeId) {
@@ -134,8 +136,8 @@ public class DefaultController {
     public ResponseContext updateNodeFirewallRules(RequestContext request, String accessKey, String secretKey, String nodeId, FirewallUpdate firewallUpdate) {
         try {
             LocalLoggableFuture<FirewallInfo> f = api.updateNodeFirewallRules(new SecretKey(accessKey, secretKey), nodeId, firewallUpdate);
-            tasks.put(f.getId(), f);
-            return new ResponseContext().status(Status.OK).entity(f.getId());
+            tasks.put(f.getId(), Pair.of(new SecretKey(accessKey, secretKey), f));
+            return new ResponseContext().status(Status.ACCEPTED).entity(f.getId());
         } catch (Exception e) {
             return new ResponseContext()
                     .status(Response.Status.INTERNAL_SERVER_ERROR)
@@ -145,8 +147,8 @@ public class DefaultController {
 
     public ResponseContext executeScript(RequestContext request, String accessKey, String secretKey, String nodeId, Command command) {
         LocalLoggableFuture<Integer> f = api.executeScript(new SecretKey(accessKey, secretKey), command.getCredentials(), nodeId, command);
-        tasks.put(f.getId(), f);
-        return new ResponseContext().status(Status.OK).entity(f.getId());
+        tasks.put(f.getId(), Pair.of(new SecretKey(accessKey, secretKey), f));
+        return new ResponseContext().status(Status.ACCEPTED).entity(f.getId());
 
     }
 
@@ -161,16 +163,17 @@ public class DefaultController {
                     .entity(e.getMessage());
         }
         LocalLoggableFuture<Void> f = api.uploadFile(new SecretKey(accessKey, secretKey), sshCredentials, nodeId, is, path);
-        tasks.put(f.getId(), f);
-        return new ResponseContext().status(Status.OK).entity(f.getId());
+        tasks.put(f.getId(), Pair.of(new SecretKey(accessKey, secretKey), f));
+        return new ResponseContext().status(Status.ACCEPTED).entity(f.getId());
 
     }
 
-    public ResponseContext getTask(RequestContext request, String taskId) {
-        LoggableFuture f = tasks.get(taskId);
-        if (f == null) {
+    public ResponseContext getTask(RequestContext request, String accessKey, String secretKey, String taskId) {
+        Pair<Credentials, LocalLoggableFuture<?>> cf = tasks.get(taskId);
+        if (cf == null || !cf.getLeft().equals(new SecretKey(accessKey, secretKey))) {
             return new ResponseContext().status(Status.NOT_FOUND);
         }
+        LocalLoggableFuture f = cf.getRight();
         TaskInfo response = new TaskInfo();
         if (!f.isDone()) {
             return new ResponseContext().status(Status.OK).entity(response.done(false));
@@ -185,12 +188,23 @@ public class DefaultController {
         }
     }
 
-    public ResponseContext pollLog(RequestContext request, String taskId) {
-        LoggableFuture<?> f = tasks.get(taskId);
-        if (f == null) {
+    public ResponseContext deleteTask(RequestContext request, String accessKey, String secretKey, String taskId) {
+        Pair<Credentials, LocalLoggableFuture<?>> cf = tasks.get(taskId);
+        if (cf == null || !cf.getLeft().equals(new SecretKey(accessKey, secretKey))) {
             return new ResponseContext().status(Status.NOT_FOUND);
         }
-        List<LoggingEvent> result = f.pollLogs();
+        tasks.remove(taskId);
+        cf.getValue().deleteLogs();
+        return new ResponseContext().status(Status.OK);
+    }
+
+    public ResponseContext pollLog(RequestContext request, String accessKey, String secretKey, String taskId) {
+        Pair<Credentials, LocalLoggableFuture<?>> cf = tasks.get(taskId);
+        if (cf == null || !cf.getLeft().equals(new SecretKey(accessKey, secretKey))) {
+            return new ResponseContext().status(Status.NOT_FOUND);
+        }
+
+        List<LoggingEvent> result = cf.getRight().pollLogs();
         log.info(result.size() + " log events polled ");
         return new ResponseContext().status(Status.OK).entity(result);
     }

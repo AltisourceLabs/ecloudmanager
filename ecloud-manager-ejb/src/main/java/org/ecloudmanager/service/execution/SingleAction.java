@@ -86,6 +86,7 @@ public class SingleAction extends Action implements Runnable {
                 setStatus(Status.SUCCESSFUL);
             } catch (LogException e) {
                 actionLog.log(e.getError());
+                setStatus(Status.FAILED);
             } catch (Exception t) {
                 actionLog.error("Failed to execute action " + getLabel() + ": ", t);
                 setStatus(Status.FAILED);

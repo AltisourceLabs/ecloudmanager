@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import org.ecloudmanager.node.LogException;
 import org.ecloudmanager.node.LoggableFuture;
 import org.ecloudmanager.node.model.LoggingEvent;
+import org.ecloudmanager.node.model.SecretKey;
 import org.ecloudmanager.node.model.TaskInfo;
 import org.ecloudmanager.node.rest.client.TasksApi;
 
@@ -19,9 +20,11 @@ public class RestLoggableFuture<T> implements LoggableFuture<T> {
     private final String taskId;
     private final TasksApi tasksApi;
     private final Class<T> type;
+    private final SecretKey credentials;
 
-    RestLoggableFuture(String taskId, TasksApi tasksApi, Class<T> type) {
 
+    RestLoggableFuture(SecretKey credentials, String taskId, TasksApi tasksApi, Class<T> type) {
+        this.credentials = credentials;
         this.taskId = taskId;
         this.tasksApi = tasksApi;
         this.type = type;
@@ -38,7 +41,7 @@ public class RestLoggableFuture<T> implements LoggableFuture<T> {
     @Override
     public List<LoggingEvent> pollLogs() {
         try {
-            return tasksApi.pollLog(taskId);
+            return tasksApi.pollLog(credentials.getName(), credentials.getSecret(), taskId);
         } catch (ApiException e) {
             throw new RuntimeException(e);
         }
@@ -57,7 +60,7 @@ public class RestLoggableFuture<T> implements LoggableFuture<T> {
     @Override
     public boolean isDone() {
         try {
-            TaskInfo info = tasksApi.getTask(taskId);
+            TaskInfo info = tasksApi.getTask(credentials.getName(), credentials.getSecret(), taskId);
             return info.getDone();
         } catch (ApiException e) {
             throw new RuntimeException(e);
@@ -66,18 +69,26 @@ public class RestLoggableFuture<T> implements LoggableFuture<T> {
 
     @Override
     public T get() throws InterruptedException, LogException {
-        TaskInfo info = call(() -> tasksApi.getTask(taskId));
+        TaskInfo info = call(() -> tasksApi.getTask(credentials.getName(), credentials.getSecret(), taskId));
         while (!info.getDone()) {
             Thread.sleep(500); //FIXME
-            info = call(() -> tasksApi.getTask(taskId));
+            info = call(() -> tasksApi.getTask(credentials.getName(), credentials.getSecret(), taskId));
         }
-        LoggingEvent error = info.getException();
-        if (error != null) {
-            throw new LogException().error(error);
+        try {
+            LoggingEvent error = info.getException();
+            if (error != null) {
+                throw new LogException().error(error);
+            }
+            Object value = info.getValue();
+            JsonElement jsonElement = new Gson().toJsonTree(value);
+            return new Gson().fromJson(jsonElement, type);
+        } finally {
+            try {
+                tasksApi.deleteTask(credentials.getName(), credentials.getSecret(), taskId);
+            } catch (ApiException e) {
+                throw new RuntimeException(e);
+            }
         }
-        Object value = info.getValue();
-        JsonElement jsonElement = new Gson().toJsonTree(value);
-        return new Gson().fromJson(jsonElement, type);
 
 //        if (String.class.equals(type)) {
 //            return (T) value.toString();

@@ -37,6 +37,8 @@ import org.ecloudmanager.tmrk.cloudapi.service.network.NetworkService;
 import org.ecloudmanager.tmrk.cloudapi.service.organization.CatalogService;
 import org.ecloudmanager.tmrk.cloudapi.service.organization.OrganizationService;
 import org.ecloudmanager.tmrk.cloudapi.util.TmrkUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -44,6 +46,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -63,7 +66,7 @@ import java.util.concurrent.TimeUnit;
  */
 
 public class CloudCachedEntityService {
-
+    private static Logger log = LoggerFactory.getLogger(CloudCachedEntityService.class);
     private CloudGenericEntityService delegate;
 
     private CloudServicesRegistry registry;
@@ -77,6 +80,21 @@ public class CloudCachedEntityService {
         this.registry = registry;
         delegate = new CloudGenericEntityService(registry);
         init();
+    }
+
+    private static <T> T callCloud(Callable<T> callable) {
+        try {
+            return callable.call();
+
+        } catch (ExecutionException | UncheckedExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof CloudapiException) {
+                throw (CloudapiException) cause;
+            }
+            throw new RuntimeException("Cloud call failed", e.getCause());
+        } catch (Exception e) {
+            throw new RuntimeException("Cloud call failed", e);
+        }
     }
 
     private void init() {
@@ -148,10 +166,13 @@ public class CloudCachedEntityService {
         }
         for (CatalogEntryType cet : catalogEntriesByOrg) {
             CatalogEntryConfigurationType config = null;
+            String id = TmrkUtils.getIdFromHref(cet.getHref());
             try {
                 config = getCatalogConfiguration(TmrkUtils.getIdFromHref(cet.getHref()));
                 mapCatalogConfig.put(config.getName(), config.getHref());
             } catch (UncheckedExecutionException | CloudapiException e) {
+                log.warn("Can't get catalog config for id " + id, e);
+
                 // there are catalogs without configuration
                 // TODO - log
             }
@@ -170,8 +191,10 @@ public class CloudCachedEntityService {
             String id = TmrkUtils.getIdFromHref(env.getHref());
             NetworksType networks = null;
             try {
-                networks = getNetworks(id);
+                networks = registry.getNetworkService().getNetworks(id);
+//                networks = getNetworks(id);
             } catch (UncheckedExecutionException | CloudapiException e) {
+                log.warn("Can't get networks for env " + env.getName(), e);
                 // permissions could be missing
                 // TODO - log
             }
@@ -185,89 +208,50 @@ public class CloudCachedEntityService {
     }
 
     public CatalogType getCatalog(String organizationId) {
-        try {
+        return callCloud(() -> {
             QueryCache<CatalogType> cache = getQueryCache("getCatalogByOrganizationId", CatalogService.class,
                     CatalogType.class);
             return cache.getCache().get(organizationId);
-        } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-            if (cause instanceof CloudapiException) {
-                throw (CloudapiException) cause;
-            }
-        }
-        return null;
+        });
     }
 
     public CatalogEntryConfigurationType getCatalogConfiguration(String catalogId) {
-        try {
+        return callCloud(() -> {
             QueryCache<CatalogEntryConfigurationType> cache = getQueryCache
                     ("getCatalogEntryConfigurationByCatalogId", CatalogService.class, CatalogEntryConfigurationType.class);
             return cache.getCache().get(catalogId);
-        } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-            if (cause instanceof CloudapiException) {
-                throw (CloudapiException) cause;
-            }
-        }
-        return null;
+        });
     }
 
     public EnvironmentsType getEnvironments(final String organizationId) {
-        try {
+        return callCloud(() -> {
             QueryCache<EnvironmentsType> cache = getQueryCache("getEnvironments", EnvironmentService.class,
                     EnvironmentsType.class);
             return cache.getCache().get(organizationId);
-        } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-            if (cause instanceof CloudapiException) {
-                throw (CloudapiException) cause;
-            }
-        }
-        return null;
-
+        });
     }
 
     public ComputePoolReferencesResourceType getComputePools(final String environmentId) {
-        try {
+        return callCloud(() -> {
             QueryCache<ComputePoolReferencesResourceType> cache = getQueryCache("getComputePoolsByEnvironment",
                     ComputePoolService.class, ComputePoolReferencesResourceType.class);
             return cache.getCache().get(environmentId);
-        } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-            if (cause instanceof CloudapiException) {
-                throw (CloudapiException) cause;
-            }
-        }
-        return null;
-
+        });
     }
 
     public DeviceLayoutType getRows(final String environmentId) {
-        try {
+        return callCloud(() -> {
             QueryCache<DeviceLayoutType> cache = getQueryCache("getDeviceLayoutByEnvironmentId", LayoutService.class,
                     DeviceLayoutType.class);
             return cache.getCache().get(environmentId);
-        } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-            if (cause instanceof CloudapiException) {
-                throw (CloudapiException) cause;
-            }
-        }
-        return null;
-
+        });
     }
 
     public NetworksType getNetworks(String environmentId) {
-        try {
+        return callCloud(() -> {
             QueryCache<NetworksType> cache = getQueryCache("getNetworks", NetworkService.class, NetworksType.class);
             return cache.getCache().get(environmentId);
-        } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-            if (cause instanceof CloudapiException) {
-                throw (CloudapiException) cause;
-            }
-        }
-        return null;
+        });
     }
 
     private <T extends ResourceType> TypedCache<T> addCache(Class<T> type) {
@@ -309,7 +293,7 @@ public class CloudCachedEntityService {
      * @return the ResourceType
      */
     public <T extends ResourceType> T getByHrefOrName(Class<T> type, String hrefOrName) {
-        try {
+        return callCloud(() -> {
             String href = hrefOrName;
             TypedCache<T> cache = getCache(type);
             if (!href.startsWith("/cloudapi")) { //TODO: refactor in a better way
@@ -317,13 +301,7 @@ public class CloudCachedEntityService {
                 href = nameToHrefMap.get(type).get(hrefOrName);
             }
             return cache.getCache().get(href);
-        } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-            if (cause instanceof CloudapiException) {
-                throw (CloudapiException) cause;
-            }
-        }
-        return null;
+        });
     }
 
     public String getHref(Class type, String name) {

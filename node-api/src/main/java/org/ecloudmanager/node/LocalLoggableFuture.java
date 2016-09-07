@@ -23,6 +23,10 @@ public class LocalLoggableFuture<T> implements LoggableFuture<T> {
         return LocalTaskLogs.pollLogs(id);
     }
 
+    public void deleteLogs() {
+        LocalTaskLogs.deleteLogs(id);
+    }
+
     @Override
     public boolean cancel(boolean mayInterruptIfRunning) {
         return f.cancel(mayInterruptIfRunning);
@@ -40,7 +44,11 @@ public class LocalLoggableFuture<T> implements LoggableFuture<T> {
 
     @Override
     public T get() throws InterruptedException, ExecutionException {
-        return f.get();
+        try {
+            return f.get();
+        } finally {
+            deleteLogs();
+        }
     }
 
     @Override

@@ -54,7 +54,7 @@ public class RestNodeAPI implements org.ecloudmanager.node.AsyncNodeAPI {
         SecretKey sk = (SecretKey) credentials;
         try {
             String taskId = nodeApi.createNode(sk.getName(), sk.getSecret(), new Node().parameters(parameters));
-            return new RestLoggableFuture<>(taskId, tasksApi, NodeInfo.class);
+            return new RestLoggableFuture<>(sk, taskId, tasksApi, NodeInfo.class);
         } catch (ApiException e) {
             return LoggableFuture.failedFuture("Failed to invoke 'createNode'", e);
         }
@@ -71,7 +71,7 @@ public class RestNodeAPI implements org.ecloudmanager.node.AsyncNodeAPI {
         SecretKey sk = (SecretKey) credentials;
         try {
             String taskId = nodeApi.configureNode(sk.getName(), sk.getSecret(), nodeId, new Node().parameters(parameters));
-            return new RestLoggableFuture<>(taskId, tasksApi, NodeInfo.class);
+            return new RestLoggableFuture<>(sk, taskId, tasksApi, NodeInfo.class);
         } catch (ApiException e) {
             return LoggableFuture.failedFuture("Failed to invoke 'configureNode'", e);
         }
@@ -82,7 +82,7 @@ public class RestNodeAPI implements org.ecloudmanager.node.AsyncNodeAPI {
         SecretKey sk = (SecretKey) credentials;
         try {
             String taskId = nodeApi.deleteNode(sk.getName(), sk.getSecret(), nodeId);
-            return new RestLoggableFuture<>(taskId, tasksApi, Void.class);
+            return new RestLoggableFuture<>(sk, taskId, tasksApi, Void.class);
         } catch (ApiException e) {
             return LoggableFuture.failedFuture("Failed to invoke 'deleteNode'", e);
         }
@@ -99,7 +99,7 @@ public class RestNodeAPI implements org.ecloudmanager.node.AsyncNodeAPI {
         SecretKey sk = (SecretKey) credentials;
         try {
             String taskId = nodeApi.updateNodeFirewallRules(sk.getName(), sk.getSecret(), nodeId, firewallUpdate);
-            return new RestLoggableFuture<>(taskId, tasksApi, FirewallInfo.class);
+            return new RestLoggableFuture<>(sk, taskId, tasksApi, FirewallInfo.class);
         } catch (ApiException e) {
             return LoggableFuture.failedFuture("Failed to invoke 'deleteNode'", e);
         }
@@ -120,7 +120,7 @@ public class RestNodeAPI implements org.ecloudmanager.node.AsyncNodeAPI {
                     , sshCredentials.getJumpHost1(), sshCredentials.getJumpHost1Username(), sshCredentials.getJumpHost1PrivateKey(), sshCredentials.getJumpHost1PrivateKeyPassphrase()
                     , sshCredentials.getJumpHost2(), sshCredentials.getJumpHost2Username(), sshCredentials.getJumpHost2PrivateKey(), sshCredentials.getJumpHost2PrivateKeyPassphrase(),
                     filePath.toFile());
-            return new RestLoggableFuture<>(taskId, tasksApi, Void.class);
+            return new RestLoggableFuture<>(sk, taskId, tasksApi, Void.class);
         } catch (ApiException e) {
             return LoggableFuture.failedFuture("Failed to invoke 'uploadFile'", e);
         }
@@ -131,7 +131,7 @@ public class RestNodeAPI implements org.ecloudmanager.node.AsyncNodeAPI {
         SecretKey sk = (SecretKey) credentials;
         try {
             String taskId = sshApi.executeScript(sk.getName(), sk.getSecret(), nodeId, command);
-            return new RestLoggableFuture<>(taskId, tasksApi, Integer.class);
+            return new RestLoggableFuture<>(sk, taskId, tasksApi, Integer.class);
         } catch (ApiException e) {
             return LoggableFuture.failedFuture("Failed to invoke 'executeScript'", e);
         }
