@@ -27,19 +27,19 @@ package org.ecloudmanager.web.faces;
 import org.ecloudmanager.deployment.core.ConstraintField;
 import org.ecloudmanager.deployment.core.ConstraintFieldSuggestion;
 import org.ecloudmanager.deployment.core.ConstraintValue;
-import org.ecloudmanager.deployment.core.DeploymentConstraint;
+import org.ecloudmanager.deployment.core.DeploymentObject;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class ConstraintInput {
-    private final DeploymentConstraint deploymentConstraint;
+    private final DeploymentObject deploymentConstraint;
     private final ConstraintField field;
     private ConstraintValue value;
     private Option option;
 
-    public ConstraintInput(DeploymentConstraint deploymentConstraint, ConstraintField field) {
+    public ConstraintInput(DeploymentObject deploymentConstraint, ConstraintField field) {
         this.deploymentConstraint = deploymentConstraint;
         this.field = field;
         this.value = deploymentConstraint.getProvidedValue(getName());

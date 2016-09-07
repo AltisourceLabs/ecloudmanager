@@ -27,5 +27,5 @@ package org.ecloudmanager.deployment.core;
 import java.util.List;
 
 public interface ConstraintFieldSuggestionsProvider {
-    List<ConstraintFieldSuggestion> getSuggestions(DeploymentConstraint deploymentConstraint);
+    List<ConstraintFieldSuggestion> getSuggestions(DeploymentObject deploymentConstraint);
 }

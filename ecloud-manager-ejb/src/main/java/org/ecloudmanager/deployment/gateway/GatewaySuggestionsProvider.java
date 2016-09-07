@@ -26,7 +26,7 @@ package org.ecloudmanager.deployment.gateway;
 
 import org.ecloudmanager.deployment.core.ConstraintFieldSuggestion;
 import org.ecloudmanager.deployment.core.ConstraintFieldSuggestionsProvider;
-import org.ecloudmanager.deployment.core.DeploymentConstraint;
+import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.repository.deployment.GatewayRepository;
 import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
 
@@ -38,7 +38,7 @@ import static org.ecloudmanager.deployment.core.ConstraintFieldSuggestion.sugges
 
 public class GatewaySuggestionsProvider implements ConstraintFieldSuggestionsProvider {
     @Override
-    public List<ConstraintFieldSuggestion> getSuggestions(DeploymentConstraint deploymentConstraint) {
+    public List<ConstraintFieldSuggestion> getSuggestions(DeploymentObject deploymentConstraint) {
         GatewayRepository gatewayRepository = CDI.current().select(GatewayRepository.class).get();
         ApplicationDeploymentService applicationDeploymentService = CDI.current().select(ApplicationDeploymentService.class).get();
         List<String> gatewayNames = gatewayRepository.getAll().stream()

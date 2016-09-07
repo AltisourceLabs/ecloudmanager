@@ -26,7 +26,7 @@ package org.ecloudmanager.deployment.vm.provisioning;
 
 import org.ecloudmanager.deployment.core.ConstraintFieldSuggestion;
 import org.ecloudmanager.deployment.core.ConstraintFieldSuggestionsProvider;
-import org.ecloudmanager.deployment.core.DeploymentConstraint;
+import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.domain.chef.ChefConfiguration;
 import org.ecloudmanager.service.template.ChefConfigurationService;
 
@@ -38,7 +38,7 @@ import static org.ecloudmanager.deployment.core.ConstraintFieldSuggestion.sugges
 
 public class ChefConfigurationSuggestionsProvider implements ConstraintFieldSuggestionsProvider {
     @Override
-    public List<ConstraintFieldSuggestion> getSuggestions(DeploymentConstraint deploymentConstraint) {
+    public List<ConstraintFieldSuggestion> getSuggestions(DeploymentObject deploymentConstraint) {
         ChefConfigurationService chefConfigurationService = CDI.current().select(ChefConfigurationService.class).get();
         List<String> chefConfigNames = chefConfigurationService.getAllForCurrentUser().stream()
                 .map(ChefConfiguration::getName)

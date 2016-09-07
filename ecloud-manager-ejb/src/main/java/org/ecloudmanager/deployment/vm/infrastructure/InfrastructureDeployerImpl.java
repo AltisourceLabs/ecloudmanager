@@ -86,7 +86,7 @@ public class InfrastructureDeployerImpl extends InfrastructureDeployer {
             params.forEach(p -> {
                         constraint.addField(ConstraintField.builder().name(p.getName()).description(p.getDescription())
                                 .defaultValue(p.getDefaultValue()).required(p.getRequired())
-                                .suggestionsProvider(p.getCanSuggest() ? new NodeAPISuggestions(apiName, p) : null).build());
+                                .suggestionsProvider(p.getCanSuggest() ? new NodeAPISuggestions(p) : null).build());
                     }
             );
         } catch (Exception e) {

@@ -26,7 +26,7 @@ package org.ecloudmanager.deployment.vm.infrastructure;
 
 import org.ecloudmanager.deployment.core.ConstraintFieldSuggestion;
 import org.ecloudmanager.deployment.core.ConstraintFieldSuggestionsProvider;
-import org.ecloudmanager.deployment.core.DeploymentConstraint;
+import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.domain.template.SshConfiguration;
 import org.ecloudmanager.service.template.SshConfigurationService;
 
@@ -38,7 +38,7 @@ import static org.ecloudmanager.deployment.core.ConstraintFieldSuggestion.sugges
 
 public class SshConfigurationSuggestionsProvider implements ConstraintFieldSuggestionsProvider {
     @Override
-    public List<ConstraintFieldSuggestion> getSuggestions(DeploymentConstraint deploymentConstraint) {
+    public List<ConstraintFieldSuggestion> getSuggestions(DeploymentObject deploymentConstraint) {
         SshConfigurationService sshConfigurationService = CDI.current().select(SshConfigurationService.class).get();
         List<String> sshConfigNames = sshConfigurationService.getAllForCurrentUser().stream()
                 .map(SshConfiguration::getName)
