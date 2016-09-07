@@ -1,0 +1,151 @@
+<!--
+  ~ The MIT License (MIT)
+  ~
+  ~ Copyright (c) 2016 Altisource Labs
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:components="http://java.sun.com/jsf/composite/components"
+                template="/WEB-INF/templates/default.xhtml">
+    <ui:define name="content">
+        <p:outputPanel id="out">
+            <h:panelGroup>
+                <p:tabView styleClass="contentForm appDeploymentTabs" dynamic="true" rendered="#{applicationDeploymentEditorController.deployment ne null}">
+                    <p:tab title="Deployment Structure">
+                        <h:form id="edit">
+                            <p>Name: <p:inputText value="#{applicationDeploymentEditorController.deployment.name}"/></p>
+                            <p>Infrastructure:
+                                <p:selectOneMenu value="#{applicationDeploymentEditorController.deployment.infrastructure}">
+                                    <f:selectItems value="#{applicationDeploymentEditorController.nodeApiIds}"/>
+                                </p:selectOneMenu>
+                            </p>
+                            <p>Entries:</p>
+                            <p:dataTable id="children" var="srv"
+                                         value="#{applicationDeploymentEditorController.editableChildren()}"
+                                         resizableColumns="true" liveResize="true" styleClass="childrenTable">
+
+                                <p:column width="30%" headerText="Name" sortBy="#{srv.name}">
+                                    <h:outputText value="#{srv}"/>
+                                </p:column>
+                                <p:column headerText="Endpoints">
+                                    <h:outputText value="#{srv.endpoints}"/>
+                                </p:column>
+                                <p:column headerText="Required">
+                                    <h:outputText value="#{srv.requiredEndpoints}"/>
+                                </p:column>
+
+                                <p:column width="60">
+                                    <p:commandButton title="Edit" icon="ui-icon-pencil"
+                                                     action="#{applicationDeploymentEditorController.startEditChild(srv)}"
+                                    />
+                                    <p:commandButton title="Delete" icon="ui-icon-close"
+                                                     update="@(.childrenTable)"
+                                                     action="#{applicationDeploymentEditorController.deleteChild(srv)}"
+                                    >
+                                    </p:commandButton>
+                                </p:column>
+                            </p:dataTable>
+                            <p:menuButton value="New..." styleClass="menubutton">
+                                <p:menuitem value="ProducedService"
+                                            action="#{applicationDeploymentEditorController.newProducedService}">
+                                </p:menuitem>
+                                <p:menuitem value="ExternalService" rendered="false"
+                                            action="#{applicationDeploymentEditorController.newExternalService}">
+                                </p:menuitem>
+                                <p:menuitem value="VM"
+                                            action="#{applicationDeploymentEditorController.newVmRef}"
+                                >
+                                </p:menuitem>
+                            </p:menuButton>
+                            <p:commandButton value="&#160;Import..."
+                                             icon="fa fa-cart-arrow-down fa-lg"
+                                             action="#{applicationDeploymentEditorController.startImportDeployable()}">
+                                <p:ajax event="dialogReturn" listener="#{applicationDeploymentEditorController.onImportDeployableReturn}"
+                                        update="@form"/>
+                            </p:commandButton>
+
+                            <p>Connections:</p>
+                            <p:dataTable id="links" var="link"
+                                         value="#{applicationDeploymentEditorController.deployment.links}"
+                                         resizableColumns="true" liveResize="true">
+
+                                <p:column width="30%" headerText="Destination" sortBy="#{link.consumer}">
+                                    <h:outputText value="#{link.consumer}"/>
+                                </p:column>
+                                <p:column headerText="Source">
+                                    <p:selectOneMenu value="#{link.supplier}">
+                                        <f:selectItem itemLabel="None" itemValue=""/>
+                                        <f:selectItems
+                                                value="#{applicationDeploymentEditorController.availableEndpoints}"
+                                                var="endpoint"
+                                                itemLabel="#{endpoint}" itemValue="#{endpoint}"/>
+                                    </p:selectOneMenu>
+                                </p:column>
+                            </p:dataTable>
+                            <p>Public endpoints:</p>
+                            <p:dataTable var="ep" value="#{applicationDeploymentEditorController.deployment.publicEndpoints}"
+                                         id="public_endpoints">
+                                <p:column id="column_endpoint" headerText="Endpoint">
+                                    <h:outputText value="#{ep}"/>
+                                </p:column>
+                                <p:column id="column_ep_action" width="30">
+                                    <p:commandButton id="delete_endpoint" title="Delete" icon="ui-icon-close"
+                                                     update="public_endpoints"
+                                                     action="#{applicationDeploymentEditorController.deletePublicEndpoint(ep)}"/>
+                                </p:column>
+                            </p:dataTable>
+                            <p:spacer/>
+                            <p:selectOneMenu id="addPublicEndpoint" value="#{applicationDeploymentEditorController.publicEndpointToAdd}"
+                                             styleClass="comboAndButton">
+                                <f:selectItem itemLabel="Select endpoint to add" itemValue=""/>
+                                <f:selectItems value="#{applicationDeploymentEditorController.availableEndpoints}"/>
+                            </p:selectOneMenu>
+                            <p:commandButton id="add_public_endpoint" value="Add"
+                                             styleClass="comboAndButton"
+                                             update="public_endpoints, addPublicEndpoint"
+                                             action="#{applicationDeploymentEditorController.addPublicEndpoint()}"/>
+
+                            <p>
+                                <p:commandButton value="Save" update="out" action="#{applicationDeploymentEditorController.save()}"/>
+                            </p>
+                        </h:form>
+                    </p:tab>
+                    <p:tab id="recipesTab"
+                           title="Recipes"
+                           titletip="Recipes for this deployment"
+                    >
+                        <components:recipes owner="#{applicationDeploymentEditorController.deployment}"/>
+                    </p:tab>
+                </p:tabView>
+            </h:panelGroup>
+
+            <ui:include src="producedService.xhtml"/>
+            <ui:include src="vmDeployment.xhtml"/>
+
+            <p:messages id="messages" showDetail="true" autoUpdate="true" closable="true" escape="false"/>
+
+        </p:outputPanel>
+    </ui:define>
+</ui:composition>

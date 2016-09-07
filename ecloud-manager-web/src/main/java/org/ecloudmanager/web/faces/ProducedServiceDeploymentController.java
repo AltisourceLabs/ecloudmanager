@@ -159,7 +159,7 @@ public class ProducedServiceDeploymentController extends FacesSupport implements
         params.put("classes", Collections.singletonList(ComponentGroupDeployment.class.getName()));
         params.put("recursive", Collections.singletonList("true"));
 
-        RequestContext.getCurrentInstance().openDialog("importDeployable", options, params);
+        RequestContext.getCurrentInstance().openDialog("/editApp/import/importDeployable", options, params);
     }
 
     public void onImportComponentGroupReturn(SelectEvent event) {

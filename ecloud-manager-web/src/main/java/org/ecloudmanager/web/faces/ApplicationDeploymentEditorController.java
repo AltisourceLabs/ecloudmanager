@@ -229,7 +229,7 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
         params.put("classes", ImmutableList.of(ProducedServiceDeployment.class.getName(), VMDeployment.class.getName()));
         params.put("recursive", Collections.singletonList("false"));
 
-        RequestContext.getCurrentInstance().openDialog("importDeployable", options, params);
+        RequestContext.getCurrentInstance().openDialog("/editApp/import/importDeployable", options, params);
     }
 
     public void onImportDeployableReturn(SelectEvent event) {

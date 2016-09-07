@@ -96,7 +96,7 @@ public class RecipeController extends FacesSupport implements Serializable {
     }
 
     public void startImportRecipe() {
-        RequestContext.getCurrentInstance().openDialog("importRecipe", options, null);
+        RequestContext.getCurrentInstance().openDialog("/editApp/import/importRecipe", options, null);
     }
 
     @NotNull
@@ -110,7 +110,7 @@ public class RecipeController extends FacesSupport implements Serializable {
 
     public void startEditChefAttribute(ChefAttribute entity) {
         Map<String, List<String>> params = storeToSessionMapAndGetParamsMapWithId(entity);
-        RequestContext.getCurrentInstance().openDialog("editChefAttribute", options, params);
+        RequestContext.getCurrentInstance().openDialog("/editChefAttribute", options, params);
     }
 
 
@@ -120,7 +120,7 @@ public class RecipeController extends FacesSupport implements Serializable {
 
     public void startEditEndpoint(Endpoint entity) {
         Map<String, List<String>> params = storeToSessionMapAndGetParamsMapWithId(entity);
-        RequestContext.getCurrentInstance().openDialog("editRecipeEndpoint", options, params);
+        RequestContext.getCurrentInstance().openDialog("/editRecipeEndpoint", options, params);
     }
 
     public void deleteEndpoint(Endpoint endpoint) {

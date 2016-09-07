@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~ The MIT License (MIT)
+  ~
+  ~ Copyright (c) 2016 Altisource Labs
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:components="http://java.sun.com/jsf/composite/components">
+    <p:dialog header="Edit Service" widgetVar="dlg_edit_service" modal="true" closeOnEscape="true" height="600"
+              width="600" id="dlg_edit_service">
+        <h:panelGroup>
+            <h:form style="width: 95%;height: 95%">
+                <p:confirmDialog id="confirm" global="true" showEffect="fade" hideEffect="fade">
+                    <p:commandButton id="yes" value="Yes" type="button" styleClass="ui-confirmdialog-yes"
+                                     icon="ui-icon-check"/>
+                    <p:commandButton id="no" value="No" type="button" styleClass="ui-confirmdialog-no"
+                                     icon="ui-icon-close"/>
+                </p:confirmDialog>
+
+                <p:outputPanel id="attrDetail" rendered="#{not empty producedServiceDeploymentController.value}">
+                    <p:panelGrid id="panel_attr_details" columns="2" style="margin-bottom:10px"
+                                 styleClass="ui-panelgrid-blank" cellpadding="5">
+
+                        <p:outputLabel id="label_op_name" for="op_key" value="Name:"/>
+                        <p:inputText id="op_key"
+                                     value="#{producedServiceDeploymentController.value.name}">
+                        </p:inputText>
+
+                        <p:outputLabel value="Component Groups:"/>
+                        <p:panel>
+                            <p:dataTable id="cg" var="cg"
+                                         value="#{producedServiceDeploymentController.value.componentGroups}"
+                                         resizableColumns="true" liveResize="true">
+
+                                <p:column width="30%" headerText="Name" sortBy="#{cg.name}">
+                                    <h:outputText value="#{cg.name}"/>
+                                </p:column>
+                                <p:column width="40%" headerText="VM">
+                                    <h:outputText value="#{cg.virtualMachineTemplate}"/>
+                                </p:column>
+                                <p:column width="60">
+                                    <p:commandButton title="Edit" icon="ui-icon-pencil"
+                                                     action="#{producedServiceDeploymentController.startEditComponentGroup(cg)}"
+                                    />
+                                    <p:commandButton title="Delete" icon="ui-icon-close"
+                                                     update="cg"
+                                                     action="#{producedServiceDeploymentController.deleteComponentGroup(cg)}">
+                                        <p:confirm header="Confirmation" message="Are you sure?"
+                                                   icon="ui-icon-alert"/>
+                                    </p:commandButton>
+                                </p:column>
+                            </p:dataTable>
+                            <p:spacer height="5" style="display: block"/>
+                            <p:commandButton value="New" icon="ui-icon-plus"
+                                             action="#{producedServiceDeploymentController.newComponentGroup()}"/>
+                            <p:commandButton value="&#160;Import..."
+                                             icon="fa fa-cart-arrow-down fa-lg"
+                                             action="#{producedServiceDeploymentController.startImportComponentGroup()}">
+                                <p:ajax event="dialogReturn" listener="#{producedServiceDeploymentController.onImportComponentGroupReturn}"
+                                        update="@form"/>
+                            </p:commandButton>
+                        </p:panel>
+
+                        <p:outputLabel value="HAProxy Frontend Configuration:"/>
+                        <p:panel>
+                            <p:inputTextarea id="frontend_config_preview" rows="6" style="width: 100%; box-sizing: border-box; max-height: 100px;" readonly="true"
+                                             widgetVar="v_frontend_config_preview"
+                                             value="#{producedServiceDeploymentController.generateHaproxyFrontendConfig()}"
+                                             converter="stringListConverter"/>
+                            <p:spacer height="5" style="display: block"/>
+                            <p:commandButton value="Configure Frontend..."
+                                             oncomplete="PF('dlg_configure_frontend').show()"
+                                             update="@widgetVar(dlg_configure_frontend)"
+                                             disabled="#{empty producedServiceDeploymentController.value}"/>
+                        </p:panel>
+
+                        <p:outputLabel value="Endpoint:"/>
+                        <p:panel>
+                            <components:endpoint value="#{producedServiceDeploymentController.value.endpoint}"
+                                                 id="endpoint"/>
+                        </p:panel>
+                    </p:panelGrid>
+                    <p:panelGrid id="attr_buttons" columns="2" style="margin-bottom:10px"
+                                 styleClass="ui-panelgrid-blank" cellpadding="5">
+                        <p:commandButton id="attr_button_save" value="Save"
+                                         action="#{applicationDeploymentEditorController.saveChild(producedServiceDeploymentController.value)}"
+                                         update="out"
+                        />
+                        <p:commandButton id="attr_button_cancel" value="Cancel" immediate="true"
+                                         action="#{applicationDeploymentEditorController.cancelChildEditing(producedServiceDeploymentController.value)}"
+                                         update="out"
+                        />
+                    </p:panelGrid>
+                </p:outputPanel>
+            </h:form>
+        </h:panelGroup>
+    </p:dialog>
+    <ui:include src="configureFrontend.xhtml"/>
+    <ui:include src="componentGroup.xhtml"/>
+</ui:composition>

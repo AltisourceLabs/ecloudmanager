@@ -105,7 +105,7 @@ public class VmTemplateController extends FacesSupport implements Serializable {
         HashMap<String, Object> options = new HashMap<>();
         options.put("width", 640);
         options.put("modal", true);
-        RequestContext.getCurrentInstance().openDialog("importVmTemplate", options, null);
+        RequestContext.getCurrentInstance().openDialog("/editApp/import/importVmTemplate", options, null);
     }
 
     public void onImportVmTemplateReturn(SelectEvent event) {

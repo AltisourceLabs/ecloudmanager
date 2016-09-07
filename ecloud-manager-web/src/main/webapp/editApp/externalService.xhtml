@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~ The MIT License (MIT)
+  ~
+  ~ Copyright (c) 2016 Altisource Labs
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+>
+    <p:dialog header="Edit External Service" widgetVar="dlg_edit_ext_service" modal="true" closeOnEscape="true"
+              height="600"
+              width="600" id="dlg_edit_ext_service">
+        <h:panelGroup>
+            <h:form style="width: 95%;height: 95%">
+                <p:outputPanel id="esDetail" rendered="#{not empty externalServiceDeploymentController.value}">
+                    <p:panelGrid id="panel_es_details" columns="2" style="margin-bottom:10px"
+                                 styleClass="ui-panelgrid-blank" cellpadding="5">
+
+                        <p:outputLabel id="label_es_name" for="es_key" value="Name:"/>
+                        <p:inputText id="es_key"
+                                     value="#{externalServiceDeploymentController.value.name}">
+                        </p:inputText>
+                        <p:outputLabel value="Description:"/>
+                        <p:inputTextarea rows="6" cols="33"
+                                         value="#{externalServiceDeploymentController.value.description}"/>
+                    </p:panelGrid>
+                    <p:panelGrid id="es_buttons" columns="2" style="margin-bottom:10px"
+                                 styleClass="ui-panelgrid-blank" cellpadding="5">
+                        <p:commandButton id="es_button_save" value="save"
+                                         action="#{applicationDeploymentEditorController.saveChild(externalServiceDeploymentController.value)}"
+                                         update="out"
+                        />
+                        <p:commandButton id="es_button_cancel" value="cancel" immediate="true"
+                                         action="#{applicationDeploymentEditorController.cancelChildEditing(externalServiceDeploymentController.value)}"
+                                         update="out"
+                        />
+                    </p:panelGrid>
+                </p:outputPanel>
+            </h:form>
+        </h:panelGroup>
+    </p:dialog>
+</ui:composition>

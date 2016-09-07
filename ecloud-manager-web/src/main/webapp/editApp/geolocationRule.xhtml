@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~ The MIT License (MIT)
+  ~
+  ~ Copyright (c) 2016 Altisource Labs
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+>
+    <p:dialog header="#{geolocationRuleController.edit ? 'Edit' : 'Add'} Geolocation Rule" widgetVar="dlg_add_geo_rule" modal="true" closeOnEscape="true" style="width: 900px;">
+        <p:ajax event="close" listener="#{geolocationRuleController.handleClose}" />
+        <h:panelGroup rendered="#{geolocationRuleController.selected ne null}">
+            <h:form>
+                <h3>#{geolocationRuleController.edit ? 'Edit' : 'Add'} Geolocation Rule</h3>
+                <h:panelGrid columns="2" cellpadding="5" columnClasses="colLabel, colValue">
+                    <h:outputText value="Backend:"/>
+                    <p:selectOneMenu value="#{geolocationRuleController.selected.backendName}">
+                        <f:selectItem itemLabel="REJECT REQUEST" itemValue="#{null}"/>
+                        <f:selectItems value="#{producedServiceDeploymentController.value.componentGroups}" var="group" itemLabel="#{group.name}" itemValue="#{group.name}"/>
+                    </p:selectOneMenu>
+                    <h:outputText value="Locations:"/>
+                    <p:panel>
+                        <p:panel styleClass="noPaddingPanel" style="margin-bottom: 5px">
+                            <p:dataTable id="selectedLocations"
+                                         widgetVar="v_selectedLocations"
+                                         value="#{geolocationRuleController.selected.locations}"
+                                         var="rule"
+                                         emptyMessage="Select Locations From the Table Below"
+                                         rowIndexVar="rowIndex"
+                                         scrollable="true"
+                                         scrollHeight="150"
+                            >
+                                <f:facet name="header">
+                                    <h:outputText value="Selected Locations"/>
+                                </f:facet>
+                                <p:column width="25">
+                                    <h:outputText value="#{rule.operator}" rendered="#{rowIndex > 0}"/>
+                                </p:column>
+                                <p:column headerText="Location">
+                                    <h:outputText value="#{rule.record.label}" style="#{rule.negate ? 'text-decoration: line-through' : ''}"/>
+                                </p:column>
+                                <p:column width="25">
+                                    <p:commandButton title="Delete" icon="fa fa-times" action="#{geolocationRuleController.removeGeoExpr(rule)}" update="selectedLocations"/>
+                                </p:column>
+                            </p:dataTable>
+                        </p:panel>
+                        <p:dataTable id="geolocationTable"
+                                     widgetVar="v_geolocationTable"
+                                     value="#{geolocationRuleController.geolocationRecords}"
+                                     selection="#{geolocationRuleController.selectedGeolocationRecords}"
+                                     var="geoRecord"
+                                     rowKey="#{geoRecord.geoid}"
+                                     rows="10"
+                                     paginator="true"
+                                     emptyMessage="No locations found with given criteria"
+                                     filteredValue="#{geolocationRuleController.filteredLocations}"
+
+                        >
+                            <f:facet name="header">
+                                <p:outputPanel style="text-align: center; margin-bottom: 2px">
+                                    <h:outputText value="Select Locations From: "/>
+                                    <p:selectOneButton value="#{geolocationRuleController.showCities}">
+                                        <p:ajax listener="#{geolocationRuleController.showCitiesChanged()}" oncomplete="PF('v_geolocationTable').clearFilters()" update="geolocationTable"/>
+                                        <f:selectItem itemLabel="Countries" itemValue="#{false}" />
+                                        <f:selectItem itemLabel="Countries and Cities" itemValue="#{true}" />
+                                    </p:selectOneButton>
+                                </p:outputPanel>
+                                <p:outputPanel style="text-align: center;">
+                                    <h:outputText value="Use Operator: "/>
+                                    <p:selectOneButton value="#{geolocationRuleController.operator}" disabled="#{geolocationRuleController.selected.locations.size() lt 1}">
+                                        <f:selectItem itemLabel="AND" itemValue="AND" />
+                                        <f:selectItem itemLabel="OR" itemValue="OR" />
+                                    </p:selectOneButton>
+                                </p:outputPanel>
+                            </f:facet>
+                            <p:column filterBy="#{geoRecord.country}" filterMatchMode="contains" headerText="Country">
+                                <h:outputText value="#{geoRecord.country}" />
+                            </p:column>
+                            <p:column filterBy="#{geoRecord.subdivision}" filterMatchMode="contains" headerText="Subdivision">
+                                <h:outputText value="#{geoRecord.subdivision}" />
+                            </p:column>
+                            <p:column filterBy="#{geoRecord.city}" filterMatchMode="contains" headerText="City">
+                                <h:outputText value="#{geoRecord.city}" />
+                            </p:column>
+                            <p:column headerText="Select" width="60">
+                                <p:commandButton title="Add Location"
+                                                 icon="fa fa-check-circle "
+                                                 action="#{geolocationRuleController.addLocation(false, geoRecord)}"
+                                                 update="geolocationTable, @widgetVar(v_selectedLocations)"/>
+                                <p:commandButton title="Add Negated Location (Everywhere Except the Selected Locations)"
+                                                 icon="fa fa-exclamation-circle"
+                                                 action="#{geolocationRuleController.addLocation(true, geoRecord)}"
+                                                 update="geolocationTable, @widgetVar(v_selectedLocations)"/>
+                            </p:column>
+                        </p:dataTable>
+                    </p:panel>
+                </h:panelGrid>
+
+                <h:panelGroup rendered="#{geolocationRuleController.edit}">
+                    <p:commandButton value="Done"
+                                     update="@widgetVar(v_preview), @widgetVar(v_geo_rules_tbl)"
+                                     action="#{geolocationRuleController.save}"
+                                     oncomplete="PF('dlg_add_geo_rule').hide();"
+                    />
+                    <p:commandButton value="Cancel"
+                                     update="@widgetVar(v_preview), @widgetVar(v_geo_rules_tbl)"
+                                     action="#{geolocationRuleController.cancel}"
+                                     oncomplete="PF('dlg_add_geo_rule').hide();"
+                    />
+                </h:panelGroup>
+                <h:panelGroup rendered="#{!geolocationRuleController.edit}">
+                    <p:commandButton value="Add"
+                                     update="@widgetVar(v_preview), @widgetVar(v_geo_rules_tbl)"
+                                     action="#{geolocationRuleController.add}"
+                                     oncomplete="PF('dlg_add_geo_rule').hide();"
+                    />
+                    <p:commandButton value="Cancel"
+                                     update="@widgetVar(v_preview), @widgetVar(v_geo_rules_tbl)"
+                                     action="#{geolocationRuleController.cancel}"
+                                     oncomplete="PF('dlg_add_geo_rule').hide();"
+                    />
+                </h:panelGroup>
+            </h:form>
+        </h:panelGroup>
+    </p:dialog>
+</ui:composition>

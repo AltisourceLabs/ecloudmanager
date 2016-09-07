@@ -76,11 +76,12 @@ public class ImportDeployableService {
         applicationDeploymentRepository.save(newDeployment);
     }
 
-    public void copyDeploymentObject(Deployable source, DeploymentObject dstParentObject, String name, boolean keepConstraints) {
+    public Deployable copyDeploymentObject(Deployable source, DeploymentObject dstParentObject, String name, boolean keepConstraints) {
         Deployable newDeploymentObj = cloneDeployable(source, dstParentObject, name, keepConstraints);
 
         ApplicationDeployment dstDeployment =
-                dstParentObject.getTop() instanceof ApplicationDeployment ? (ApplicationDeployment) dstParentObject.getTop() : null;
+                dstParentObject != null && dstParentObject.getTop() instanceof ApplicationDeployment ?
+                        (ApplicationDeployment) dstParentObject.getTop() : null;
 
         source.stream(VirtualMachineTemplate.class).forEach(vmt -> {
             String path = source.relativePathTo(vmt);
@@ -88,11 +89,15 @@ public class ImportDeployableService {
             virtualMachineTemplateService.importVm(vmt, dstVmt, dstDeployment);
         });
 
-        dstParentObject.addChild(newDeploymentObj);
+        if (dstParentObject != null) {
+            dstParentObject.addChild(newDeploymentObj);
+        }
 
         if (dstDeployment != null) {
             applicationDeploymentRepository.save(dstDeployment);
         }
+
+        return newDeploymentObj;
     }
 
     @NotNull

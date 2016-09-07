@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~ The MIT License (MIT)
+  ~
+  ~ Copyright (c) 2016 Altisource Labs
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:components="http://java.sun.com/jsf/composite/components"
+>
+    <p:dialog header="Edit Component Group " widgetVar="dlg_edit_cg" modal="true" closeOnEscape="true"
+              style="width: 900px" id="dlg_edit_cg">
+        <h:panelGroup>
+            <h:form>
+                <h:panelGrid columns="2" cellpadding="5" columnClasses="colLabel, colValue">
+                    <h:outputText value="Name:"/>
+                    <p:inputText value="#{componentGroupDeploymentController.value.name}">
+                        <p:ajax update="previewBackend"/>
+                    </p:inputText>
+                </h:panelGrid>
+                <h3>HAProxy Backend Configuration:</h3>
+                <h:panelGrid columns="2" cellpadding="5" columnClasses="colLabel, colValue">
+                    <h:outputText value="Backend Mode:"/>
+                    <p:selectOneMenu value="#{componentGroupDeploymentController.value.haProxyBackendConfig.mode}" converter="haproxyModeConverter">
+                        <p:ajax update="previewBackend, stickyServers"/>
+                        <f:selectItems value="#{componentGroupDeploymentController.value.haProxyBackendConfig.mode.values()}" var="mode" itemLabel="#{mode.toString()}" itemValue="#{mode}"/>
+                    </p:selectOneMenu>
+
+                    <h:outputText value="Sticky Servers (cookie-based):"/>
+                    <p:selectBooleanCheckbox id="stickyServers" disabled="#{componentGroupDeploymentController.value.haProxyBackendConfig.mode != 'HTTP'}" itemLabel="" value="#{componentGroupDeploymentController.value.haProxyBackendConfig.stickyServers}">
+                        <p:ajax update="previewBackend"/>
+                    </p:selectBooleanCheckbox>
+
+                    <h:outputText value="Custom Configuration:"/>
+                    <p:inputTextarea rows="6" converter="stringListConverter" value="#{componentGroupDeploymentController.value.haProxyBackendConfig.config}">
+                        <p:ajax update="previewBackend"/>
+                    </p:inputTextarea>
+                    <h:outputText value="Preview Configuration:"/>
+                    <p:inputTextarea id="previewBackend" widgetVar="v_preview_backends" rows="6" readonly="true" converter="stringListConverter" value="#{componentGroupDeploymentController.generateHaproxyBackendConfig()}"/>
+
+
+                    <h:outputText value="Backend Server Options:"/>
+                    <p:inputText value="#{componentGroupDeploymentController.value.haProxyBackendConfig.serverOptions}"/>
+
+                    <h:outputText value="VM:"/>
+                    <p:panel style="width: 100%">
+                        <components:vmtemplate owner="#{applicationDeploymentEditorController.deployment}"/>
+                    </p:panel>
+                    <!--<p:selectOneMenu value="#{componentGroupDeploymentController.value.virtualMachineTemplate}"-->
+                    <!--converter="vmTemplateConverter">-->
+                    <!--<f:selectItem itemLabel="None" itemValue=""/>-->
+                    <!--<f:selectItems value="#{componentGroupDeploymentController.virtualMachineTemplates}"-->
+                    <!--var="templ"-->
+                    <!--itemLabel="#{templ.name}" itemValue="#{templ}"/>-->
+                    <!--</p:selectOneMenu>-->
+                </h:panelGrid>
+
+                <h:panelGroup>
+                    <p:commandButton value="Save"
+                                     action="#{producedServiceDeploymentController.saveComponentGroup(componentGroupDeploymentController.value)}"
+                                     update="out"
+                    />
+                    <p:commandButton value="Cancel" immediate="true"
+                                     action="#{producedServiceDeploymentController.cancelComponentGroupEditing(componentGroupDeploymentController.value)}"
+                                     update="out"
+                    />
+                </h:panelGroup>
+            </h:form>
+        </h:panelGroup>
+
+    </p:dialog>
+</ui:composition>

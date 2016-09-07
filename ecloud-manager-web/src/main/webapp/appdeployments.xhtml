@@ -46,7 +46,7 @@
                             <h:outputText value="#{appDeployment.children()}"/>
                         </p:column>
                         <p:column width="142">
-                            <p:button title="Edit Blueprint" outcome="editApplicationDeployment" icon="fa fa-cubes">
+                            <p:button title="Edit Blueprint" outcome="editApp/editApplicationDeployment" icon="fa fa-cubes">
                                 <f:param name="deployment" value="#{appDeployment.id.toString()}"/>
                             </p:button>
                             <p:button title="Edit Constraints" outcome="appdeployment" icon="fa fa-th-list">
@@ -68,7 +68,7 @@
                         </p:column>
 
                     </p:dataTable>
-                    <p:button outcome="editApplicationDeployment" icon="ui-icon-plus" value="New">
+                    <p:button outcome="editApp/editApplicationDeployment" icon="ui-icon-plus" value="New">
                         <f:param name="createNewDeployment" value="#{true}"/>
                     </p:button>
                     <p:growl id="messages" sticky="true" showDetail="true"/>
