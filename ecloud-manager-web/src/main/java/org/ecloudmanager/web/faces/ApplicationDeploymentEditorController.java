@@ -112,6 +112,7 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
         } else {
             applicationDeploymentService.update(deployment);
         }
+        addMessage(new FacesMessage("Application deployment saved.", ""));
     }
 
     public void startEditChild(Deployable child) {

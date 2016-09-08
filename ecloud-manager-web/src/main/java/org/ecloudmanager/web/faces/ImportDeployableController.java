@@ -29,6 +29,7 @@ import org.ecloudmanager.deployment.core.ObjectRef;
 import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
+import org.mongodb.morphia.Datastore;
 import org.omnifaces.el.functions.Arrays;
 import org.primefaces.context.RequestContext;
 
@@ -69,6 +70,8 @@ public class ImportDeployableController extends FacesSupport implements Serializ
 
     @Inject
     private transient ApplicationDeploymentRepository applicationDeploymentRepository;
+    @Inject
+    private transient Datastore datastore;
 
     private ObjectRef selectedDeployable;
     private List<ObjectRef> deployables = new ArrayList<>();
@@ -98,6 +101,11 @@ public class ImportDeployableController extends FacesSupport implements Serializ
                 }
             });
         });
+
+        classes.forEach(cls -> {
+            datastore.find(cls).asList().forEach(dObj -> deployables.add(new ObjectRef(null, (DeploymentObject) dObj)));
+        });
+
     }
 
     public ObjectRef getSelectedDeployable() {
