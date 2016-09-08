@@ -58,6 +58,9 @@ public class ImportDeployableService {
 
     public void copyDeployment(ApplicationDeployment source, String name, boolean keepConstraints) {
         ApplicationDeployment newDeployment = cloneDeployable(source, null, name, keepConstraints);
+        if (!keepConstraints) {
+            newDeployment.specifyConstraints();
+        }
 
         // Save the deployment before importing recipes to be able to create recipe owner references
         applicationDeploymentRepository.save(newDeployment);
@@ -119,7 +122,7 @@ public class ImportDeployableService {
                     cfg.children().clear(); // Children will be recreated with specifyConstraints
                 }
             });
-            newDeploymentObj.specifyConstraints();
+            //newDeploymentObj.specifyConstraints();
         }
         return newDeploymentObj;
     }

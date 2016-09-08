@@ -78,9 +78,16 @@
                     <!--</p:selectOneMenu>-->
                 </h:panelGrid>
 
+                <p:remoteCommand name="saveComponentGroupDeployment"
+                                 action="#{producedServiceDeploymentController.saveComponentGroup(componentGroupDeploymentController.value)}"
+                                 rendered="#{applicationDeploymentEditorController.deployment ne null}"/>
+                <p:remoteCommand name="saveComponentGroupDeployment"
+                                 action="#{commonComponentGroupDeploymentsController.save(componentGroupDeploymentController.value)}"
+                                 rendered="#{applicationDeploymentEditorController.deployment eq null}"/>
+
                 <h:panelGroup>
                     <p:commandButton value="Save"
-                                     action="#{producedServiceDeploymentController.saveComponentGroup(componentGroupDeploymentController.value)}"
+                                     onclick="saveComponentGroupDeployment()"
                                      update="out"
                     />
                     <p:commandButton value="Cancel" immediate="true"

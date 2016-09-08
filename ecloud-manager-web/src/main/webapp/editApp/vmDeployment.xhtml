@@ -49,13 +49,21 @@
                         <components:vmtemplate owner="#{applicationDeploymentEditorController.deployment}"/>
                     </p:panel>
                 </p:panelGrid>
+
+                <p:remoteCommand name="saveVMDeployment"
+                                 action="#{applicationDeploymentEditorController.saveChild(topLevelVMDeploymentController.value)}"
+                                 rendered="#{applicationDeploymentEditorController.deployment ne null}"/>
+                <p:remoteCommand name="saveVMDeployment"
+                                 action="#{commonVMDeploymentsController.save(topLevelVMDeploymentController.value)}"
+                                 rendered="#{applicationDeploymentEditorController.deployment eq null}"/>
+
                 <p:panelGrid id="ref_buttons" columns="2" style="margin-bottom:10px"
                              styleClass="ui-panelgrid-blank" cellpadding="5">
-                    <p:commandButton id="ref_button_save" value="save"
-                                     action="#{applicationDeploymentEditorController.saveChild(topLevelVMDeploymentController.value)}"
+                    <p:commandButton id="ref_button_save" value="Save"
+                                     onclick="saveVMDeployment()"
                                      update="out"
                     />
-                    <p:commandButton id="ref_button_cancel" value="cancel" immediate="true"
+                    <p:commandButton id="ref_button_cancel" value="Cancel" immediate="true"
                                      action="#{applicationDeploymentEditorController.cancelChildEditing(topLevelVMDeploymentController.value)}"
                                      update="out"
                     />
