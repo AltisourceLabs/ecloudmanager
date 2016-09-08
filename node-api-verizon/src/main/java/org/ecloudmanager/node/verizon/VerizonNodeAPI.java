@@ -189,7 +189,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         }
     }
 
-    private void assignIp(String vmId, String network, String ipAddress, CloudCachedEntityService cache, CloudServicesRegistry registry) {
+    private void assignIp(String vmId, String networkHref, String ipAddress, CloudServicesRegistry registry) {
         AssignedIpAddressesType assignedIp = objectFactory.createAssignedIpAddressesType();
         ArrayOfActionType aat = objectFactory.createArrayOfActionType();
         ActionType at = objectFactory.createActionType();
@@ -199,15 +199,11 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         assignedIp.setActions(objectFactory.createResourceTypeActions(aat));
         DeviceNetworkType dn = objectFactory.createDeviceNetworkType();
         DeviceNetworksType dnt = objectFactory.createDeviceNetworksType();
+        String network = TmrkUtils.getIdFromHref(networkHref);
         dn.setName(network);
-        NetworksType networks = cache.getByHrefOrName(NetworksType.class, "/cloudapi/ecloud/networks/" + network);
-
-        String networkHref = networks.getHref();
         dn.setHref(networkHref);
         DeviceIpsType ips = objectFactory.createDeviceIpsType();
-
         ips.getIpAddress().add(ipAddress);
-
         dn.setIpAddresses(objectFactory.createDeviceNetworkTypeIpAddresses(ips));
         dnt.getNetwork().add(dn);
         assignedIp.setNetworks(objectFactory.createAssignedIpAddressesTypeNetworks(dnt));
@@ -630,8 +626,6 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         String envId = nodeId.split(":")[0];
         String vmId = nodeId.split(":")[1];
         CloudServicesRegistry registry = new CloudServicesRegistry(accessKey, secretKey);
-        CloudCachedEntityService cache = getCache(accessKey, secretKey);
-
         String ip = getNode(credentials, nodeId).getIp();
         if (Strings.isNullOrEmpty(ip)) {
             throw new IllegalStateException("No ip address on node " + nodeId);
@@ -642,7 +636,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         boolean assigned = element != null && element.getValue().getNetwork().stream()
                 .flatMap(dnt -> dnt.getIpAddresses().getValue().getIpAddress().stream()).anyMatch(ip::equals);
         if (!assigned) {
-            assignIp(vmId, getNetwork(registry, vmId), ip, cache, registry);
+            assignIp(vmId, getNetworkHref(registry, vmId), ip, registry);
             log.info("Ip " + ip + " assigned to VM " + vmId);
         }
 
@@ -672,22 +666,20 @@ public class VerizonNodeAPI implements NodeBaseAPI {
 
     }
 
-    private String getNetwork(CloudServicesRegistry registry, String vmId) {
+    private String getNetworkHref(CloudServicesRegistry registry, String vmId) {
 
         VirtualMachineType selectedVm = registry.getVirtualMachineService().getVirtualMachineById(vmId);
 
         HardwareConfigurationType hwconfig = selectedVm.getHardwareConfiguration().getValue();
         NicsType nics = hwconfig.getNics().getValue();
-        NetworkReferenceType network = nics.getNic().get(0).getNetwork();
-        String networkId = network.getHref().substring(network.getHref().lastIndexOf("/") + 1, network.getHref()
-                .length());
+        return nics.getNic().get(0).getNetwork().getHref();
 
-        return networkId;
     }
 
     private FirewallAclEndpointType firewallAclEndpointType(CloudServicesRegistry registry, String vmId) {
         String ip = getIpAddress(vmId, registry);
-        String network = getNetwork(registry, vmId);
+        String networkHref = getNetworkHref(registry, vmId);
+        String network = TmrkUtils.getIdFromHref(networkHref);
         FirewallAclEndpointType fwaclet = new FirewallAclEndpointType();
         IpAddressReferenceType v = objectFactory.createIpAddressReferenceType();
         String href = "/cloudapi/ecloud/ipaddresses/networks/" + network + "/" + ip;
