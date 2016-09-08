@@ -128,7 +128,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
     }
 
     @Override
-    public NodeInfo createNode(Credentials credentials, Map<String, String> parameters) {
+    public String createNode(Credentials credentials, Map<String, String> parameters) {
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
 
@@ -175,7 +175,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
 //        log.info("VM hardware configuaration updated");
         startupVm(vmId, registry, false);
 
-        return getNode(credentials, envId + ":" + vmId);
+        return envId + ":" + vmId;
     }
 
     private void startupVm(String vmId, CloudServicesRegistry registry, boolean wait) {

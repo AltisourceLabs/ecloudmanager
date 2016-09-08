@@ -94,7 +94,7 @@ public class DefaultController {
     }
 
     public ResponseContext createNode(RequestContext request, String accessKey, String secretKey, Node node) {
-        LocalLoggableFuture<NodeInfo> f = api.createNode(new SecretKey(accessKey, secretKey), node.getParameters());
+        LocalLoggableFuture<String> f = api.createNode(new SecretKey(accessKey, secretKey), node.getParameters());
         tasks.put(f.getId(), Pair.of(new SecretKey(accessKey, secretKey), f));
         return new ResponseContext().status(Status.ACCEPTED).entity(f.getId());
     }

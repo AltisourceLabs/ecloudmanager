@@ -50,11 +50,11 @@ public class RestNodeAPI implements org.ecloudmanager.node.AsyncNodeAPI {
     }
 
     @Override
-    public LoggableFuture<NodeInfo> createNode(Credentials credentials, Map<String, String> parameters) throws Exception {
+    public LoggableFuture<String> createNode(Credentials credentials, Map<String, String> parameters) throws Exception {
         SecretKey sk = (SecretKey) credentials;
         try {
             String taskId = nodeApi.createNode(sk.getName(), sk.getSecret(), new Node().parameters(parameters));
-            return new RestLoggableFuture<>(sk, taskId, tasksApi, NodeInfo.class);
+            return new RestLoggableFuture<>(sk, taskId, tasksApi, String.class);
         } catch (ApiException e) {
             return LoggableFuture.failedFuture("Failed to invoke 'createNode'", e);
         }

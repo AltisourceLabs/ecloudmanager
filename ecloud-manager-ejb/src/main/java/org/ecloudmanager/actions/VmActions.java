@@ -67,10 +67,10 @@ public class VmActions {
         return Action.actionSequence("Create and Start VM",
                 Action.single("Create VM", (ActionLogger actionLog) -> {
                     clearVmConstraints(vmDeployment);
-                    NodeInfo node = waitFor(api.createNode(credentials, parameters), actionLog);
-                    InfrastructureDeployer.addVMId(vmDeployment, node.getId());
+                    String nodeId = waitFor(api.createNode(credentials, parameters), actionLog);
+                    InfrastructureDeployer.addVMId(vmDeployment, nodeId);
                     applicationDeploymentService.update((ApplicationDeployment) vmDeployment.getTop());
-                    return node;
+                    return nodeId;
                 }, vmDeployment),
                 Action.single("Wait for node to be ready", (ActionLogger actionLog) -> {
                     try {

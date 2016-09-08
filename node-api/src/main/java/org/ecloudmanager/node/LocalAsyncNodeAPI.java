@@ -33,7 +33,7 @@ public class LocalAsyncNodeAPI extends LocalAsyncSshAPI implements AsyncNodeAPI 
     }
 
     @Override
-    public LocalLoggableFuture<NodeInfo> createNode(Credentials credentials, Map<String, String> parameters) {
+    public LocalLoggableFuture<String> createNode(Credentials credentials, Map<String, String> parameters) {
         return submit(() -> nodeBaseAPI.createNode(credentials, parameters), executor);
     }
 

@@ -149,7 +149,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
     }
 
     @Override
-    public NodeInfo createNode(Credentials credentials, Map<String, String> parameters) throws AWS.RegionNotExistException, ExecutionException {
+    public String createNode(Credentials credentials, Map<String, String> parameters) throws AWS.RegionNotExistException, ExecutionException {
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
         String region = parameters.get(Parameter.region.name());
@@ -185,7 +185,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
                 , null, null);
 
 
-        return getNode(credentials, region + ":" + vmId);
+        return region + ":" + vmId;
     }
 
     private void deleteSecurityGroup(AmazonEC2 ec2, String id) {
