@@ -389,10 +389,10 @@ public class AWSNodeAPI implements NodeBaseAPI {
             log.info("Starting AWS instance " + vmId + "(" + newName + ")");
             ec2.startInstances(new StartInstancesRequest().withInstanceIds(vmId));
 
-            Callable<DescribeInstancesResult> poll =
-                    () -> ec2.describeInstances(new DescribeInstancesRequest().withInstanceIds(vmId));
-            Predicate<DescribeInstancesResult> check =
-                    (describeResult) -> "running".equals(describeResult.getReservations().get(0).getInstances().get(0).getState().getName());
+            Callable<Instance> poll =
+                    () -> ec2.describeInstances(new DescribeInstancesRequest().withInstanceIds(vmId)).getReservations().get(0).getInstances().get(0);
+            Predicate<Instance> check =
+                    (i) -> "running".equals(i.getState().getName()) && !Strings.isNullOrEmpty(i.getPrivateIpAddress());
             poller.poll(
                     poll, check,
                     1, 600, 20,

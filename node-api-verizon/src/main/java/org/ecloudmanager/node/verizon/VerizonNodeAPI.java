@@ -29,6 +29,14 @@ public class VerizonNodeAPI implements NodeBaseAPI {
     private static APIInfo API_INFO = new APIInfo().id("VERIZON").description("Verizon Terremark");
     private ObjectFactory objectFactory = new ObjectFactory();
 
+    private static String getResourceId(ResourceType r) {
+        return TmrkUtils.getIdFromHref(r.getHref());
+    }
+
+    private static String getReferenceId(ReferenceType r) {
+        return TmrkUtils.getIdFromHref(r.getHref());
+    }
+
     @Override
     public APIInfo getAPIInfo() {
         return API_INFO;
@@ -83,13 +91,13 @@ public class VerizonNodeAPI implements NodeBaseAPI {
                 if (environment == null) {
                     return Collections.emptyList();
                 }
-                NetworksType networks = cache.getNetworks(TmrkUtils.getIdFromHref(environment.getHref()));
+                NetworksType networks = cache.getNetworks(getResourceId(environment));
                 return networks.getNetwork().stream().map(e -> new ParameterValue().value(e.getName())).collect(Collectors.toList());
             case row:
                 if (environment == null) {
                     return Collections.emptyList();
                 }
-                DeviceLayoutType rows = cache.getRows(TmrkUtils.getIdFromHref(environment.getHref()));
+                DeviceLayoutType rows = cache.getRows(getResourceId(environment));
                 return rows.getRows().getValue().getRow().stream()
                         .map(e -> new ParameterValue().value(e.getName()))
                         .collect(Collectors.toList());
@@ -99,7 +107,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
                     return Collections.emptyList();
                 }
 
-                DeviceLayoutType envRows = cache.getRows(TmrkUtils.getIdFromHref(environment.getHref()));
+                DeviceLayoutType envRows = cache.getRows(getResourceId(environment));
                 LayoutRowType row = envRows.getRows().getValue().getRow().stream()
                         .filter(r -> r.getName().equals(rowName))
                         .findAny()
@@ -119,12 +127,9 @@ public class VerizonNodeAPI implements NodeBaseAPI {
     }
 
     private String getOrganizationId(String accessKey, String privateKey) {
-//        return "1927849";
-
         OrganizationsType organizations = new CloudServicesRegistry(accessKey, privateKey).getOrganizationService().getOrganizations();
         // TODO - for now - get the first organization. Consider handling multiple organizations.
-        OrganizationType organization = organizations.getOrganization().get(0);
-        return TmrkUtils.getIdFromHref(organization.getHref());
+        return getResourceId(organizations.getOrganization().get(0));
     }
 
     @Override
@@ -159,34 +164,28 @@ public class VerizonNodeAPI implements NodeBaseAPI {
 
         // Create vm
         EnvironmentType env = cache.getByHrefOrName(EnvironmentType.class, envStr);
-        String envId = TmrkUtils.getIdFromHref(env.getHref());
+        String envId = getResourceId(env);
         List<ComputePoolReferenceType> computePools = cache
                 .getComputePools(envId).getComputePool();
-        String poolId = TmrkUtils.getIdFromHref(computePools.get(0).getHref());
+        String poolId = getReferenceId(computePools.get(0));
         ImportVirtualMachineType vm = createTmrkVm(createVm, env, cache, registry);
         VirtualMachineType createdVm;
         createdVm = registry.getVirtualMachineService().importVirtualMachineFromCatalog(poolId, vm);
 
-        String vmId = TmrkUtils.getIdFromHref(createdVm.getHref());
+        String vmId = getResourceId(createdVm);
         log.info("VM created with id: " + vmId);
-
-//        // Allocate the disk space if needed
-//        updateHardwareConfiguration(vmId, Integer.parseInt(storage), Integer.parseInt(cpu), Integer.parseInt(memory), registry);
-//        log.info("VM hardware configuaration updated");
-        startupVm(vmId, registry, false);
-
         return envId + ":" + vmId;
     }
 
-    private void startupVm(String vmId, CloudServicesRegistry registry, boolean wait) {
+    private void startupVm(String vmId, CloudServicesRegistry registry) {
         //log.info("Starting VM " + vmId);
-        waitUntilMachineIsNotReady(vmId, 1000, registry);
-
-        TaskType task = registry.getVirtualMachineService().actionPowerOnMachine(vmId);
-        task.setName("power on virtual machine");
-        if (wait) {
+        waitUntilMachineIsNotReady(vmId, registry, false);
+        if (!registry.getVirtualMachineService().getVirtualMachineById(vmId).getPoweredOn().getValue()) {
+            TaskType task = registry.getVirtualMachineService().actionPowerOnMachine(vmId);
+            task.setName("power on virtual machine");
             waitUntilTaskNotFinished(task, registry);
         }
+        waitUntilMachineIsNotReady(vmId, registry, true);
     }
 
     private void assignIp(String vmId, String networkHref, String ipAddress, CloudServicesRegistry registry) {
@@ -212,25 +211,13 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         waitUntilTaskNotFinished(task, registry);
     }
 
-    private String getIpAddress(String vmId, int timeout, CloudServicesRegistry registry) {
-        String address = null;
-        long start = System.currentTimeMillis();
-        while (address == null && System.currentTimeMillis() - start < timeout * 1000) {
-            address = getIpAddress(vmId, registry);
-        }
-        return address;
-    }
-
-    private String getIpAddress(String vmId, CloudServicesRegistry registry) {
+    private String getIpAddress(VirtualMachineType vm, CloudServicesRegistry registry) {
 //        log.info("Trying to obtain IP address for VM " + vmId);
-        VirtualMachineType selectedVm = registry.getVirtualMachineService().getVirtualMachineById(vmId);
 
-        HardwareConfigurationType hwconfig = selectedVm.getHardwareConfiguration().getValue();
+        HardwareConfigurationType hwconfig = vm.getHardwareConfiguration().getValue();
         NicsType nics = hwconfig.getNics().getValue();
         NetworkReferenceType network = nics.getNic().get(0).getNetwork();
-        String networkId = network.getHref().substring(network.getHref().lastIndexOf("/") + 1, network.getHref()
-                .length());
-
+        String networkId = getReferenceId(network);
         NetworkType networkType = registry.getNetworkService().getNetworkById(networkId);
 
         String selectedVmIpAddress = null;
@@ -238,7 +225,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         List<IpAddressType> ipAddresses = networkType.getIpAddresses().getValue().getIpAddress();
         for (IpAddressType ipAddress : ipAddresses) {
             if (ipAddress.getDetectedOn() != null) {
-                if (ipAddress.getDetectedOn().getValue().getName().equals(selectedVm.getName())) {
+                if (ipAddress.getDetectedOn().getValue().getName().equals(vm.getName())) {
                     selectedVmIpAddress = ipAddress.getName();
                 }
             }
@@ -291,9 +278,6 @@ public class VerizonNodeAPI implements NodeBaseAPI {
          */
         ImportNetworkMappingsType importNetMap = new ImportNetworkMappingsType();
 
-//        CatalogEntryConfigurationType catEntryConfig =
-//                cache.getByHrefOrName(CatalogEntryConfigurationType.class, catalog.getConfiguration().getValue()
-//                        .getHref());
         CatalogNetworkMappingsType networkMappingsType = catEntryConfig.getNetworkMappings().getValue();
         List<CatalogNetworkMappingType> networkMappings = networkMappingsType.getNetworkMapping();
         ImportNetworkMappingType networkMapping;
@@ -304,43 +288,33 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         }
         String networksHRef = cache.getHref(NetworksType.class, cmd.getNetwork());
 
-        ReferenceType rtNet = null;
-        List<ImportNetworkMappingType> inmt = importNetMap.getNetworkMapping();
-        for (ImportNetworkMappingType impNetMap : inmt) {
-            rtNet = new ReferenceType();
-            rtNet.setHref(networksHRef);
-            rtNet.setName(cmd.getNetwork());
-            impNetMap.setNetwork(rtNet);
-        }
-
+        importNetMap.getNetworkMapping().forEach(i -> {
+            ReferenceType r = new ReferenceType();
+            r.setHref(networksHRef);
+            r.setName(cmd.getNetwork());
+            i.setNetwork(r);
+        });
         vm.setNetworkMappings(importNetMap);
-
         return vm;
     }
 
     private LayoutRequestType createLayoutRequest(String row, String group, EnvironmentType env, CloudCachedEntityService cache) {
-        DeviceLayoutType tmrkLayout = cache.getRows(TmrkUtils.getIdFromHref(env.getHref()));
+        DeviceLayoutType tmrkLayout = cache.getRows(getResourceId(env));
         RowsType rows = tmrkLayout.getRows().getValue();
-        LayoutRowType rowType = null;
-        for (LayoutRowType rowT : rows.getRow()) {
-            if (rowT.getName().equals(row)) {
-                rowType = rowT;
-                break;
-            }
+        Optional<LayoutRowType> olrt = rows.getRow().stream().filter(lrt -> row.equals(lrt.getName())).findAny();
+        if (!olrt.isPresent()) {
+            throw new IllegalArgumentException("Row not found: " + row);
         }
+        Optional<LayoutGroupType> olgt = olrt.get().getGroups().getValue().getGroup().stream().filter(lgt -> group.equals(lgt.getName())).findAny();
+        if (!olgt.isPresent()) {
+            throw new IllegalArgumentException("Group not found: " + group + " in row " + row);
 
+        }
         LayoutRequestType layout = new LayoutRequestType();
         ReferenceType rt = new ReferenceType();
+        rt.setHref(olgt.get().getHref());
+        rt.setType(olgt.get().getType());
         layout.setGroup(objectFactory.createLayoutReferenceTypeGroup(rt));
-
-        GroupsType groups = rowType.getGroups().getValue();
-        for (LayoutGroupType lgt : groups.getGroup()) {
-            if (lgt.getName().equals(group)) {
-                rt.setHref(lgt.getHref());
-                rt.setType(lgt.getType());
-                break;
-            }
-        }
         return layout;
     }
 
@@ -394,45 +368,22 @@ public class VerizonNodeAPI implements NodeBaseAPI {
             return;
         }
 
-        waitUntilMachineIsNotReady(vmId, 1000, registry);
-        boolean needStartup = false;
-        if (needShutdown) {
-            VirtualMachineType vm = vmService.getVirtualMachineById(vmId);
-            boolean poweredOn = vm.getPoweredOn().getValue();
-            if (poweredOn) {
-                shutdownVm(vmId, registry);
-                needStartup = true;
-            }
+        VirtualMachineType vm = waitUntilMachineIsNotReady(vmId, registry, false);
+        if (needShutdown && vm.getPoweredOn().getValue()) {
+            shutdownVm(vm, registry);
         }
 
         TaskType task = vmService.editVirtualMachineHardwareConfiguration(vmId, objectFactory
                 .createHardwareConfiguration(hardwareConfiguration));
         task.setName("edit virtual machine hardware configuration");
         waitUntilTaskNotFinished(task, registry);
-
-        if (needStartup) {
-            startupVm(vmId, registry, false);
-        }
     }
 
-    private void shutdownVm(String vmId, CloudServicesRegistry registry) {
-        //    log.info("Shutting down VM " + vmId);
-        VirtualMachineService vmService = registry.getVirtualMachineService();
-        VirtualMachineType vm = waitUntilMachineIsNotReady(vmId, 1000, registry);
-        if (vm == null) {
-//            log.warn("VM " + vmId + " not ready - skip shutdown");
-            return;
-        }
-
-        if (!vm.getPoweredOn().getValue()) {
-//            log.info("VM " + vmId + " is not powered on - skip shutdown");
-            return;
-        }
-
-        TaskType task = vmService.actionShutdownMachine(vmId);
+    private void shutdownVm(VirtualMachineType vm, CloudServicesRegistry registry) {
+        TaskType task = registry.getVirtualMachineService().actionShutdownMachine(getResourceId(vm));
         task.setName("shutdown virtual machine");
         waitUntilTaskNotFinished(task, registry);
-        waitUntilMachineIsPoweredOff(vmId, registry);
+        waitUntilMachineIsPoweredOff(getResourceId(vm), registry);
     }
 
     private void waitUntilMachineIsPoweredOff(String vmId, CloudServicesRegistry registry) {
@@ -440,7 +391,6 @@ public class VerizonNodeAPI implements NodeBaseAPI {
             VirtualMachineType virtualMachineType = registry.getVirtualMachineService().getVirtualMachineById(vmId);
             return !virtualMachineType.getPoweredOn().getValue();
         };
-
         new SynchronousPoller().poll(
                 poll, x -> x,
                 1, VZ_TASK_TIMEOUT_SEC,
@@ -449,10 +399,8 @@ public class VerizonNodeAPI implements NodeBaseAPI {
     }
 
     private void waitUntilTaskNotFinished(TaskType task, CloudServicesRegistry registry) {
-        String taskHref = task.getHref();
-
         Callable<TaskStatus> poll = () -> {
-            TaskType obtainedTask = registry.getTaskService().getTaskById(TmrkUtils.getIdFromHref(taskHref));
+            TaskType obtainedTask = registry.getTaskService().getTaskById(getResourceId(task));
             return obtainedTask.getStatus().getValue();
         };
         Predicate<TaskStatus> check =
@@ -464,7 +412,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         );
     }
 
-    private VirtualMachineType waitUntilMachineIsNotReady(String vmId, int timeout, CloudServicesRegistry registry) {
+    private VirtualMachineType waitUntilMachineIsNotReady(String vmId, CloudServicesRegistry registry, boolean waitForIP) {
         VirtualMachineService vmService = registry.getVirtualMachineService();
         List<VirtualMachineStatus> badStatuses = Arrays.asList(
                 VirtualMachineStatus.COPY_IN_PROGRESS,
@@ -474,24 +422,14 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         );
 
         Callable<VirtualMachineType> poll = () -> vmService.getVirtualMachineById(vmId);
-        Predicate<VirtualMachineType> check = (virtualMachineType) -> {
-            VirtualMachineStatus status = virtualMachineType.getStatus().getValue();
-            return !badStatuses.contains(status);
-        };
+        Predicate<VirtualMachineType> check = (vm) -> !badStatuses.contains(vm.getStatus().getValue()) && (!waitForIP || getIpAddress(vm, registry) != null);
 
-        VirtualMachineType result = null;
-
-        try {
-            result = new SynchronousPoller().poll(
+        return new SynchronousPoller().poll(
                     poll, check,
                     1, VZ_TASK_TIMEOUT_SEC,
                     "waiting for virtual machine " + vmId + " to become ready"
             );
-        } catch (Exception e) {
-//            log.error("Virtual machine " + vmId + " is not ready", e);
-        }
 
-        return result;
     }
 
     @Override
@@ -500,7 +438,6 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         String secretKey = ((SecretKey) credentials).getSecret();
         String envId = nodeId.split(":")[0];
         String vmId = nodeId.split(":")[1];
-        CloudCachedEntityService cache = getCache(accessKey, secretKey);
         CloudServicesRegistry registry = new CloudServicesRegistry(accessKey, secretKey);
         VirtualMachineType vm = registry.getVirtualMachineService().getVirtualMachineById(vmId);
         NodeInfo.StatusEnum status;
@@ -508,7 +445,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         switch (vm.getStatus().getValue()) {
             case DEPLOYED:
                 boolean poweredOn = vm.getPoweredOn().getValue();
-                ip = getIpAddress(vmId, registry);
+                ip = getIpAddress(vm, registry);
                 status = ip == null || !poweredOn ? NodeInfo.StatusEnum.PENDING : NodeInfo.StatusEnum.RUNNING;
                 break;
             case NOT_DEPLOYED:
@@ -519,8 +456,7 @@ public class VerizonNodeAPI implements NodeBaseAPI {
                 status = NodeInfo.StatusEnum.PENDING;
         }
         ;
-        NodeInfo info = new NodeInfo().status(status).ip(ip).id(nodeId);
-        return info;
+        return new NodeInfo().status(status).ip(ip).id(nodeId);
     }
 
     @Override
@@ -531,7 +467,8 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         String vmId = nodeId.split(":")[1];
         CloudCachedEntityService cache = getCache(accessKey, secretKey);
         CloudServicesRegistry registry = new CloudServicesRegistry(accessKey, secretKey);
-        updateVmNameAndLayout(registry, cache, envId, vmId, parameters.get(Parameter.name.name()), parameters.get(Parameter.group.name()), parameters.get(Parameter.row.name()));
+        VirtualMachineType vm = waitUntilMachineIsNotReady(vmId, registry, false);
+        updateVmNameAndLayout(registry, cache, envId, vm, parameters.get(Parameter.name.name()), parameters.get(Parameter.group.name()), parameters.get(Parameter.row.name()));
         String cpuStr = parameters.get(Parameter.cpu.name());
         String memoryStr = parameters.get(Parameter.memory.name());
         String storageStr = parameters.get(Parameter.storage.name());
@@ -539,17 +476,16 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         Integer memory = memoryStr == null ? null : Integer.parseInt(memoryStr);
         Integer storage = storageStr == null ? null : Integer.parseInt(storageStr);
         updateHardwareConfiguration(vmId, storage, cpu, memory, registry);
+        startupVm(vmId, registry);
         return getNode(credentials, nodeId);
     }
 
-    private void updateVmNameAndLayout(CloudServicesRegistry registry, CloudCachedEntityService cache, String envStr, String vmId, String name, String group, String row) {
-        VirtualMachineType vm = registry.getVirtualMachineService().getVirtualMachineById(vmId);
+    private void updateVmNameAndLayout(CloudServicesRegistry registry, CloudCachedEntityService cache, String envStr, VirtualMachineType vm, String name, String group, String row) {
 
         if (name != null && !vm.getName().equals(name)) {
-            log.info("Renaming VM " + vmId + " from " + vm.getName() + " to " + name);
-
+            log.info("Renaming VM from " + vm.getName() + " to " + name);
             vm.setName(name);
-            TaskType task = registry.getVirtualMachineService().editVirtualMachine(vmId, vm);
+            TaskType task = registry.getVirtualMachineService().editVirtualMachine(getResourceId(vm), vm);
             task.setName("edit virtual machine");
             waitUntilTaskNotFinished(task, registry);
             log.info("VM renamed");
@@ -561,10 +497,10 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         if (!currentGroup.equals(toGroup) || !currentRow.equals(toRow)) {
             EnvironmentType env = cache.getByHrefOrName(EnvironmentType.class, envStr);
             LayoutRequestType layoutRequest = createLayoutRequest(toRow, toGroup, env, cache);
-            log.info("Moving VM " + vmId);
+            log.info("Moving VM ");
             log.info("From group: " + currentGroup + " row: " + currentRow);
             log.info("To group: " + toGroup + " row: " + toRow);
-            registry.getVirtualMachineService().moveVirtualMachine(vmId, layoutRequest);
+            registry.getVirtualMachineService().moveVirtualMachine(getResourceId(vm), layoutRequest);
         }
     }
 
@@ -573,35 +509,35 @@ public class VerizonNodeAPI implements NodeBaseAPI {
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
         String envId = nodeId.split(":")[0];
-        String id = nodeId.split(":")[1];
+        String vmId = nodeId.split(":")[1];
         CloudServicesRegistry registry = new CloudServicesRegistry(accessKey, secretKey);
-        shutdownVM(id, registry);
-        log.info("Shutdown vm " + id);
-        deleteVm(id, registry);
-        log.info("Delete vm " + id);
+        VirtualMachineType vm = waitUntilMachineIsNotReady(vmId, registry, false);
+        if (vm == null) {
+            // FIXME throw not found exception?
+            log.warn("VM " + vmId + " not ready - skip shutdown");
+            return;
+        }
+        if (vm.getPoweredOn().getValue()) {
+            shutdownVM(vmId, registry);
+        }
+        deleteVm(vmId, registry);
+        log.info("VM " + vmId + " deleted");
     }
 
-    private void shutdownVM(String nodeId, CloudServicesRegistry registry) {
-        VirtualMachineType vm = waitUntilMachineIsNotReady(nodeId, 1000, registry);
-        if (vm == null) {
-            //    log.warn("VM " + vmId + " not ready - skip shutdown");
-            return;
-        }
-        if (!vm.getPoweredOn().getValue()) {
-            //        log.info("VM " + vmId + " is not powered on - skip shutdown");
-            return;
-        }
-
-        TaskType task = registry.getVirtualMachineService().actionShutdownMachine(nodeId);
+    private void shutdownVM(String vmId, CloudServicesRegistry registry) {
+        TaskType task = registry.getVirtualMachineService().actionShutdownMachine(vmId);
+        log.info("Starting shutdown vm " + vmId);
         task.setName("shutdown virtual machine");
         waitUntilTaskNotFinished(task, registry);
-        waitUntilMachineIsPoweredOff(nodeId, registry);
+        log.info("Shutdown vm " + vmId + " task completed");
+        waitUntilMachineIsPoweredOff(vmId, registry);
+        log.info("VM " + vmId + " is powered off");
     }
 
     private void deleteVm(String vmId, CloudServicesRegistry registry) {
         //log.info("Deleting VM " + vmId);
 
-        VirtualMachineType vm = waitUntilMachineIsNotReady(vmId, 1000, registry);
+        VirtualMachineType vm = waitUntilMachineIsNotReady(vmId, registry, false);
         if (vm == null) {
 //            log.info("VM " + vmId + " not ready - skip deletion");
             return;
@@ -619,19 +555,17 @@ public class VerizonNodeAPI implements NodeBaseAPI {
 
     @Override
     public FirewallInfo updateNodeFirewallRules(Credentials credentials, String nodeId, FirewallUpdate firewallUpdate) {
-
-
         String accessKey = ((SecretKey) credentials).getName();
         String secretKey = ((SecretKey) credentials).getSecret();
         String envId = nodeId.split(":")[0];
         String vmId = nodeId.split(":")[1];
         CloudServicesRegistry registry = new CloudServicesRegistry(accessKey, secretKey);
-        String ip = getNode(credentials, nodeId).getIp();
+        VirtualMachineType vm = waitUntilMachineIsNotReady(vmId, registry, true);
+        String ip = getIpAddress(vm, registry);
         if (Strings.isNullOrEmpty(ip)) {
             throw new IllegalStateException("No ip address on node " + nodeId);
         }
         log.info("VM " + vmId + " ip address: " + ip);
-        VirtualMachineType vm = registry.getVirtualMachineService().getVirtualMachineById(vmId);
         JAXBElement<DeviceNetworksType> element = vm.getIpAddresses().getValue().getAssignedIpAddresses().getValue().getNetworks();
         boolean assigned = element != null && element.getValue().getNetwork().stream()
                 .flatMap(dnt -> dnt.getIpAddresses().getValue().getIpAddress().stream()).anyMatch(ip::equals);
@@ -667,17 +601,15 @@ public class VerizonNodeAPI implements NodeBaseAPI {
     }
 
     private String getNetworkHref(CloudServicesRegistry registry, String vmId) {
-
         VirtualMachineType selectedVm = registry.getVirtualMachineService().getVirtualMachineById(vmId);
-
         HardwareConfigurationType hwconfig = selectedVm.getHardwareConfiguration().getValue();
         NicsType nics = hwconfig.getNics().getValue();
         return nics.getNic().get(0).getNetwork().getHref();
-
     }
 
     private FirewallAclEndpointType firewallAclEndpointType(CloudServicesRegistry registry, String vmId) {
-        String ip = getIpAddress(vmId, registry);
+        VirtualMachineType vm = waitUntilMachineIsNotReady(vmId, registry, true);
+        String ip = getIpAddress(vm, registry);
         String networkHref = getNetworkHref(registry, vmId);
         String network = TmrkUtils.getIdFromHref(networkHref);
         FirewallAclEndpointType fwaclet = new FirewallAclEndpointType();

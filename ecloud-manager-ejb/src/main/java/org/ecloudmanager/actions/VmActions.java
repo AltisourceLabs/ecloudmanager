@@ -33,7 +33,6 @@ import org.ecloudmanager.jeecore.service.Service;
 import org.ecloudmanager.node.AsyncNodeAPI;
 import org.ecloudmanager.node.model.Credentials;
 import org.ecloudmanager.node.model.NodeInfo;
-import org.ecloudmanager.node.util.NodeUtil;
 import org.ecloudmanager.repository.deployment.ActionLogger;
 import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
 import org.ecloudmanager.repository.deployment.LoggingEventRepository;
@@ -72,30 +71,12 @@ public class VmActions {
                     applicationDeploymentService.update((ApplicationDeployment) vmDeployment.getTop());
                     return nodeId;
                 }, vmDeployment),
-                Action.single("Wait for node to be ready", (ActionLogger actionLog) -> {
-                    try {
-                        NodeInfo node = NodeUtil.wait(api, credentials, InfrastructureDeployer.getVmId(vmDeployment));
-                        actionLog.info("Node IP: " + node.getIp());
-                        return node;
-                    } catch (Exception e) {
-
-                        throw new RuntimeException(e);
-                    }
-                }, vmDeployment),
                 Action.single("Configure VM", (ActionLogger actionLog) -> {
                     NodeInfo node = waitFor(api.configureNode(credentials, InfrastructureDeployer.getVmId(vmDeployment), parameters), actionLog);
+                    actionLog.info("Node IP: " + node.getIp());
+                    InfrastructureDeployer.addIP(vmDeployment, node.getIp());
+                    applicationDeploymentService.update((ApplicationDeployment) vmDeployment.getTop());
                     return node;
-                }, vmDeployment),
-                Action.single("Wait for node to be ready", (ActionLogger actionLog) -> {
-                    try {
-                        NodeInfo node = NodeUtil.wait(api, credentials, InfrastructureDeployer.getVmId(vmDeployment));
-                        actionLog.info("Node IP: " + node.getIp());
-                        InfrastructureDeployer.addIP(vmDeployment, node.getIp());
-                        applicationDeploymentService.update((ApplicationDeployment) vmDeployment.getTop());
-                        return node;
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
                 }, vmDeployment),
                 new CreateFirewallRulesAction(vmDeployment, api, credentials, loggingEventRepository));
     }
