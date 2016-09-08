@@ -446,7 +446,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
         }
         HostedZone hostedZone = getHostedZone(hostedZoneName, route53);
 
-        String recordSetName = name + "." + hostedZoneName;
+        String recordSetName = name.toLowerCase() + "." + hostedZoneName;
         ListResourceRecordSetsRequest listResourceRecordSetsRequest =
                 new ListResourceRecordSetsRequest(hostedZone.getId()).withStartRecordName(recordSetName);
         List<ResourceRecordSet> resourceRecordSets = route53.listResourceRecordSets
