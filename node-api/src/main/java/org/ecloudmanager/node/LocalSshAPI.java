@@ -92,11 +92,10 @@ public class LocalSshAPI {
 
     private Session createSession(String username, String host, String privateKey, String passphrase) throws
             JSchException {
-        byte[] passphraseBytes = passphrase == null ? null : passphrase.getBytes();
         Callable<Session> tryConnect = () -> {
             try {
                 JSch jsch = new JSch();
-                jsch.addIdentity(username, privateKey.getBytes(), null, passphraseBytes);
+                jsch.addIdentity(username, privateKey.getBytes(), null, passphrase == null ? null : passphrase.getBytes());
                 Session session = jsch.getSession(username, host);
                 session.setConfig("StrictHostKeyChecking", "no");
                 session.connect();
@@ -122,7 +121,7 @@ public class LocalSshAPI {
                 }
                 int assinged_port = parentSession.setPortForwardingL(0, host, 22);
                 JSch jsch = new JSch();
-                jsch.addIdentity(username, privateKey.getBytes(), null, passphrase.getBytes());
+                jsch.addIdentity(username, privateKey.getBytes(), null, passphrase == null ? null : passphrase.getBytes());
                 Session session = jsch.getSession(username, "127.0.0.1", assinged_port);
                 session.setConfig("StrictHostKeyChecking", "no");
                 session.connect();
