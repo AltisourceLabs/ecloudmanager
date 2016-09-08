@@ -36,12 +36,14 @@ import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironmentDeployer;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.service.NodeAPIConfigurationService;
 import org.jetbrains.annotations.NotNull;
+import org.mongodb.morphia.annotations.Entity;
 import org.mongodb.morphia.annotations.Transient;
 
 import javax.enterprise.inject.spi.CDI;
 import java.util.*;
 import java.util.stream.Stream;
 
+@Entity
 public class VMDeployment extends Deployable {
     private static final long serialVersionUID = 4504079285011312598L;
 

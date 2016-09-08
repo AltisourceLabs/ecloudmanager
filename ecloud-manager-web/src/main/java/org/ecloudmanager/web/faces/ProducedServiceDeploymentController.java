@@ -124,9 +124,10 @@ public class ProducedServiceDeploymentController extends FacesSupport implements
         newChild = false;
         RequestContext ctx = RequestContext.getCurrentInstance();
         ctx.execute("PF('" + ComponentGroupDeploymentController.DIALOG_EDIT + "').hide()");
-        ctx.update(DIALOG_EDIT);
-        ctx.execute("PF('" + DIALOG_EDIT + "').show()");
-
+        if (value != null) {
+            ctx.update(DIALOG_EDIT);
+            ctx.execute("PF('" + DIALOG_EDIT + "').show()");
+        }
     }
 
     public boolean getAbTestingEnabled() {
