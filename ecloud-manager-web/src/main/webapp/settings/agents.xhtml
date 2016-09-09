@@ -48,7 +48,7 @@
                             <h:outputText value="#{configuration.name}"/>
                         </p:column>
                         <p:column headerText="Type">
-                            <h:outputText value="#{configuration.type}"/>
+                            <h:outputText value="#{configuration.type.toString()}"/>
                         </p:column>
                         <p:column style="white-space: normal;">
                             <h:outputText value="#{nodeAPIConfigurationController.getDescription(configuration)}"/>
@@ -82,8 +82,7 @@
                             <h:outputText value="Name:"/>
                             <p:inputText value="#{nodeAPIConfigurationController.configuration.name}"/>
                             <h:outputText value="Type:"/>
-                            <p:selectOneMenu id="type" value="#{nodeAPIConfigurationController.configuration.type}"
-                                             effect="fold">
+                            <p:selectOneMenu id="type" value="#{nodeAPIConfigurationController.configuration.type}">
                                 <p:ajax event="change" update="address,apiClass"/>
                                 <f:selectItem itemLabel="Select One" itemValue=""/>
                                 <f:selectItems value="#{nodeAPIConfigurationController.types}"/>
@@ -96,19 +95,18 @@
                             <p:selectOneMenu id="apiClass"
                                              disabled="#{nodeAPIConfigurationController.configuration.type ne 'LOCAL'}"
                                              var="c"
-                                             value="#{nodeAPIConfigurationController.configuration.nodeBaseAPIClassName}"
-                                             effect="fold">
+                                             value="#{nodeAPIConfigurationController.configuration.nodeBaseAPIClassName}">
                                 <f:selectItems value="#{nodeAPIConfigurationController.availableAPIs.entrySet()}"
                                                var="entry"
                                                itemLabel="#{entry.value.description.concat(' [').concat(entry.value.id).concat(']')}"
                                                itemValue="#{entry.key}"/>
                             </p:selectOneMenu>
                             <h:outputText value="Credentials Key:"/>
-                            <p:inputText value="#{nodeAPIConfigurationController.configuration.credentialsKey}"
-                                         autocomplete="off" redisplay="true"/>
+                            <p:password value="#{nodeAPIConfigurationController.configuration.credentialsKey}"
+                                        redisplay="true"/>
                             <h:outputText value="Credentials Secret:"/>
-                            <p:inputText value="#{nodeAPIConfigurationController.configuration.credentialsSecret}"
-                                         autocomplete="off" redisplay="true"/>
+                            <p:password value="#{nodeAPIConfigurationController.configuration.credentialsSecret}"
+                                        redisplay="true"/>
                         </h:panelGrid>
                         <p:spacer/>
                         <p:outputPanel styleClass="runlistPanel">

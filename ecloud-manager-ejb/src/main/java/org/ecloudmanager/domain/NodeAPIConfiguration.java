@@ -121,7 +121,18 @@ public class NodeAPIConfiguration extends OwnedMongoObject implements Serializab
     }
 
     public enum Type {
-        LOCAL,
-        REMOTE
+        LOCAL("Embedded"),
+        REMOTE("Remote");
+
+        private String label;
+
+        Type(String label) {
+            this.label = label;
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
     }
 }
