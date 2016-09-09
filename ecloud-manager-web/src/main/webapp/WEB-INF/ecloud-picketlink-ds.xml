@@ -31,7 +31,7 @@
    <datasource jndi-name="java:jboss/datasources/ecloud-picketlink-ds"
       pool-name="ecloud-manager-picketlink" enabled="true"
       use-java-context="true">
-      <connection-url>jdbc:h2:~/ecloud-picketlink;DB_CLOSE_DELAY=-1;AUTO_SERVER=TRUE</connection-url>
+      <connection-url>jdbc:h2:~/ecloud-picketlink;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;AUTO_SERVER=TRUE</connection-url>
       <driver>h2</driver>
       <security>
          <user-name>sa</user-name>
