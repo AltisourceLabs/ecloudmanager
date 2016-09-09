@@ -67,6 +67,14 @@ public class MorphiaDatastoreProducer {
     }
 
     private static MongoClient mongoClient(Logger log) throws UnknownHostException {
+        String mongoHost = System.getProperty("mongodb.host");
+        String mongoPort = System.getProperty("mongodb.port");
+        if (mongoHost != null && mongoPort != null) {
+            log(log, Level.INFO, "System property \"mongodb.host\" specified: " + mongoHost);
+            log(log, Level.INFO, "System property \"mongodb.port\" specified: " + mongoPort);
+            return new MongoClient(mongoHost, Integer.parseInt(mongoPort));
+        }
+
         Properties properties = new Properties();
         String fileName = System.getProperty("jboss.server.config.dir") + "/" + CONFIG_FILE_NAME;
         File f = new File(fileName);
