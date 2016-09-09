@@ -1,12 +1,13 @@
 # Deployment portal Agent web application
 ## How to start a Jetty server 
-### For AWS
+After [the whole project](https://github.com/AltisourceLabs/ecloudmanager) build completed run the following command from this sub-project :
+##### For AWS
     
     mvn jetty:run -P aws -Djetty.port=8021
     
 will start agent on locally on [http://localhost:8021](http://localhost:8021)     
 
-### For Verizon Terremark
+##### For Verizon Terremark
 
     mvn jetty:run -P verizon -Djetty.port=8022
     

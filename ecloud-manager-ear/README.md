@@ -8,7 +8,7 @@
 ### Starting the server from Maven
 
 MongoDB server should run on `localhost` port `27017` (default MongoDB port)
-After [full project](../) build run the following command from this sub-project :
+After [the whole project](https://github.com/AltisourceLabs/ecloudmanager) build completed run the following command from this sub-project :
 
     mvn wildfly:run 
     
