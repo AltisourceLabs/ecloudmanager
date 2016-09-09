@@ -49,6 +49,7 @@ import static org.ecloudmanager.node.LoggableFuture.waitFor;
 @Service
 public class VmActions {
     static String CREATE_VM = "Create VM";
+    static String CONFIGURE_VM = "Configure VM";
     @Inject
     SynchronousPoller synchronousPoller;
     @Inject
@@ -64,14 +65,14 @@ public class VmActions {
     public Action getCreateVmAction(VMDeployment vmDeployment, AsyncNodeAPI api, Credentials credentials, Map<String, String> parameters) {
 
         return Action.actionSequence("Create and Start VM",
-                Action.single("Create VM", (ActionLogger actionLog) -> {
+                Action.single(CREATE_VM, (ActionLogger actionLog) -> {
                     clearVmConstraints(vmDeployment);
                     String nodeId = waitFor(api.createNode(credentials, parameters), actionLog);
                     InfrastructureDeployer.addVMId(vmDeployment, nodeId);
                     applicationDeploymentService.update((ApplicationDeployment) vmDeployment.getTop());
                     return nodeId;
                 }, vmDeployment),
-                Action.single("Configure VM", (ActionLogger actionLog) -> {
+                Action.single(CONFIGURE_VM, (ActionLogger actionLog) -> {
                     NodeInfo node = waitFor(api.configureNode(credentials, InfrastructureDeployer.getVmId(vmDeployment), parameters), actionLog);
                     actionLog.info("Node IP: " + node.getIp());
                     InfrastructureDeployer.addIP(vmDeployment, node.getIp());

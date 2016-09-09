@@ -83,10 +83,10 @@ public class CreateFirewallRulesAction extends SingleAction {
             DeploymentObject d = e.getLeft();
             if (d instanceof VMDeployment) {
                 VMDeployment supplier = (VMDeployment) d;
-                Optional<SingleAction> createVMAction = fullAction.stream(SingleAction.class).filter(singleAction -> singleAction.getDeployable().equals(supplier))
-                        .filter(singleAction -> VmActions.CREATE_VM.equals(singleAction.getDescription())).findAny();
-                if (createVMAction.isPresent()) {
-                    result.add(createVMAction.get());
+                Optional<SingleAction> configureVMAction = fullAction.stream(SingleAction.class).filter(singleAction -> singleAction.getDeployable().equals(supplier))
+                        .filter(singleAction -> VmActions.CONFIGURE_VM.equals(singleAction.getDescription())).findAny();
+                if (configureVMAction.isPresent()) {
+                    result.add(configureVMAction.get());
                 }
             } else {
                 // TODO implement managed HAProxy
