@@ -155,6 +155,7 @@ public class ComponentGroupDeployment extends Deployable {
                 c.setExtendedConfig(parentConfig);
                 c.clear();
             });
+            child.setNodeNameParameter(child.getName());
         });
     }
 

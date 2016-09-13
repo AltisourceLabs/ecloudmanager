@@ -28,6 +28,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.bson.types.ObjectId;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.app.Link;
+import org.ecloudmanager.deployment.core.ConstraintValue;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.core.Endpoint;
@@ -47,6 +48,7 @@ import java.util.stream.Stream;
 public class VMDeployment extends Deployable {
     private static final long serialVersionUID = 4504079285011312598L;
 
+    private static final String NODE_NAME_PARAMETER = "name";
     @Transient
     private VMDeployer deployer;
 
@@ -61,6 +63,11 @@ public class VMDeployment extends Deployable {
             deployer = new VMDeployer(getInfrastructure());
         }
         return deployer;
+    }
+
+    public void setNodeNameParameter(String name) {
+        DeploymentObject infrastructureConfig = getDeployer().getInfrastructureDeployer().getInfrastructureConfig(this);
+        infrastructureConfig.setValue(NODE_NAME_PARAMETER, ConstraintValue.value(name));
     }
 
     @NotNull
