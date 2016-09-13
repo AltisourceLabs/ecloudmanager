@@ -106,23 +106,33 @@ public abstract class AbstractDeployer<T extends Deployable> implements Deployer
 
             List<Action> actions = new ArrayList<>();
 
+            // Use map.compute below to filter null values
             Map<Deployable, Action> updateActions = new HashMap<>();
-            toUpdate.forEach(s -> updateActions.put(s, s.getDeployer().getUpdateAction(lastAttempt, (Deployable)
-                before.getChildByName(s
-                    .getName()), s)));
+            toUpdate.forEach(d -> updateActions.compute(d, (s,v) -> s.getDeployer().getUpdateAction(lastAttempt, (Deployable) before.getChildByName(s.getName()), s)));
 //            initDependencies(updateActions, false);
 
             Map<Deployable, Action> createActions = new HashMap<>();
-            toCreate.forEach(s -> createActions.put(s, s.getDeployer().getCreateAction(s)));
+            toCreate.forEach(d -> createActions.compute(d, (s,v) -> s.getDeployer().getCreateAction(s)));
 //            initDependencies(createActions, false);
 
             Map<Deployable, Action> deleteActions = new HashMap<>();
-            toDelete.forEach(s -> deleteActions.put(s, s.getDeployer().getDeleteAction(s)));
+            toDelete.forEach(d -> deleteActions.compute(d, (s,v) ->  s.getDeployer().getDeleteAction(s)));
 //            initDependencies(deleteActions, true);
 
-            actions.addAll(updateActions.values());
-            actions.addAll(createActions.values());
-            actions.addAll(deleteActions.values());
+            if (deleteActions.size() > 0 && (createActions.size() > 0 || updateActions.size() > 0)) {
+                List<Action> createAndUpdateActions = new ArrayList<>();
+                createAndUpdateActions.addAll(createActions.values());
+                createAndUpdateActions.addAll(updateActions.values());
+                actions.add(Action.actionSequence(
+                        "Delete and update " + after.getName() + " children",
+                        deleteActions.size() > 1 ? Action.actionGroup("Delete " + after.getName() + " children", deleteActions.values()) : deleteActions.values().iterator().next(),
+                        createAndUpdateActions.size() > 1 ? Action.actionGroup("Create or update " + after.getName() + " children", createAndUpdateActions) : createAndUpdateActions.get(0)
+                ));
+            } else {
+                actions.addAll(updateActions.values());
+                actions.addAll(createActions.values());
+                actions.addAll(deleteActions.values());
+            }
 
             String childrenActionName = "Update " + after.getName() + " children";
             String mainActionName = "Update " + after.getName();

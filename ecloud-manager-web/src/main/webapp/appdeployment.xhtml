@@ -33,6 +33,11 @@
         <p:outputPanel id="out">
             <h:panelGroup>
                 <h:form id="edit" styleClass="contentForm" style="height: 40%">
+                    <p:contextMenu for="tree">
+                        <p:menuitem value="Copy Values" actionListener="#{applicationDeploymentController.copyConstraints}" icon="fa fa-copy"/>
+                        <p:menuitem value="Paste Values" actionListener="#{applicationDeploymentController.pasteConstraints}" update=":fields" icon="fa fa-paste"/>
+                    </p:contextMenu>
+
                     <p:treeTable id="tree" value="#{applicationDeploymentController.getTree()}" var="document"
                                  selectionMode="single" selection="#{applicationDeploymentController.selectedNode}">
                         <p:ajax event="select" listener="#{applicationDeploymentController.onNodeSelect}"
@@ -49,6 +54,17 @@
                     </p:treeTable>
                 </h:form>
                 <h:form id="fields" styleClass="contentForm" style="height: 40%">
+                    <p:toolbar>
+                        <f:facet name="left">
+                            <p:commandButton title="Copy Values" icon="fa fa-copy"
+                                             actionListener="#{applicationDeploymentController.copyConstraints}"
+                            />
+                            <p:commandButton title="Paste Values" icon="fa fa-paste"
+                                             update=":fields"
+                                             actionListener="#{applicationDeploymentController.pasteConstraints}"
+                            />
+                        </f:facet>
+                    </p:toolbar>
                     <p:dataTable var="constraint" rowIndexVar="rowIndex" value="#{applicationDeploymentController.constraints}">
                         <p:ajax event="cellEdit" update=":edit"/>
                         <p:column headerText="Constraint">
