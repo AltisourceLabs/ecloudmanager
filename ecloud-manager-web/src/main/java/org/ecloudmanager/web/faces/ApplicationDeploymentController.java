@@ -45,6 +45,7 @@ import org.primefaces.event.NodeSelectEvent;
 import org.primefaces.model.TreeNode;
 
 import javax.annotation.PostConstruct;
+import javax.faces.context.FacesContext;
 import javax.faces.event.ActionEvent;
 import javax.faces.model.SelectItem;
 import javax.faces.model.SelectItemGroup;
@@ -54,6 +55,7 @@ import java.io.Serializable;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Controller
@@ -97,15 +99,15 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
     private TreeNode selectedNode;
 
     private List<SelectItem> selectItems;
-    private List<ConstraintInput> constraints = new ArrayList<>();
+    private ArrayList<ConstraintInput> constraints = new ArrayList<>();
     private TreeNode tree = null;
     private String jsonString;
 
-    public List<ConstraintInput> getConstraints() {
+    public ArrayList<ConstraintInput> getConstraints() {
         return constraints;
     }
 
-    public void setConstraints(List<ConstraintInput> constraints) {
+    public void setConstraints(ArrayList<ConstraintInput> constraints) {
         this.constraints = constraints;
     }
 
@@ -206,8 +208,12 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
     }
 
     public void onNodeSelect(NodeSelectEvent event) {
+        updateConstraints(event.getTreeNode());
+    }
+
+    private void updateConstraints(TreeNode node) {
+        Object data = node.getData();
         constraints.clear();
-        Object data = event.getTreeNode().getData();
         if (data instanceof DeploymentObject) {
             DeploymentObject obj = (DeploymentObject) data;
             for (ConstraintField f : obj.getConstraintFields()) {
@@ -268,5 +274,40 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
 
     public String getJsonString() {
         return jsonString;
+    }
+
+    public void copyConstraints() {
+        Map<String, Object> sessionMap = FacesContext.getCurrentInstance().getExternalContext().getSessionMap();
+        sessionMap.put("ApplicationDeploymentController.constraintsBuffer", constraints.clone());
+    }
+
+    public void pasteConstraints() {
+        if (selectedNode != null) {
+            Object data = selectedNode.getData();
+            if (data instanceof DeploymentObject) {
+                DeploymentObject obj = (DeploymentObject) data;
+                Map<String, Object> sessionMap = FacesContext.getCurrentInstance().getExternalContext().getSessionMap();
+                List<ConstraintInput> constraintInputs = (List<ConstraintInput>) sessionMap.get("ApplicationDeploymentController.constraintsBuffer");
+                if (constraintInputs != null) {
+                    constraintInputs.stream().forEach(ci -> {
+                        if (!ci.isReadOnly()) {
+                            ConstraintField constraintField = obj.getConstraintField(ci.getName());
+                            if (constraintField != null) {
+                                switch (ConstraintInput.Option.valueOf(ci.getOption())) {
+                                    case DEFAULT:
+                                        break;
+                                    case REFERENCE:
+                                        obj.setValue(ci.getName(), ConstraintValue.reference(ci.getReference()));
+                                        break;
+                                    case VALUE:
+                                        obj.setValue(ci.getName(), ConstraintValue.value(ci.getValue()));
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        }
+        updateConstraints(selectedNode);
     }
 }
