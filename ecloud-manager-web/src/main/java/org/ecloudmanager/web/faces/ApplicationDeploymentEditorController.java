@@ -31,14 +31,17 @@ import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.deployment.es.ExternalServiceDeployment;
+import org.ecloudmanager.deployment.gateway.GatewayDeployment;
 import org.ecloudmanager.deployment.ps.ProducedServiceDeployment;
 import org.ecloudmanager.deployment.vm.VMDeployment;
+import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
 import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironment;
 import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
 import org.ecloudmanager.service.NodeAPIConfigurationService;
 import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
+import org.ecloudmanager.service.deployment.GatewayService;
 import org.ecloudmanager.service.deployment.ImportDeployableService;
 import org.ecloudmanager.web.faces.ImportDeployableController.ImportDeployableDialogResult;
 import org.omnifaces.cdi.Param;
@@ -68,12 +71,30 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
     private String publicEndpointToAdd;
     @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
-    @Param(converter = "applicationDeploymentConverter")
+    @Param(converter = "topLevelDeployableConverter")
     private ApplicationDeployment deployment;
     @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
     @Param
     private Boolean createNewDeployment;
+    @Inject
+    @Param
+    private Integer tabindex;
+
+    // Parameters for a gateway deployment
+    @SuppressWarnings("CdiInjectionPointsInspection")
+    @Inject
+    @Param(converter = "vmTemplateConverter")
+    private VirtualMachineTemplate vmTemplate;
+    @SuppressWarnings("CdiInjectionPointsInspection")
+    @Inject
+    @Param
+    private String gatewayName;
+    @SuppressWarnings("CdiInjectionPointsInspection")
+    @Inject
+    @Param
+    private String infrastructure;
+
 
     @Inject
     private transient ApplicationDeploymentRepository applicationDeploymentRepository;
@@ -83,6 +104,8 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
     private transient NodeAPIConfigurationService nodeAPIProvider;
     @Inject
     private transient ImportDeployableService importDeployableService;
+    @Inject
+    private transient GatewayService gatewayService;
 
     public ApplicationDeployment getDeployment() {
         return deployment;
@@ -92,12 +115,22 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
         return nodeAPIProvider.getAPIs();
     }
 
+    public Integer getTabindex() {
+        return tabindex;
+    }
+
+    public void setTabindex(Integer tabindex) {
+        this.tabindex = tabindex;
+    }
+
     @PostConstruct
     public void init() {
         if (createNewDeployment != null && createNewDeployment) {
             deployment = new ApplicationDeployment();
             deployment.setName("NewDeployment");
             applicationDeploymentService.save(deployment);
+        } else if (gatewayName != null) {
+            deployment = gatewayService.create(gatewayName, vmTemplate, infrastructure);
         }
     }
 
@@ -242,5 +275,9 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
                 importDeployableService.copyDeploymentObject(deployable, deployment, name, result.getIncludeConstraints());
             }
         }
+    }
+
+    public boolean isGatewayDeployment() {
+        return deployment instanceof GatewayDeployment;
     }
 }

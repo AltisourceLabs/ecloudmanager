@@ -125,9 +125,10 @@ public class GatewaysController extends FacesSupport implements Serializable {
     }
 
     public String goToDeployment(String infrastructure) {
-        return "appdeployment?faces-redirect=true" +
+        return "/editApp/editApplicationDeployment?faces-redirect=true" +
                "&gatewayName=" + newGatewayName +
                "&vmTemplate=" + newGatewayVmTemplate.getId().toString() +
+               "&tabindex=2" +
                "&infrastructure=" + infrastructure;
     }
 
