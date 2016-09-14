@@ -33,6 +33,7 @@ import org.ecloudmanager.deployment.core.DeploymentConstraint;
 import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.core.NodeAPISuggestions;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
+import org.ecloudmanager.deployment.vm.VMDeployer;
 import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.node.AsyncNodeAPI;
 import org.ecloudmanager.node.model.APIInfo;
@@ -42,10 +43,18 @@ import org.ecloudmanager.service.NodeAPIConfigurationService;
 import org.ecloudmanager.service.execution.Action;
 
 import javax.enterprise.inject.spi.CDI;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class InfrastructureDeployerImpl extends InfrastructureDeployer {
+    private final static String NODE_PARAMETER_NAME = "name";
+    private final static String NODE_PARAMETER_CPU = "cpu";
+    private final static String NODE_PARAMETER_MEMORY = "memory";
+    private final static String NODE_PARAMETER_STORAGE = "storage";
+
+    private List<String> COMMON_PARAMETERS = Arrays.asList(NODE_PARAMETER_NAME, NODE_PARAMETER_CPU, NODE_PARAMETER_MEMORY, NODE_PARAMETER_STORAGE);
 
     private NodeAPIConfigurationService nodeAPIProvider = CDI.current().select(NodeAPIConfigurationService.class).get();
     private SecretKey credentials;
@@ -74,7 +83,12 @@ public class InfrastructureDeployerImpl extends InfrastructureDeployer {
     }
 
     public Map<String, String> getNodeParameters(VMDeployment deployment) {
-        return getConfig(deployment).getConfigValues();
+        Map<String, String> result = new HashMap<>(getConfig(deployment).getConfigValues());
+        result.put(NODE_PARAMETER_NAME, deployment.getConfigValue(VMDeployer.VM_NAME));
+        result.put(NODE_PARAMETER_CPU, Integer.toString(deployment.getVirtualMachineTemplate().getProcessorCount()));
+        result.put(NODE_PARAMETER_MEMORY, Integer.toString(deployment.getVirtualMachineTemplate().getMemory()));
+        result.put(NODE_PARAMETER_STORAGE, Integer.toString(deployment.getVirtualMachineTemplate().getStorage()));
+        return result;
     }
 
 
@@ -84,9 +98,11 @@ public class InfrastructureDeployerImpl extends InfrastructureDeployer {
         try {
             List<NodeParameter> params = nodeAPI.getNodeParameters(credentials);
             params.forEach(p -> {
-                        constraint.addField(ConstraintField.builder().name(p.getName()).description(p.getDescription())
-                                .defaultValue(p.getDefaultValue()).required(p.getRequired())
-                                .suggestionsProvider(p.getCanSuggest() ? new NodeAPISuggestions(p) : null).build());
+                if (!COMMON_PARAMETERS.contains(p.getName())) {
+                    constraint.addField(ConstraintField.builder().name(p.getName()).description(p.getDescription())
+                            .defaultValue(p.getDefaultValue()).required(p.getRequired())
+                            .suggestionsProvider(p.getCanSuggest() ? new NodeAPISuggestions(p) : null).build());
+                }
                     }
             );
         } catch (Exception e) {
