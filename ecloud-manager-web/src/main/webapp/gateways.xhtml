@@ -49,8 +49,9 @@
                             <h:outputText value="#{gatewaysController.isDeployed(entity) ? 'Deployed' : 'Not Deployed'}"/>
                         </p:column>
                         <p:column width="90">
-                            <p:button outcome="appdeployment" icon="ui-icon-pencil">
+                            <p:button outcome="/editApp/editApplicationDeployment" icon="ui-icon-pencil">
                                 <f:param name="deployment" value="#{entity.id.toString()}"/>
+                                <f:param name="tabindex" value="2"/>
                             </p:button>
                             <p:commandButton title="Delete" icon="ui-icon-close"
                                              update="out"

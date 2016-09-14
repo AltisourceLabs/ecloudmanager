@@ -85,8 +85,9 @@
                     <p:button value="Back To Deployment History" outcome="deploymentAttempts" rendered="#{not empty deploymentActionController.deploymentAttempt}">
                         <f:param name="deployment" value="#{deploymentActionController.deployment.id.toString()}"/>
                     </p:button>
-                    <p:button value="Back To Deployment" outcome="appdeployment">
+                    <p:button value="Back To Deployment" outcome="/editApp/editApplicationDeployment">
                         <f:param name="deployment" value="#{deploymentActionController.deployment.id.toString()}"/>
+                        <f:param name="tabindex" value="2"/>
                     </p:button>
                     <p:button value="Layout View" onclick="PrimeFaces.widgets.cs.doLayout(); return false;"/>
                 </h:form>

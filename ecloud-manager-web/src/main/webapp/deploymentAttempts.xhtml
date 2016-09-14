@@ -70,8 +70,9 @@
                     <p:growl id="messages" sticky="true" showDetail="true"/>
                 </h:form>
                 <h:form id="buttons" styleClass="contentForm">
-                    <p:button outcome="appdeployment" value="Go Back to Deployment">
+                    <p:button outcome="/editApp/editApplicationDeployment" value="Go Back to Deployment">
                         <f:param name="deployment" value="#{deploymentAttemptsController.deployment.id.toString()}"/>
+                        <f:param name="tabindex" value="2"/>
                     </p:button>
                 </h:form>
             </h:panelGroup>

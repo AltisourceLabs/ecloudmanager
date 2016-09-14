@@ -49,8 +49,9 @@
                             <p:button title="Edit Blueprint" outcome="editApp/editApplicationDeployment" icon="fa fa-cubes">
                                 <f:param name="deployment" value="#{appDeployment.id.toString()}"/>
                             </p:button>
-                            <p:button title="Edit Constraints" outcome="appdeployment" icon="fa fa-th-list">
+                            <p:button title="Edit Constraints" outcome="editApp/editApplicationDeployment" icon="fa fa-th-list">
                                 <f:param name="deployment" value="#{appDeployment.id.toString()}"/>
+                                <f:param name="tabindex" value="2"/>
                             </p:button>
                             <p:commandButton oncomplete="PF('dlg_copy').show();"
                                              icon="fa fa-files-o" title="Copy Deployment"

@@ -32,8 +32,12 @@
     <ui:define name="content">
         <p:outputPanel id="out">
             <h:panelGroup>
-                <p:tabView styleClass="contentForm appDeploymentTabs" dynamic="true" rendered="#{applicationDeploymentEditorController.deployment ne null}">
-                    <p:tab title="Deployment Structure">
+                <p:tabView styleClass="contentForm appDeploymentTabs"
+                           dynamic="true"
+                           rendered="#{applicationDeploymentEditorController.deployment ne null}"
+                           activeIndex="#{applicationDeploymentEditorController.tabindex}"
+                >
+                    <p:tab title="Deployment Structure" disabled="#{applicationDeploymentEditorController.isGatewayDeployment()}">
                         <h:form id="edit">
                             <p>Name: <p:inputText value="#{applicationDeploymentEditorController.deployment.name}"/></p>
                             <p>Infrastructure:
@@ -135,8 +139,15 @@
                     <p:tab id="recipesTab"
                            title="Recipes"
                            titletip="Recipes for this deployment"
+                           disabled="#{applicationDeploymentEditorController.isGatewayDeployment()}"
                     >
                         <components:recipes owner="#{applicationDeploymentEditorController.deployment}"/>
+                    </p:tab>
+                    <p:tab id="constraintsTab"
+                           title="Constraints"
+                           titletip="Recipes for this deployment"
+                    >
+                        <ui:include src="appdeployment.xhtml"/>
                     </p:tab>
                 </p:tabView>
             </h:panelGroup>

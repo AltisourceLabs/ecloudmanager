@@ -39,7 +39,6 @@ import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
 import org.ecloudmanager.repository.deployment.DeploymentAttemptRepository;
 import org.ecloudmanager.service.chef.ChefGenerationService;
 import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
-import org.ecloudmanager.service.deployment.GatewayService;
 import org.omnifaces.cdi.Param;
 import org.primefaces.event.NodeSelectEvent;
 import org.primefaces.model.TreeNode;
@@ -68,26 +67,8 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
     @Param(converter = "topLevelDeployableConverter")
     private ApplicationDeployment deployment;
 
-    @SuppressWarnings("CdiInjectionPointsInspection")
-    @Inject
-    @Param
-    private String infrastructure;
-
-    // Parameters for a gateway deployment
-    @SuppressWarnings("CdiInjectionPointsInspection")
-    @Inject
-    @Param(converter = "vmTemplateConverter")
-    private VirtualMachineTemplate vmTemplate;
-
-    @SuppressWarnings("CdiInjectionPointsInspection")
-    @Inject
-    @Param
-    private String gatewayName;
-
     @Inject
     private transient ApplicationDeploymentService applicationDeploymentService;
-    @Inject
-    private transient GatewayService gatewayService;
     @Inject
     private transient ApplicationDeploymentRepository applicationDeploymentRepository;
     @Inject
@@ -95,6 +76,9 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
 
     @Inject
     private transient ChefGenerationService chefGenerationService;
+
+    @Inject
+    private transient ApplicationDeploymentEditorController applicationDeploymentEditorController;
 
     private TreeNode selectedNode;
 
@@ -113,8 +97,8 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
 
     @PostConstruct
     public void init() {
-        if (gatewayName != null) {
-            deployment = gatewayService.create(gatewayName, vmTemplate, infrastructure);
+        if (deployment == null) {
+            deployment = applicationDeploymentEditorController.getDeployment();
         }
     }
 
@@ -247,7 +231,7 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
 
     public String saveAndRedirectToAction() {
         save();
-        return "deploymentAction?faces-redirect=true&includeViewParams=true";
+        return "/deploymentAction?faces-redirect=true&includeViewParams=true";
     }
 
     public boolean canDeploy() {
