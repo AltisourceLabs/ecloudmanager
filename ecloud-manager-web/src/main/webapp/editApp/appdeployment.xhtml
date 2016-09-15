@@ -36,18 +36,38 @@
                     <p:menuitem value="Paste Values" actionListener="#{applicationDeploymentController.pasteConstraints}" update="@(.constraintFields)" icon="fa fa-paste"/>
                 </p:contextMenu>
 
-                <p:treeTable id="tree" value="#{applicationDeploymentController.getTree()}" var="document"
+                <p:treeTable id="tree" value="#{applicationDeploymentController.getTree()}" var="node"
                              selectionMode="single" selection="#{applicationDeploymentController.selectedNode}">
                     <p:ajax event="select" listener="#{applicationDeploymentController.onNodeSelect}"
                             update="@(.constraintFields)"/>
                     <p:column headerText="Name">
-                        <h:outputText value="#{document}"/>
+                        <h:outputText styleClass="fa fa-cubes pull-left"
+                                      rendered="#{node['class'].simpleName eq 'ApplicationDeployment'}"/>
+                        <h:outputText styleClass="fa fa-cog pull-left"
+                                      rendered="#{node['class'].simpleName eq 'ProducedServiceDeployment'}"/>
+                        <h:outputText styleClass="fa fa-server pull-left"
+                                      rendered="#{node['class'].simpleName eq 'ComponentGroupDeployment'}"/>
+                        <h:outputText styleClass="fa fa-desktop pull-left"
+                                      rendered="#{node['class'].simpleName eq 'VMDeployment'}"/>
+                        <h:outputText styleClass="fa fa-sliders pull-left"
+                                      rendered="#{node['class'].simpleName eq 'Config'}"/>
+                        <h:outputText styleClass="fa fa-globe pull-left"
+                                      rendered="#{node['class'].simpleName eq 'ChefEnvironment'}"/>
+                        <h:outputText styleClass="fa fa-plug pull-left"
+                                      rendered="#{node['class'].simpleName eq 'Endpoint'}"/>
+                        <h:outputText styleClass="fa fa-sitemap pull-left"
+                                      rendered="#{node['class'].simpleName eq 'GatewayDeployment'}"/>
+                        <h:outputText styleClass="fa fa-desktop pull-left"
+                                      rendered="#{node['class'].simpleName eq 'GatewayVMDeployment'}"/>
+
+                        <p:tooltip for="nodeValue" value="#{node}" trackMouse="true"/>
+                        <h:outputText id="nodeValue" value="#{node.name}"/>
                     </p:column>
                     <p:column style="width:24px">
                         <h:outputText styleClass="ui-icon ui-icon-notice"
-                                      rendered="#{document['class'].simpleName ne 'String' and not document.satisfied()}"/>
+                                      rendered="#{node['class'].simpleName ne 'String' and not node.satisfied()}"/>
                         <h:outputText styleClass="ui-icon ui-icon-check"
-                                      rendered="#{document['class'].simpleName ne 'String' and document.satisfied()}"/>
+                                      rendered="#{node['class'].simpleName ne 'String' and node.satisfied()}"/>
                     </p:column>
                 </p:treeTable>
             </h:form>
