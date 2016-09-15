@@ -106,6 +106,8 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
     private transient ImportDeployableService importDeployableService;
     @Inject
     private transient GatewayService gatewayService;
+    @Inject
+    ApplicationDeploymentController applicationDeploymentController;
 
     public ApplicationDeployment getDeployment() {
         return deployment;
@@ -146,6 +148,7 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
             applicationDeploymentService.update(deployment);
         }
         addMessage(new FacesMessage("Application deployment saved.", ""));
+        applicationDeploymentController.resetTree();
     }
 
     public void startEditChild(Deployable child) {
