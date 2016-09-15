@@ -92,7 +92,7 @@ public class ProducedServiceDeploymentController extends FacesSupport implements
 
     public void save() {
         RequestContext ctx = RequestContext.getCurrentInstance();
-        ctx.execute("PF('dlg_edit_service').hide()");
+        ctx.execute("PF('" + DIALOG_EDIT + "').hide()");
 //        RequestContext.getCurrentInstance().closeDialog(value);
     }
 
