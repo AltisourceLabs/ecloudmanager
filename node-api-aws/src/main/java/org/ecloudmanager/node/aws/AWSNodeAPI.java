@@ -260,7 +260,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
     private Instance getInstance(AmazonEC2 ec2, String vmId) {
         DescribeInstancesResult result =
                 ec2.describeInstances(new DescribeInstancesRequest().withInstanceIds(vmId));
-        return result.getReservations().get(0).getInstances().get(0);
+        return result.getReservations().size() > 0 ? result.getReservations().get(0).getInstances().get(0) : null;
     }
 
     private String getInstanceName(Instance instance) {
@@ -530,6 +530,10 @@ public class AWSNodeAPI implements NodeBaseAPI {
         AmazonEC2 ec2 = AWS.ec2(accessKey, secretKey, region);
         AmazonRoute53 route53 = AWS.route53(accessKey, secretKey);
         Instance instance = getInstance(ec2, id);
+        if (instance == null) {
+            log.warn("Instance " + id + " not found - skip deleting instance, route53 record and security group.");
+            return;
+        }
         String vpcId = instance.getVpcId();
         String name = getInstanceName(instance);
         String hostedZone = getInstanceHostedZone(instance);

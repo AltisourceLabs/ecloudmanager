@@ -53,7 +53,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment> {
-    public static final String PORT = "port";
     public static final String BIND_IP = "bind_ip";
     public static final String HAPROXY_MONITORING = "ha_proxy_monitoring";
     public static final String GATEWAY = "gateway";
@@ -285,7 +284,7 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
 
         List<String> config = generateHAProxyFrontendConfig(serviceDeployment.getName(), frontendConfig);
 
-        String port = serviceDeployment.getConfigValue(PORT);
+        String port = serviceDeployment.getEndpoint().getPort().toString();
         String ip = serviceDeployment.getConfigValue(BIND_IP);
 
         config.add("bind " + ip + ":" + port);
@@ -295,7 +294,6 @@ public class HAProxyDeployer extends AbstractDeployer<ProducedServiceDeployment>
 
     @Override
     public void specifyConstraints(ProducedServiceDeployment deployment) {
-        deployment.addField(ConstraintField.builder().name(PORT).description("Service port").type(ConstraintField.Type.NUMBER).build());
         deployment.addField(ConstraintField.builder().name(BIND_IP).description("Bind IP").defaultValue("*").build());
         // TODO support multiple IP addresses??
         deployment.addField(ConstraintField.builder()
