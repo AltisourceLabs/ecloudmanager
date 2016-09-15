@@ -31,8 +31,12 @@
                 xmlns:p="http://primefaces.org/ui"
                 xmlns:components="http://java.sun.com/jsf/composite/components"
 >
-    <p:dialog header="Edit Component Group " widgetVar="dlg_edit_cg" modal="true" closeOnEscape="true"
-              style="width: 900px" id="dlg_edit_cg">
+    <p:dialog header="Edit Component Group"
+              widgetVar="dlg_edit_cg"
+              modal="true"
+              closeOnEscape="true"
+              positionType="absolute"
+              id="dlg_edit_cg">
         <h:panelGroup>
             <h:form>
                 <h:panelGrid columns="2" cellpadding="5" columnClasses="colLabel, colValue">
