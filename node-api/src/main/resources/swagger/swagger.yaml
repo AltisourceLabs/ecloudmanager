@@ -548,6 +548,10 @@
           type: string
         description:
           type: string
+        version:
+          type: string
+        revision:
+          type: string
     Node:
       properties:
         parameters:

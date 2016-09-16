@@ -16,6 +16,7 @@ import org.ecloudmanager.node.util.SynchronousPoller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -24,12 +25,22 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class AWSNodeAPI implements NodeBaseAPI {
+    private static final int RETRY_TIMEOUT = 10;
     static Logger log = LoggerFactory.getLogger(AWSNodeAPI.class);
     private static String DEFAULT_SECURITY_GROUP_NAME = "default";
     private static String TAG_NAME = "Name";
     private static String TAG_CREATOR = "Creator";
     private static String TAG_HOSTED_ZONE = "Hosted Zone";
     private static APIInfo API_INFO = new APIInfo().id("AWS").description("Amazon EC2");
+
+    static {
+        try {
+            GitInfo gitInfo = GitInfo.get();
+            API_INFO = API_INFO.version(gitInfo.getBuildVersion()).revision(gitInfo.getCommitIdAbbrev());
+        } catch (IOException e) {
+            log.error("Can't read Git Info", e);
+        }
+    }
 
     private static String getSubnetLabel(com.amazonaws.services.ec2.model.Subnet subnet) {
         return subnet.getTags().stream()
@@ -42,6 +53,10 @@ public class AWSNodeAPI implements NodeBaseAPI {
     private static List<FirewallRule> fromIpPermission(IpPermission permission) {
         return permission.getIpRanges().stream().map(range ->
                 new FirewallRule().type(FirewallRule.TypeEnum.IP).protocol(permission.getIpProtocol()).port(permission.getToPort()).from(range)).collect(Collectors.toList());
+    }
+
+    private static Predicate<Exception> errorCode(String errorCode) {
+        return e -> AmazonServiceException.class.isInstance(e) && errorCode.equals(AmazonServiceException.class.cast(e).getErrorCode());
     }
 
     @Override
@@ -126,19 +141,20 @@ public class AWSNodeAPI implements NodeBaseAPI {
                         Collections.emptyList() :
                         amazonEC2.describeKeyPairs().getKeyPairs().stream()
                                 .map(k -> new ParameterValue().value(k.getKeyName())).collect(Collectors.toList());
-            case image:
-                try {
-                    List<ParameterValue> result = amazonEC2 == null ?
-                            Collections.emptyList() :
-                            amazonEC2.describeImages().getImages().stream()
-                                    .map(i -> new ParameterValue().value(i.getImageId()).description(i.getDescription())).collect(Collectors.toList());
-                    return result;
-                } catch (Exception t) {
-                    t.printStackTrace();
-
-                }
             case hosted_zone:
                 return route53Client.listHostedZones().getHostedZones().stream().map(z -> new ParameterValue().value(z.getName())).collect(Collectors.toList());
+            case image:
+//                if (amazonEC2 == null) {
+//                    return Collections.emptyList();
+//                }
+//                try {
+//                    List<Image> images = amazonEC2.describeImages().getImages();
+//                    return  images.stream()
+//                            .map(i -> new ParameterValue().value(i.getImageId()).description(i.getDescription())).collect(Collectors.toList());
+//                } catch (Exception t) {
+//                    t.printStackTrace();
+//
+//                }
             case storage:
             case name:
             case cpu:
@@ -168,16 +184,16 @@ public class AWSNodeAPI implements NodeBaseAPI {
             log.info("Ssh access firewall rule added");
         } catch (Exception t) {
             log.error("Can't add ssh access firewall rule", t);
-            deleteSecurityGroup(ec2, securityGroupId);
+            deleteSecurityGroupOnFailure(ec2, securityGroupId);
             throw t;
         }
         String vmId;
         try {
-            vmId = runWithRetry("Create node", () -> createNode(ec2, storage, securityGroupId, subnet, image, instanceType, keyPair), AmazonServiceException.class::isInstance);
+            vmId = runWithRetry("Create node", () -> createNode(ec2, storage, securityGroupId, subnet, image, instanceType, keyPair), errorCode("InvalidGroup.NotFound"));
             log.info("VM created with id: " + vmId);
         } catch (Exception t) {
             log.error("Can't create node", t);
-            deleteSecurityGroup(ec2, securityGroupId);
+            deleteSecurityGroupOnFailure(ec2, securityGroupId);
             throw t;
         }
         runWithRetry("Create 'Name' tag",
@@ -188,12 +204,13 @@ public class AWSNodeAPI implements NodeBaseAPI {
         return region + ":" + vmId;
     }
 
-    private void deleteSecurityGroup(AmazonEC2 ec2, String id) {
+    private void deleteSecurityGroupOnFailure(AmazonEC2 ec2, String id) {
         try {
+            log.info("Security group deleted with id: " + id);
             ec2.deleteSecurityGroup(new DeleteSecurityGroupRequest().withGroupId(id));
             log.info("Security group deleted with id: " + id);
         } catch (Exception t1) {
-            log.error("Failed to delete security group with id: " + id, t1);
+            log.error("WARNING! Failed to delete security group with id: " + id, t1);
         }
     }
 
@@ -311,8 +328,6 @@ public class AWSNodeAPI implements NodeBaseAPI {
             log.info("Created DNS record for " + newName + "." + newHostedZone + " with IP: " + instance.getPrivateIpAddress());
         }
 
-        //createTags(instanceId, after, amazonEC2);
-
         String newInstanceType = parameters.get(Parameter.instance_type.name());
 
         String newStorage = parameters.get(Parameter.storage.name());
@@ -413,7 +428,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
                 .withTags(new Tag(TAG_HOSTED_ZONE, hostedZone)));
     }
 
-    private void createDnsRecord(AmazonRoute53 route53, String ip, String name, String hostedZoneName) {
+    private ChangeResourceRecordSetsResult createDnsRecord(AmazonRoute53 route53, String ip, String name, String hostedZoneName) {
         log.info("Creating route53 record for " + name);
 
         HostedZone hostedZone = getHostedZone(hostedZoneName, route53);
@@ -425,10 +440,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
                 resourceRecordSet)));
         ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest = new ChangeResourceRecordSetsRequest()
                 .withHostedZoneId(hostedZone.getId()).withChangeBatch(changeBatch);
-        ChangeResourceRecordSetsResult changeResourceRecordSetsResult =
-                runWithRetry("Route53 request", () -> route53.changeResourceRecordSets(changeResourceRecordSetsRequest), PriorRequestNotCompleteException.class::isInstance);
-
-//        guardedChangeResourceRecordSets(route53, changeResourceRecordSetsRequest);
+        return runWithRetry("Route53 request", () -> route53.changeResourceRecordSets(changeResourceRecordSetsRequest), PriorRequestNotCompleteException.class::isInstance);
     }
 
     private HostedZone getHostedZone(String awsHostedZone, AmazonRoute53 route53) {
@@ -468,23 +480,6 @@ public class AWSNodeAPI implements NodeBaseAPI {
         log.info("Submitted delete recordset request " + changeResourceRecordSetsResult.getChangeInfo().toString());
     }
 
-    private ChangeResourceRecordSetsResult guardedChangeResourceRecordSets(
-            AmazonRoute53 route53,
-            ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest
-    ) {
-        Callable<ChangeResourceRecordSetsResult> poll =
-                () -> {
-                    try {
-                        return route53.changeResourceRecordSets(changeResourceRecordSetsRequest);
-                    } catch (PriorRequestNotCompleteException e) {
-                        log.warn("Route 53 request not completed, retrying...", e);
-                        return null;
-                    }
-                };
-        Predicate<ChangeResourceRecordSetsResult> check = Objects::nonNull;
-        return new SynchronousPoller().poll(poll, check, 1, 600, "wait for route53 request to be submitted");
-    }
-
     private void runWithRetry(String operation, Runnable runnable, Predicate<Exception> retry, Predicate<Exception> ignore) {
         runWithRetry(operation, () -> {
             runnable.run();
@@ -517,8 +512,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
                         throw e;
                     }
                 };
-        Predicate<T> check = Objects::nonNull;
-        return new SynchronousPoller().poll(poll, check, 1, 600, "wait for " + operation + " to be submitted");
+        return new SynchronousPoller().poll(poll, Objects::nonNull, 1, RETRY_TIMEOUT, "wait for " + operation + " to be submitted");
     }
 
     @Override
@@ -558,17 +552,12 @@ public class AWSNodeAPI implements NodeBaseAPI {
                 log.info("Node " + nodeId + " assigned to security group id: " + defaultSG.getGroupId() + " name: " + defaultSG.getGroupName());
                 log.info("Deleting security group " + groupIdToDelete);
                 ec2.deleteSecurityGroup(new DeleteSecurityGroupRequest().withGroupId(groupIdToDelete));
-//                runWithRetry(details, "Deleting security group", () -> ec2.deleteSecurityGroup(new DeleteSecurityGroupRequest().withGroupId(groupIdToDelete)),
-//                        AmazonServiceException.class::isInstance,
-//                        e -> AmazonServiceException.class.isInstance(e) && ! AmazonServiceException.class.cast(e).getErrorCode().equals("400")
-//                );
                 log.info("Security group deleted: " + groupIdToDelete);
             }
         }
         TerminateInstancesRequest terminateInstancesRequest = new TerminateInstancesRequest().withInstanceIds(id);
         TerminateInstancesResult result = ec2.terminateInstances(terminateInstancesRequest);
         log.info("Node terminated: " + id);
-        //return details.status(ExecutionDetails.StatusEnum.OK);
     }
 
     @Override
@@ -612,11 +601,10 @@ public class AWSNodeAPI implements NodeBaseAPI {
         return getNodeFirewallRules(credentials, nodeId);
     }
 
-    private String getSecurityGroup(AmazonEC2 ec2, String nodeInternalId) {
-        Reservation reservation = ec2.describeInstances(new DescribeInstancesRequest().withInstanceIds(nodeInternalId)).getReservations().get(0);
+    private String getSecurityGroup(AmazonEC2 ec2, String vmId) {
+        Reservation reservation = ec2.describeInstances(new DescribeInstancesRequest().withInstanceIds(vmId)).getReservations().get(0);
         Instance instance = reservation.getInstances().get(0);
         Optional<Tag> nameTag = instance.getTags().stream().filter(t -> t.getKey().equals(TAG_NAME)).findFirst();
-        String vpcId = instance.getVpcId();
         if (nameTag.isPresent()) {
             String name = nameTag.get().getValue();
             Optional<GroupIdentifier> group = instance.getSecurityGroups().stream().filter(g -> g.getGroupName().startsWith(name)).findAny();

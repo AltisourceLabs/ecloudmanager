@@ -91,7 +91,7 @@ public enum AWSInstanceType {
                 .filter(v -> v.getCpu() >= cpu && v.getMemory() >= memory)
                 .sorted((b, a) -> {
                     return ComparisonChain.start()
-                            .compare(a.isEbs(), b.isEbs())
+                            .compareFalseFirst(a.isEbs(), b.isEbs())
                             .compare(b.getPricePerHour(), a.getPricePerHour())
                             .compare(a.getEcu(), b.getEcu())
                             .result();
