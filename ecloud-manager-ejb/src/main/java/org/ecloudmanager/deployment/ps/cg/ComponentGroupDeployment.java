@@ -142,7 +142,7 @@ public class ComponentGroupDeployment extends Deployable {
             vmConfig = cfg;
         }
         children(VMDeployment.class).forEach(child -> {
-            child.copyConfig(vmConfig);
+            //child.copyConfig(vmConfig);
             child.setExtendedConfig(vmConfig);
             // TODO uncomment?
             // child.clear();

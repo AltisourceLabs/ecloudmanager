@@ -30,12 +30,16 @@
                 xmlns:p="http://primefaces.org/ui"
                 xmlns:components="http://java.sun.com/jsf/composite/components"
 >
-    <p:dialog header="Edit VM Deployment" widgetVar="dlg_edit_vm_ref" modal="true" closeOnEscape="true"
-              height="600" width="600" id="dlg_edit_vm_ref">
+    <p:dialog header="Edit VM Deployment"
+              widgetVar="dlg_edit_vm_ref"
+              modal="true"
+              closeOnEscape="true"
+              positionType="absolute"
+              id="dlg_edit_vm_ref">
         <h:panelGroup>
-            <h:form style="width: 95%;height: 95%">
+            <h:form>
                 <p:panelGrid id="panel_ref_details" columns="2" style="margin-bottom:10px"
-                             styleClass="ui-panelgrid-blank" cellpadding="5">
+                             styleClass="ui-panelgrid-blank" cellpadding="5" columnClasses="colLabel, colValue">
 
                     <p:outputLabel id="label_ref_name" for="ref_name" value="Name:"/>
                     <p:inputText id="ref_name"

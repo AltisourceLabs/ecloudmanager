@@ -113,6 +113,10 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
         return tree;
     }
 
+    public void resetTree() {
+        tree = null;
+    }
+
     private TreeNode initTree() {
         SortableDefaultTreeNode root = new SortableDefaultTreeNode("root");
 
@@ -253,7 +257,7 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
             (ComponentGroupDeployment::scale);
         deployment.specifyConstraints();
         // rebuild the tree
-        tree = null;
+        resetTree();
     }
 
     public String getJsonString() {

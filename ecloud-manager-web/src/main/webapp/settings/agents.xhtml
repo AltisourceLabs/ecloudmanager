@@ -73,8 +73,8 @@
                     <p:growl id="messages" sticky="true" showDetail="true"/>
                 </h:form>
             </h:panelGroup>
-            <p:dialog header="Edit Configuration" widgetVar="dlg_edit" modal="true" closeOnEscape="true"
-                      style="width: 900px; position: absolute" id="dlg_edit">
+            <p:dialog header="Edit Configuration" widgetVar="dlg_edit" modal="true" closeOnEscape="true" positionType="absolute"
+                      id="dlg_edit">
                 <p:ajax event="close" listener="#{nodeAPIConfigurationController.handleClose}"/>
                 <h:panelGroup>
                     <h:form>
@@ -102,18 +102,15 @@
                                                itemValue="#{entry.key}"/>
                             </p:selectOneMenu>
                             <h:outputText value="Credentials Key:"/>
-                            <p:password value="#{nodeAPIConfigurationController.configuration.credentialsKey}"
-                                        redisplay="true"/>
+                            <p:inputText value="#{nodeAPIConfigurationController.configuration.credentialsKey}"/>
                             <h:outputText value="Credentials Secret:"/>
                             <p:password value="#{nodeAPIConfigurationController.configuration.credentialsSecret}"
                                         redisplay="true"/>
                         </h:panelGrid>
-                        <p:spacer/>
                         <p:outputPanel styleClass="runlistPanel">
                             <components:runlist runlistHolder="#{nodeAPIConfigurationController.configuration}"
                                                 title="Agent Specific Chef Run List"/>
                         </p:outputPanel>
-                        <p:spacer/>
                         <h:panelGroup>
                             <p>
                                 <p:commandButton id="button_save" value="Save" update="out"

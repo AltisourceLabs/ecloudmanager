@@ -341,6 +341,7 @@ form > button.ui-button {
 .runlistPanel {
     border: 1px solid #D5D5D5;
     padding: 1em;
+    width: 850px;
 }
 
 .colLabel {
