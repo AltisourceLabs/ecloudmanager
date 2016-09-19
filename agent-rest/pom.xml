@@ -20,7 +20,7 @@
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
                     <execution>
-                        <phase>package</phase>
+                        <phase>process-resources</phase>
                         <goals>
                             <goal>copy-dependencies</goal>
                         </goals>
@@ -34,7 +34,8 @@
                 <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
                     <execution>
-                        <phase>package</phase>
+                        <phase>process-resources</phase>
+                        <!--phase>package</phase-->
                         <configuration>
                             <tasks>
                                 <unjar src="${project.build.directory}/lib/node-api-${project.version}.jar"
