@@ -90,6 +90,12 @@
             <groupId>org.ecloudmanager</groupId>
             <artifactId>node-api-verizon</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jboss.resteasy</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.ecloudmanager</groupId>
@@ -110,7 +116,7 @@
             in JBoss WildFly -->
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
-            <artifactId>jaxrs-api</artifactId>
+            <artifactId>resteasy-jaxrs</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>

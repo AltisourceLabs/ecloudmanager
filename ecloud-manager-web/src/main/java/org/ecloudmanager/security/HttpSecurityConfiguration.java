@@ -35,6 +35,7 @@ public class HttpSecurityConfiguration {
 
         builder
                 .http()
+                .forPath("/api/*").authenticateWith().basic()
                 .allPaths()
                 .authenticateWith()
                 .form()

@@ -24,7 +24,7 @@
 
 package org.ecloudmanager.web.faces;
 
-import org.apache.deltaspike.core.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
