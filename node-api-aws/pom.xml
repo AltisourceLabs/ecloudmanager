@@ -53,7 +53,10 @@
             <artifactId>node-api</artifactId>
             <version>${project.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
     </dependencies>
     <build>
         <!-- GIT COMMIT ID PLUGIN CONFIGURATION -->
