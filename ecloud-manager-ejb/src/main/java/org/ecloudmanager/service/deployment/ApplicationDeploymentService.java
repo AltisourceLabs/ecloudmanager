@@ -36,10 +36,13 @@ import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
 import org.ecloudmanager.jeecore.service.ServiceSupport;
+import org.ecloudmanager.node.LoggingEventListener;
 import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
 import org.ecloudmanager.repository.deployment.DeploymentAttemptRepository;
 import org.ecloudmanager.repository.template.RecipeRepository;
 import org.ecloudmanager.service.execution.Action;
+import org.ecloudmanager.service.execution.ActionCompletionCallback;
+import org.ecloudmanager.service.execution.ActionException;
 import org.ecloudmanager.service.execution.ActionExecutor;
 import org.ecloudmanager.service.template.VirtualMachineTemplateService;
 import org.mongodb.morphia.Morphia;
@@ -99,27 +102,48 @@ public class ApplicationDeploymentService extends ServiceSupport {
     }
 
     @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-    public void execute(final Deployable deployment, Action action, DeploymentAttempt.Type actionType) {
-        log.info("Starting deployment action (" + actionType + ") for " + deployment.getName());
-        log.info("Submitting action:" + action.toString());
+    public void execute(final DeploymentAttempt attempt, ActionCompletionCallback onComplete, LoggingEventListener... listeners) {
+        log.info("Starting deployment action (" + attempt.getType() + ") for " + attempt.getDeployment().getName());
+        log.info("Submitting action:" + attempt.toString());
 
         try {
-            actionExecutor.execute(action, () -> {
+            actionExecutor.execute(attempt.getAction(), (Exception e) -> {
                 // Need to reload deployment from the DB because the changes made by actions are stored there
                 // but not reflected in the object instance referenced by the 'deployment' var
-                Deployable reloadedDeployment = datastore.get(deployment);
+                Deployable reloadedDeployment = datastore.get(attempt.getDeployment());
 
-                DeploymentAttempt deploymentAttempt = new DeploymentAttempt(reloadedDeployment, action, actionType);
+                DeploymentAttempt deploymentAttempt = new DeploymentAttempt(reloadedDeployment, attempt.getAction(), attempt.getType());
                 deploymentAttempt.setOwner(identity.getAccount().getId());
                 deploymentAttemptRepository.save(deploymentAttempt);
-
                 actionExecutor.shutdown();
-            });
+                if (onComplete != null) {
+                    switch (attempt.getAction().getStatus()) {
+                        case SUCCESSFUL:
+                            onComplete.onComplete(null);
+                            break;
+                        case PENDING:
+                        case RUNNING:
+                        case FAILED:
+                        case NOT_RUN:
+                            onComplete.onComplete(new ActionException("Action finished with status " + attempt.getAction().getStatus().name()));
+                            break;
+                    }
+                }
+            }, listeners);
         } catch (InterruptedException e) {
             log.log(Level.ERROR, "Deployment interrupted: ", e);
-        } catch (Throwable e) {
-            log.error("Error during application deployment (" + actionType + "): " + e.getMessage());
+            onComplete.onComplete(e);
+        } catch (Exception e) {
+            log.error("Error during application deployment (" + attempt.getType() + "): " + e.getMessage());
+            onComplete.onComplete(e);
         }
+    }
+
+    public DeploymentAttempt getDeployAction(ApplicationDeployment deployment) {
+        DeploymentAttempt lastAttempt = deploymentAttemptRepository.findLastAttempt(deployment);
+        return lastAttempt != null && lastAttempt.getType() != DeploymentAttempt.Type.DELETE ?
+                new DeploymentAttempt(deployment, deployment.getDeployer().getUpdateAction(lastAttempt, (ApplicationDeployment) lastAttempt.getDeployment(), deployment), DeploymentAttempt.Type.UPDATE) :
+                new DeploymentAttempt(deployment, deployment.getDeployer().getCreateAction(deployment), DeploymentAttempt.Type.CREATE);
     }
 
     public boolean isDeployed(ApplicationDeployment applicationDeployment) {

@@ -25,6 +25,9 @@
 package org.ecloudmanager.service.execution;
 
 import org.apache.logging.log4j.Logger;
+import org.ecloudmanager.node.LoggingEventListener;
+import org.ecloudmanager.repository.deployment.ActionLogger;
+import org.ecloudmanager.repository.deployment.LoggingEventRepository;
 import org.jetbrains.annotations.Nullable;
 
 import javax.ejb.Stateless;
@@ -40,19 +43,24 @@ public class ActionExecutor {
     @Named("contextExecutorService")
     ExecutorService executorService;
 
+    @Inject
+    LoggingEventRepository loggingEventRepository;
+
 //    @Resource
 //    ManagedExecutorService executorService;
 //    @Resource
 //    ContextService cs;
 
-    public void execute(Action action, @Nullable Runnable onComplete) throws InterruptedException {
+    public void execute(Action action, @Nullable ActionCompletionCallback onComplete, LoggingEventListener... listeners) throws InterruptedException {
         executorService.submit(() -> {
             while (!action.isDone()) {
                 SingleAction a = action.getAvailableAction(action);
                 if (a != null) {
+                    ActionLogger actionLog = loggingEventRepository.createActionLogger(ActionExecutor.class, a.getId(), listeners);
+
                     log.info("Submitting action for execution: " + a.getLabel());
                     a.setStatus(Action.Status.RUNNING);
-                    executorService.submit(a);
+                    executorService.submit(() -> a.apply(actionLog));
                 } else {
                     try {
                         Thread.sleep(1000);
@@ -64,7 +72,7 @@ public class ActionExecutor {
                 //System.out.println(action);
             }
             if (onComplete != null) {
-                onComplete.run();
+                onComplete.onComplete(null);
             }
         });
     }

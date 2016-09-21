@@ -190,7 +190,7 @@ public class DeploymentActionController extends FacesSupport implements Serializ
 
     private CyModel cyModel;
 
-    private Action action;
+    private DeploymentAttempt attempt;
     private HashMap<Action, CyNode> action2cyNode;
 
     private Set<ObjectId> expandedRows = new HashSet<>();
@@ -198,29 +198,20 @@ public class DeploymentActionController extends FacesSupport implements Serializ
     @PostConstruct
     public void init() {
         if (deploymentAttempt == null) {
-            DeploymentAttempt lastAttempt = deploymentAttemptRepository.findLastAttempt(deployment);
-            if (actionType == Type.CREATE) {
-                if (lastAttempt != null && lastAttempt.getType() != DeploymentAttempt.Type.DELETE) {
-                    actionType = Type.UPDATE;
-                }
-            }
-
             switch (actionType) {
                 case CREATE:
-                    action = deployment.getDeployer().getCreateAction(deployment);
-                    break;
                 case UPDATE:
-                    action = deployment.getDeployer().getUpdateAction(lastAttempt, (ApplicationDeployment)
-                        lastAttempt.getDeployment(), deployment);
+                    attempt = applicationDeploymentService.getDeployAction(deployment);
+                    actionType = attempt.getType();
                     break;
                 case DELETE:
-                    action = deployment.getDeployer().getDeleteAction(deployment);
+                    attempt = new DeploymentAttempt(deployment, deployment.getDeployer().getDeleteAction(deployment), actionType);
                     break;
             }
         } else {
             deployment = (ApplicationDeployment) deploymentAttempt.getDeployment();
-            action = deploymentAttempt.getAction();
-            action.restoreDependencies();
+            attempt = deploymentAttempt;
+            attempt.getAction().restoreDependencies();
         }
 
         cyModel = generateGraphModel();
@@ -267,8 +258,8 @@ public class DeploymentActionController extends FacesSupport implements Serializ
 
     private void generateGraphModel(CyModel graphModel) {
         action2cyNode = new HashMap<>();
-        generateActionNodes(graphModel, action, null, action2cyNode);
-        generateDependencyEdges(graphModel, action, action2cyNode);
+        generateActionNodes(graphModel, attempt.getAction(), null, action2cyNode);
+        generateDependencyEdges(graphModel, attempt.getAction(), action2cyNode);
     }
 
     private void generateActionNodes(CyModel graphModel, Action action, CyNode parent, Map<Action, CyNode> action2node) {
@@ -298,17 +289,17 @@ public class DeploymentActionController extends FacesSupport implements Serializ
     }
 
     public boolean canExecuteAction() {
-        return action.getStatus() == Action.Status.PENDING;
+        return attempt.getAction().getStatus() == Action.Status.PENDING;
     }
 
     public void executeAction() {
         if (canExecuteAction()) {
-            applicationDeploymentService.execute(deployment, action, actionType);
+            applicationDeploymentService.execute(attempt, null);
         }
     }
 
     public void loadActionStatuses() {
-        action.stream().forEach(action -> {
+        attempt.getAction().stream().forEach(action -> {
             CyNode node = action2cyNode.get(action);
             setStatusClass(node, action.getStatus());
         });
@@ -342,7 +333,7 @@ public class DeploymentActionController extends FacesSupport implements Serializ
 
     private Action getSelectedAction() {
         Collection<CyNode> selectedNodes = cyModel.getSelectedNodes();
-        return action.stream()
+        return attempt.getAction().stream()
             .filter((action) -> selectedNodes.contains(action2cyNode.get(action)))
             .findAny().orElseGet(() -> null);
     }

@@ -30,16 +30,13 @@ import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.DeploymentObject;
 import org.ecloudmanager.node.LogException;
 import org.ecloudmanager.repository.deployment.ActionLogger;
-import org.ecloudmanager.repository.deployment.LoggingEventRepository;
 import org.mongodb.morphia.annotations.Reference;
 import org.mongodb.morphia.annotations.Transient;
 
-import javax.enterprise.inject.spi.CDI;
-
-public class SingleAction extends Action implements Runnable {
+public class SingleAction<T> extends Action implements ActionCallable<T> {
 
     @Transient
-    private ActionCallable actionCallable;
+    private ActionCallable<T> actionCallable;
     private String description;
     @Reference
     private DeploymentObject topDeployable;
@@ -75,27 +72,6 @@ public class SingleAction extends Action implements Runnable {
         return null;
     }
 
-
-    @Override
-    public void run() {
-        Status status = getStatus();
-        if (status == Status.RUNNING) {
-            ActionLogger actionLog = CDI.current().select(LoggingEventRepository.class).get().createActionLogger(SingleAction.class, getId());
-            try {
-                Object result = actionCallable.apply(actionLog);
-                setStatus(Status.SUCCESSFUL);
-            } catch (LogException e) {
-                actionLog.log(e.getError());
-                setStatus(Status.FAILED);
-            } catch (Exception t) {
-                actionLog.error("Failed to execute action " + getLabel() + ": ", t);
-                setStatus(Status.FAILED);
-            }
-        } else {
-            throw new IllegalStateException("Invalid action state " + toString());
-        }
-    }
-
     public Deployable getDeployable() {
         if (topDeployable == null || pathToDeployable == null) {
             return null;
@@ -124,4 +100,23 @@ public class SingleAction extends Action implements Runnable {
         this.actionCallable = callable;
     }
 
+    @Override
+    public T apply(ActionLogger actionLogger) throws Exception {
+        Status status = getStatus();
+        if (status == Status.RUNNING) {
+            try {
+                T result = actionCallable.apply(actionLogger);
+                setStatus(Status.SUCCESSFUL);
+            } catch (LogException e) {
+                actionLogger.log(e.getError());
+                setStatus(Status.FAILED);
+            } catch (Exception t) {
+                actionLogger.error("Failed to execute action " + getLabel() + ": ", t);
+                setStatus(Status.FAILED);
+            }
+        } else {
+            throw new IllegalStateException("Invalid action state " + toString());
+        }
+        return null;
+    }
 }

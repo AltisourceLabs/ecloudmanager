@@ -35,7 +35,6 @@ import org.ecloudmanager.node.model.Credentials;
 import org.ecloudmanager.node.model.NodeInfo;
 import org.ecloudmanager.repository.deployment.ActionLogger;
 import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
-import org.ecloudmanager.repository.deployment.LoggingEventRepository;
 import org.ecloudmanager.service.NodeAPIConfigurationService;
 import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
 import org.ecloudmanager.service.execution.Action;
@@ -59,8 +58,6 @@ public class VmActions {
     private NodeAPIConfigurationService nodeAPIProvider;
     @Inject
     private ApplicationDeploymentRepository applicationDeploymentRepository;
-    @Inject
-    private LoggingEventRepository loggingEventRepository;
 
     public Action getCreateVmAction(VMDeployment vmDeployment, AsyncNodeAPI api, Credentials credentials, Map<String, String> parameters) {
 
@@ -79,7 +76,7 @@ public class VmActions {
                     applicationDeploymentService.update((ApplicationDeployment) vmDeployment.getTop());
                     return node;
                 }, vmDeployment),
-                new CreateFirewallRulesAction(vmDeployment, api, credentials, loggingEventRepository));
+                new CreateFirewallRulesAction(vmDeployment, api, credentials));
     }
 
 

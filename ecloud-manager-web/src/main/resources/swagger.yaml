@@ -31,14 +31,6 @@
         produces:
         - application/json
         parameters:
-        - name: accessKey
-          in: header
-          required: true
-          type: string
-        - name: secretKey
-          in: header
-          required: true
-          type: string
         - name: taskId
           in: path
           description: ID of task to return
@@ -63,14 +55,6 @@
         produces:
         - application/json
         parameters:
-        - name: accessKey
-          in: header
-          required: true
-          type: string
-        - name: secretKey
-          in: header
-          required: true
-          type: string
         - name: taskId
           in: path
           description: ID of task to delete
@@ -96,14 +80,6 @@
         produces:
         - application/json
         parameters:
-        - name: accessKey
-          in: header
-          required: true
-          type: string
-        - name: secretKey
-          in: header
-          required: true
-          type: string
         - name: taskId
           in: path
           description: ID of task to return
@@ -170,8 +146,8 @@
       post:
         tags:
         - deployment
-        summary: Delete node
-        operationId: deleteNode
+        summary: Deploy application
+        operationId: deploy
         produces:
         - application/json
         parameters:

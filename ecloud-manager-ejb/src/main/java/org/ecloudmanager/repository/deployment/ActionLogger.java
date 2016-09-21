@@ -5,28 +5,28 @@ import org.ecloudmanager.domain.LoggingEventEntity;
 import org.ecloudmanager.node.LoggableFuture;
 import org.ecloudmanager.node.LoggingEventListener;
 import org.ecloudmanager.node.model.LoggingEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 public class ActionLogger implements LoggingEventListener {
-    Logger logger;
-    LoggingEventRepository repository;
+    private LoggingEventRepository repository;
     private String actionId;
     private String fqcn;
     private ExecutorService executor;
+    private Collection<LoggingEventListener> listeners;
 
-    ActionLogger(Class caller, String actionId, LoggingEventRepository repository, ExecutorService executor) {
+    ActionLogger(Class caller, String actionId, LoggingEventRepository repository, ExecutorService executor, LoggingEventListener... listeners) {
         this.actionId = actionId;
         this.fqcn = caller.getName();
-        logger = LoggerFactory.getLogger(fqcn);
         this.repository = repository;
         this.executor = executor;
+        this.listeners = Arrays.asList(listeners);
     }
 
     public <V> V submitAndWait(Callable<V> c) throws ExecutionException, InterruptedException {
@@ -35,17 +35,18 @@ public class ActionLogger implements LoggingEventListener {
 
     @Override
     public void log(Collection<LoggingEvent> events) {
+        listeners.forEach(l -> l.log(events));
         repository.saveAll(events.stream().map(e -> new LoggingEventEntity(actionId, e)).collect(Collectors.toList()));
     }
 
     public void log(LoggingEvent event) {
-        repository.save(new LoggingEventEntity(actionId, event));
+        log(Collections.singletonList(event));
     }
 
     private void recordEvent(String level, String msg, Throwable throwable) {
-        repository.save(new LoggingEventEntity(actionId, new LoggingEvent().level(level).logger(fqcn).message(msg)
+        log(new LoggingEvent().level(level).logger(fqcn).message(msg)
                 .throwable(throwable == null ? null : ExceptionUtils.getStackTrace(throwable))
-                .timeStamp(System.currentTimeMillis())));
+                .timeStamp(System.currentTimeMillis()));
     }
 
     public void error(String msg, Throwable t) {

@@ -27,6 +27,7 @@ package org.ecloudmanager.repository.deployment;
 import org.ecloudmanager.domain.LoggingEventEntity;
 import org.ecloudmanager.jeecore.repository.MongoDBRepositorySupport;
 import org.ecloudmanager.jeecore.repository.Repository;
+import org.ecloudmanager.node.LoggingEventListener;
 import org.ecloudmanager.service.execution.Action;
 import org.ecloudmanager.service.execution.SingleAction;
 
@@ -52,8 +53,8 @@ public class LoggingEventRepository extends MongoDBRepositorySupport<LoggingEven
                 .collect(Collectors.toList());
     }
 
-    public ActionLogger createActionLogger(Class caller, String actionId) {
-        return new ActionLogger(caller, actionId, this, executorService);
+    public ActionLogger createActionLogger(Class caller, String actionId, LoggingEventListener... listeners) {
+        return new ActionLogger(caller, actionId, this, executorService, listeners);
     }
 
 }

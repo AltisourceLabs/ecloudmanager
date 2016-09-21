@@ -14,7 +14,6 @@ import org.ecloudmanager.node.model.FirewallInfo;
 import org.ecloudmanager.node.model.FirewallRule;
 import org.ecloudmanager.node.model.FirewallUpdate;
 import org.ecloudmanager.repository.deployment.ActionLogger;
-import org.ecloudmanager.repository.deployment.LoggingEventRepository;
 import org.ecloudmanager.service.execution.Action;
 import org.ecloudmanager.service.execution.SingleAction;
 
@@ -30,7 +29,7 @@ public class CreateFirewallRulesAction extends SingleAction {
         super();
     }
 
-    public CreateFirewallRulesAction(VMDeployment deployment, AsyncNodeAPI nodeAPI, Credentials credentials, LoggingEventRepository loggingEventRepository) {
+    public CreateFirewallRulesAction(VMDeployment deployment, AsyncNodeAPI nodeAPI, Credentials credentials) {
         super(null, "Create Firewall Rules", deployment);
         setCallable((ActionLogger actionLog) -> {
             ApplicationDeployment ad = (ApplicationDeployment) deployment.getTop();
