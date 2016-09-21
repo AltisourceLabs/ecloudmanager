@@ -129,5 +129,13 @@ public class ApplicationDeploymentsController extends FacesSupport implements Se
     public boolean getIncludeConstraints() {
         return includeConstraints;
     }
+
+    public String createNewDeployment() {
+        ApplicationDeployment deployment = new ApplicationDeployment();
+        deployment.setName("NewDeployment");
+        applicationDeploymentService.save(deployment);
+
+        return "editApp/editApplicationDeployment?faces-redirect=true&deployment=" + deployment.getId().toString();
+    }
 }
 

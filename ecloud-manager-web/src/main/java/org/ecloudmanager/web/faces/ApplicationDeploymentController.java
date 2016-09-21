@@ -28,10 +28,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.core.*;
+import org.ecloudmanager.deployment.gateway.GatewayDeployment;
 import org.ecloudmanager.deployment.history.DeploymentAttempt;
+import org.ecloudmanager.deployment.ps.ProducedServiceDeployment;
 import org.ecloudmanager.deployment.ps.cg.ComponentGroupDeployment;
+import org.ecloudmanager.deployment.vm.GatewayVMDeployment;
 import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
+import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironment;
 import org.ecloudmanager.deployment.vm.provisioning.ChefEnvironmentDeployer;
 import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
@@ -53,6 +57,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -61,6 +66,19 @@ import java.util.stream.Collectors;
 public class ApplicationDeploymentController extends FacesSupport implements Serializable {
 
     private static final long serialVersionUID = -4809521504415887873L;
+
+    private static final Map<Class, String> nodeIcons = new HashMap<>();
+    static {
+        nodeIcons.put(ApplicationDeployment.class, "fa fa-cubes pull-left");
+        nodeIcons.put(ProducedServiceDeployment.class, "fa fa-cog pull-left");
+        nodeIcons.put(ComponentGroupDeployment.class, "fa fa-server pull-left");
+        nodeIcons.put(VMDeployment.class, "fa fa-desktop pull-left");
+        nodeIcons.put(Config.class, "fa fa-sliders pull-left");
+        nodeIcons.put(ChefEnvironment.class, "fa fa-globe pull-left");
+        nodeIcons.put(Endpoint.class, "fa fa-plug pull-left");
+        nodeIcons.put(GatewayDeployment.class, "fa fa-sitemap pull-left");
+        nodeIcons.put(GatewayVMDeployment.class, "fa fa-desktop pull-left");
+    }
 
     @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
@@ -114,7 +132,7 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
     }
 
     public void resetTree() {
-        tree = null;
+        tree = initTree();
     }
 
     private TreeNode initTree() {
@@ -297,5 +315,10 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
             }
         }
         updateConstraints(selectedNode);
+    }
+
+    public String getNodeIcon(Object node) {
+        String result = nodeIcons.get(node.getClass());
+        return result == null ? "" : result;
     }
 }

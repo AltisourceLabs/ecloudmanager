@@ -41,24 +41,7 @@
                     <p:ajax event="select" listener="#{applicationDeploymentController.onNodeSelect}"
                             update="@(.constraintFields)"/>
                     <p:column headerText="Name">
-                        <h:outputText styleClass="fa fa-cubes pull-left"
-                                      rendered="#{node['class'].simpleName eq 'ApplicationDeployment'}"/>
-                        <h:outputText styleClass="fa fa-cog pull-left"
-                                      rendered="#{node['class'].simpleName eq 'ProducedServiceDeployment'}"/>
-                        <h:outputText styleClass="fa fa-server pull-left"
-                                      rendered="#{node['class'].simpleName eq 'ComponentGroupDeployment'}"/>
-                        <h:outputText styleClass="fa fa-desktop pull-left"
-                                      rendered="#{node['class'].simpleName eq 'VMDeployment'}"/>
-                        <h:outputText styleClass="fa fa-sliders pull-left"
-                                      rendered="#{node['class'].simpleName eq 'Config'}"/>
-                        <h:outputText styleClass="fa fa-globe pull-left"
-                                      rendered="#{node['class'].simpleName eq 'ChefEnvironment'}"/>
-                        <h:outputText styleClass="fa fa-plug pull-left"
-                                      rendered="#{node['class'].simpleName eq 'Endpoint'}"/>
-                        <h:outputText styleClass="fa fa-sitemap pull-left"
-                                      rendered="#{node['class'].simpleName eq 'GatewayDeployment'}"/>
-                        <h:outputText styleClass="fa fa-desktop pull-left"
-                                      rendered="#{node['class'].simpleName eq 'GatewayVMDeployment'}"/>
+                        <h:outputText styleClass="#{applicationDeploymentController.getNodeIcon(node)}"/>
 
                         <p:tooltip for="nodeValue" value="#{node}" trackMouse="true"/>
                         <h:outputText id="nodeValue" value="#{node.name}"/>
@@ -144,7 +127,7 @@
                 </p:dataTable>
             </h:form>
             <h:form id="buttons" styleClass="contentForm" style="height: 40%">
-                <p:commandButton value="Save" update="out" action="#{applicationDeploymentController.save}"/>
+                <p:commandButton value="Save" update="@(.constraintFields) @(.constraintsTree)" action="#{applicationDeploymentEditorController.save}"/>
                 <p:commandButton value="Generate Chef Env."
                                  actionListener="#{applicationDeploymentController.generateChefEnv}" update="@widgetVar(dlg1)" oncomplete="PF('dlg1').show();" />
                 <p:commandButton id="deployButton" value="Deploy..." action="#{applicationDeploymentController.saveAndRedirectToAction}"

@@ -76,9 +76,6 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
     @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
     @Param
-    private Boolean createNewDeployment;
-    @Inject
-    @Param
     private Integer tabindex;
 
     // Parameters for a gateway deployment
@@ -127,11 +124,7 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
 
     @PostConstruct
     public void init() {
-        if (createNewDeployment != null && createNewDeployment) {
-            deployment = new ApplicationDeployment();
-            deployment.setName("NewDeployment");
-            applicationDeploymentService.save(deployment);
-        } else if (gatewayName != null) {
+        if (gatewayName != null) {
             deployment = gatewayService.create(gatewayName, vmTemplate, infrastructure);
         }
     }
