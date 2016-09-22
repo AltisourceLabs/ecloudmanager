@@ -24,7 +24,6 @@
 
 package org.ecloudmanager.web.faces;
 
-import com.rits.cloning.Cloner;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
@@ -53,8 +52,6 @@ public class RecipesController extends FacesSupport implements Serializable {
     private transient RecipeService recipeService;
     @Inject
     private transient VirtualMachineTemplateService virtualMachineTemplateService;
-    @Inject
-    private transient Cloner cloner;
     @Inject
     private transient RecipeController recipeController;
     @Inject
@@ -105,18 +102,9 @@ public class RecipesController extends FacesSupport implements Serializable {
     }
 
     public void onRowSelect(SelectEvent event) {
-//        String id =  ((Recipe) event.getObject()).getId();
-//        ConfigurableNavigationHandler configurableNavigationHandler =
-//                (ConfigurableNavigationHandler)FacesContext.
-//                        getCurrentInstance().getApplication().getNavigationHandler();
-//
-//        configurableNavigationHandler.performNavigation("recipes.jsf?selected=" + id + "&faces-redirect=true");
-
     }
 
     public void onRowUnselect(UnselectEvent event) {
-//        FacesMessage msg = new FacesMessage("Car Unselected", ((Recipe) event.getObject()).getId());
-//        FacesContext.getCurrentInstance().addMessage(null, msg);
 
     }
 
@@ -129,7 +117,7 @@ public class RecipesController extends FacesSupport implements Serializable {
         return recipeController.getValue();
     }
 
-    private void updateOwner(Recipe recipe) {
+    void updateOwner(Recipe recipe) {
         if (
                 applicationDeploymentEditorController != null &&
                 applicationDeploymentEditorController.getDeployment() != null
@@ -162,16 +150,4 @@ public class RecipesController extends FacesSupport implements Serializable {
         event.getSource();
     }
 
-    public void onImportRecipeReturn(SelectEvent event) {
-        List<Recipe> newRecipes = (List<Recipe>) event.getObject();
-        if (newRecipes != null) {
-            newRecipes.stream().forEach(recipe -> {
-                Recipe newRecipe = cloner.deepClone(recipe);
-                newRecipe.setId(new ObjectId());
-                updateOwner(newRecipe);
-                recipeService.saveWithUniqueName(newRecipe);
-                refresh();
-            });
-        }
-    }
 }

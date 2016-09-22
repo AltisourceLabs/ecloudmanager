@@ -30,20 +30,19 @@ import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
 import org.mongodb.morphia.Datastore;
-import org.omnifaces.el.functions.Arrays;
 import org.primefaces.context.RequestContext;
 
-import javax.annotation.PostConstruct;
-import javax.faces.application.FacesMessage;
-import javax.faces.context.FacesContext;
 import javax.inject.Inject;
 import java.io.Serializable;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 @Controller
 public class ImportDeployableController extends FacesSupport implements Serializable{
+    private static final String DIALOG = "dlg_import_deployable";
+
     public static class ImportDeployableDialogResult {
         private DeploymentObject object;
         private Boolean includeConstraints;
@@ -68,6 +67,11 @@ public class ImportDeployableController extends FacesSupport implements Serializ
         }
     }
 
+    @FunctionalInterface
+    public interface ImportDeployableDialogSaveCallback {
+        void save(ImportDeployableDialogResult importResult);
+    }
+
     @Inject
     private transient ApplicationDeploymentRepository applicationDeploymentRepository;
     @Inject
@@ -79,19 +83,13 @@ public class ImportDeployableController extends FacesSupport implements Serializ
     private Boolean includeConstraints;
     private String name;
 
-    @PostConstruct
-    public void init() {
-        Map<String, String[]> parameterValuesMap = FacesContext.getCurrentInstance().getExternalContext().getRequestParameterValuesMap();
-        String[] classNames = parameterValuesMap.get("classes");
-        Set<Class> classes = Stream.of(classNames).map(n -> {
-            try {
-                return Class.forName(n);
-            } catch (ClassNotFoundException e) {
-                addMessage(new FacesMessage("Unexpected error: " + e.getMessage()));
-                return null;
-            }
-        }).filter(Objects::nonNull).collect(Collectors.toSet());
-        boolean recursive = Arrays.contains(parameterValuesMap.get("recursive"), "true");
+    private ImportDeployableDialogSaveCallback callback;
+
+    public void openDialog(Set<Class> classes, boolean recursive, ImportDeployableDialogSaveCallback callback) {
+        this.callback = callback;
+        this.name = null;
+        selectedDeployable = null;
+        deployables.clear();
 
         applicationDeploymentRepository.getAll().forEach(d -> {
             Stream<DeploymentObject> stream = recursive ? d.stream() : d.children().stream();
@@ -106,6 +104,7 @@ public class ImportDeployableController extends FacesSupport implements Serializ
             datastore.find(cls).asList().forEach(dObj -> deployables.add(new ObjectRef(null, (DeploymentObject) dObj)));
         });
 
+        RequestContext.getCurrentInstance().execute("PF('" + DIALOG + "').show();");
     }
 
     public ObjectRef getSelectedDeployable() {
@@ -141,10 +140,13 @@ public class ImportDeployableController extends FacesSupport implements Serializ
     }
 
     public void save() {
-        RequestContext.getCurrentInstance().closeDialog(new ImportDeployableDialogResult(selectedDeployable.getObject(), name, includeConstraints));
+        if (callback != null && selectedDeployable != null) {
+            callback.save(new ImportDeployableDialogResult(selectedDeployable.getObject(), name, includeConstraints));
+        }
+        RequestContext.getCurrentInstance().execute("PF('" + DIALOG + "').hide();");
     }
 
     public void cancel() {
-        RequestContext.getCurrentInstance().closeDialog(null);
+        RequestContext.getCurrentInstance().execute("PF('" + DIALOG + "').hide();");
     }
 }

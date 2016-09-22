@@ -28,7 +28,6 @@
                 xmlns:ui="http://java.sun.com/jsf/facelets"
                 xmlns:h="http://java.sun.com/jsf/html"
                 xmlns:p="http://primefaces.org/ui"
-                xmlns:components="http://java.sun.com/jsf/composite/components"
 >
     <p:dialog header="Edit VM Deployment"
               widgetVar="dlg_edit_vm_ref"
@@ -50,7 +49,7 @@
                                      value="#{topLevelVMDeploymentController.value.description}"/>
                     <p:outputLabel value="VM:"/>
                     <p:panel style="width: 100%">
-                        <components:vmtemplate owner="#{applicationDeploymentEditorController.deployment}"/>
+                        <ui:include src="vmtemplate.xhtml"/>
                     </p:panel>
                 </p:panelGrid>
 

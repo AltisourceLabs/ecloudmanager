@@ -32,15 +32,11 @@ import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.template.RecipeRepository;
 import org.ecloudmanager.repository.template.VirtualMachineTemplateRepository;
 import org.ecloudmanager.service.template.VirtualMachineTemplateService;
-import org.primefaces.context.RequestContext;
 import org.primefaces.event.ReorderEvent;
-import org.primefaces.event.SelectEvent;
 
 import javax.annotation.PostConstruct;
-import javax.faces.application.FacesMessage;
 import javax.inject.Inject;
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.List;
 
 @Controller
@@ -98,23 +94,6 @@ public class VmTemplateController extends FacesSupport implements Serializable {
         if (recipeToAdd != null) {
             value.addRecipe(recipeToAdd);
             recipeToAdd = null;
-        }
-    }
-
-    public void startImportVmTemplate() {
-        HashMap<String, Object> options = new HashMap<>();
-        options.put("width", 640);
-        options.put("modal", true);
-        RequestContext.getCurrentInstance().openDialog("/editApp/import/importVmTemplate", options, null);
-    }
-
-    public void onImportVmTemplateReturn(SelectEvent event) {
-        VirtualMachineTemplate virtualMachineTemplate = (VirtualMachineTemplate) event.getObject();
-        if (virtualMachineTemplate != null) {
-            String message = vmtemplateService.importVm(virtualMachineTemplate, value, applicationDeploymentEditorController.getDeployment());
-            if (!message.isEmpty()) {
-                addMessage(new FacesMessage(message));
-            }
         }
     }
 

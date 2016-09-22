@@ -85,10 +85,9 @@
                             </p:menuButton>
                             <p:commandButton value="&#160;Import..."
                                              icon="fa fa-cart-arrow-down fa-lg"
-                                             action="#{applicationDeploymentEditorController.startImportDeployable()}">
-                                <p:ajax event="dialogReturn" listener="#{applicationDeploymentEditorController.onImportDeployableReturn}"
-                                        update="@form"/>
-                            </p:commandButton>
+                                             action="#{applicationDeploymentEditorController.startImportDeployable()}"
+                                             update="@widgetVar(dlg_import_deployable)"
+                            />
 
                             <p>Connections:</p>
                             <p:dataTable id="links" var="link"
@@ -142,6 +141,9 @@
                            disabled="#{applicationDeploymentEditorController.isGatewayDeployment()}"
                     >
                         <components:recipes owner="#{applicationDeploymentEditorController.deployment}"/>
+                        <ui:include src="import/importRecipe.xhtml"/>
+                        <ui:include src="/editChefAttribute.xhtml"/>
+                        <ui:include src="/editRecipeEndpoint.xhtml"/>
                     </p:tab>
                     <p:tab id="constraintsTab"
                            title="Constraints"
@@ -154,6 +156,8 @@
 
             <ui:include src="producedService.xhtml"/>
             <ui:include src="vmDeployment.xhtml"/>
+            <ui:include src="import/importVmTemplate.xhtml"/>
+            <ui:include src="import/importDeployable.xhtml"/>
 
             <p:messages id="messages" showDetail="true" autoUpdate="true" closable="true" escape="false"/>
 

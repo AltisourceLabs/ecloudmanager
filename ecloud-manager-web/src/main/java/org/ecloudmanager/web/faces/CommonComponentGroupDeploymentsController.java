@@ -24,6 +24,7 @@
 
 package org.ecloudmanager.web.faces;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang3.StringUtils;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.ps.cg.ComponentGroupDeployment;
@@ -32,13 +33,10 @@ import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.ComponentGroupDeploymentRepository;
 import org.ecloudmanager.service.deployment.ImportDeployableService;
 import org.primefaces.context.RequestContext;
-import org.primefaces.event.SelectEvent;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 
 @Controller
@@ -53,6 +51,8 @@ public class CommonComponentGroupDeploymentsController extends FacesSupport impl
     private transient ComponentGroupDeploymentController componentGroupDeploymentController;
     @Inject
     private transient VmTemplateController vmTemplateController;
+    @Inject
+    private transient ImportDeployableController importDeployableController;
 
     @PostConstruct
     private void init() {
@@ -84,28 +84,22 @@ public class CommonComponentGroupDeploymentsController extends FacesSupport impl
     }
 
     public void startImportCG() {
-        HashMap<String, Object> options = new HashMap<>();
-        options.put("width", 640);
-        options.put("modal", true);
-
-        HashMap<String, List<String>> params = new HashMap<>();
-        params.put("classes", Collections.singletonList(ComponentGroupDeployment.class.getName()));
-        params.put("recursive", Collections.singletonList("true"));
-
-        RequestContext.getCurrentInstance().openDialog("/editApp/import/importDeployable", options, params);
-    }
-
-    public void onImportCGReturn(SelectEvent event) {
-        ImportDeployableController.ImportDeployableDialogResult result = (ImportDeployableController.ImportDeployableDialogResult) event.getObject();
-        if (result != null) {
-            Deployable deployable = (Deployable) result.getObject();
-            if (deployable != null) {
-                String name = StringUtils.isEmpty(result.getName()) ? deployable.getName() : result.getName();
-                Deployable newDeployable = importDeployableService.copyDeploymentObject(deployable, null, name, result.getIncludeConstraints());
-                componentGroupDeploymentRepository.save((ComponentGroupDeployment) newDeployable);
-                refresh();
-            }
-        }
+        importDeployableController.openDialog(
+                ImmutableSet.of(ComponentGroupDeployment.class),
+                true,
+                result -> {
+                    if (result != null) {
+                        Deployable deployable = (Deployable) result.getObject();
+                        if (deployable != null) {
+                            String name = StringUtils.isEmpty(result.getName()) ? deployable.getName() : result.getName();
+                            Deployable newDeployable = importDeployableService.copyDeploymentObject(deployable, null, name, result.getIncludeConstraints());
+                            componentGroupDeploymentRepository.save((ComponentGroupDeployment) newDeployable);
+                            refresh();
+                        }
+                        RequestContext.getCurrentInstance().update("out");
+                    }
+                }
+        );
     }
 
     public void save(ComponentGroupDeployment componentGroupDeployment) {

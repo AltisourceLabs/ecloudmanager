@@ -22,60 +22,68 @@
   ~ SOFTWARE.
   -->
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-
-<html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:h="http://java.sun.com/jsf/html"
-      xmlns:p="http://primefaces.org/ui">
-
-<h:head>
-    <title>Import Existing VM Template</title>
-    <h:outputStylesheet name="css/screen.css" />
-</h:head>
-
-<h:body>
-    <h:form>
-        <p:outputPanel>
-            <p:dataTable value="#{importVMTemplateController.templateRefs}"
-                         var="templateRef"
-                         selection="#{importVMTemplateController.selectedTemplate}"
-                         selectionMode="single"
-                         rowKey="#{templateRef.id}"
-                         rows="10"
-                         paginator="true"
-                         sortBy="#{templateRef.deployment ne null ? templateRef.deployment.name : '-'}"
-            >
-                <p:column headerText="Deployment Name"
-                          filterBy="#{templateRef.deployment ne null ? templateRef.deployment.name : '-'}"
-                          filterMatchMode="startsWith"
-                          sortBy="#{templateRef.deployment ne null ? templateRef.deployment.name : '-'}"
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+>
+    <p:dialog header="Import Existing VM Template"
+              widgetVar="dlg_import_vmtemplate"
+              modal="true"
+              closeOnEscape="true"
+              id="dlg_import_vmtemplate"
+              width="640"
+              appendTo="@(body)"
+    >
+        <p:ajax event="close"
+                update="@(.panelgrid-edit-vmtemplate), @widgetVar(vmtemplateRecipesTable), @this"
+                listener="#{importVMTemplateController.setSelectedTemplate(null)}"
+        />
+        <h:form>
+            <p:outputPanel>
+                <p:dataTable value="#{importVMTemplateController.templateRefs}"
+                             var="templateRef"
+                             selection="#{importVMTemplateController.selectedTemplate}"
+                             selectionMode="single"
+                             rowKey="#{templateRef.id}"
+                             rows="10"
+                             paginator="true"
+                             sortBy="#{templateRef.deployment ne null ? templateRef.deployment.name : '-'}"
                 >
-                    <h:outputText value="#{templateRef.deployment ne null ? templateRef.deployment.name : '-'}"/>
-                </p:column>
-                <p:column headerText="Deployment Object"
-                          filterBy="#{templateRef.path}"
-                          filterMatchMode="contains"
-                          sortBy="#{templateRef.path}"
-                >
-                    <h:outputText value="#{templateRef.path}"/>
-                </p:column>
-                <p:column headerText="VM Template Name"
-                          filterBy="#{templateRef.object.name}"
-                          filterMatchMode="contains"
-                          sortBy="#{templateRef.object.name}"
-                >
-                    <h:outputText value="#{templateRef.object.name}"/>
-                </p:column>
-            </p:dataTable>
-        </p:outputPanel>
-        <p:panelGrid columns="2" cellpadding="5" styleClass="ui-panelgrid-blank">
-            <p:commandButton value="Import"
-                             actionListener="#{importVMTemplateController.save()}"/>
-            <p:commandButton value="Cancel" immediate="true"
-                             actionListener="#{importVMTemplateController.cancel()}"/>
-        </p:panelGrid>
-    </h:form>
-</h:body>
-
-</html>
+                    <p:column headerText="Deployment Name"
+                              filterBy="#{templateRef.deployment ne null ? templateRef.deployment.name : '-'}"
+                              filterMatchMode="startsWith"
+                              sortBy="#{templateRef.deployment ne null ? templateRef.deployment.name : '-'}"
+                    >
+                        <h:outputText value="#{templateRef.deployment ne null ? templateRef.deployment.name : '-'}"/>
+                    </p:column>
+                    <p:column headerText="Deployment Object"
+                              filterBy="#{templateRef.path}"
+                              filterMatchMode="contains"
+                              sortBy="#{templateRef.path}"
+                    >
+                        <h:outputText value="#{templateRef.path}"/>
+                    </p:column>
+                    <p:column headerText="VM Template Name"
+                              filterBy="#{templateRef.object.name}"
+                              filterMatchMode="contains"
+                              sortBy="#{templateRef.object.name}"
+                    >
+                        <h:outputText value="#{templateRef.object.name}"/>
+                    </p:column>
+                </p:dataTable>
+            </p:outputPanel>
+            <p:panelGrid columns="2" cellpadding="5" styleClass="ui-panelgrid-blank">
+                <p:commandButton value="Import"
+                                 actionListener="#{importVMTemplateController.save()}"
+                                 oncomplete="PF('dlg_import_vmtemplate').hide()"
+                                 update="@(.panelgrid-edit-vmtemplate), @widgetVar(vmtemplateRecipesTable)"
+                />
+                <p:commandButton value="Cancel"
+                                 actionListener="#{importVMTemplateController.cancel()}"
+                                 oncomplete="PF('dlg_import_vmtemplate').hide()"
+                />
+            </p:panelGrid>
+        </h:form>
+    </p:dialog>
+</ui:composition>

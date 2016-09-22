@@ -24,6 +24,7 @@
 
 package org.ecloudmanager.web.faces;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang3.StringUtils;
 import org.ecloudmanager.deployment.core.Deployable;
 import org.ecloudmanager.deployment.core.Endpoint;
@@ -33,13 +34,10 @@ import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.ProducedServiceRepository;
 import org.ecloudmanager.service.deployment.ImportDeployableService;
 import org.primefaces.context.RequestContext;
-import org.primefaces.event.SelectEvent;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 
 @Controller
@@ -52,6 +50,8 @@ public class CommonProducedServicesController extends FacesSupport implements Se
     private transient ImportDeployableService importDeployableService;
     @Inject
     private transient ProducedServiceDeploymentController producedServiceDeploymentController;
+    @Inject
+    private transient ImportDeployableController importDeployableController;
 
     @PostConstruct
     private void init() {
@@ -83,28 +83,22 @@ public class CommonProducedServicesController extends FacesSupport implements Se
     }
 
     public void startImportProducedService() {
-        HashMap<String, Object> options = new HashMap<>();
-        options.put("width", 640);
-        options.put("modal", true);
-
-        HashMap<String, List<String>> params = new HashMap<>();
-        params.put("classes", Collections.singletonList(ProducedServiceDeployment.class.getName()));
-        params.put("recursive", Collections.singletonList("false"));
-
-        RequestContext.getCurrentInstance().openDialog("/editApp/import/importDeployable", options, params);
-    }
-
-    public void onImportProducedServiceReturn(SelectEvent event) {
-        ImportDeployableController.ImportDeployableDialogResult result = (ImportDeployableController.ImportDeployableDialogResult) event.getObject();
-        if (result != null) {
-            Deployable deployable = (Deployable) result.getObject();
-            if (deployable != null) {
-                String name = StringUtils.isEmpty(result.getName()) ? deployable.getName() : result.getName();
-                Deployable newDeployable = importDeployableService.copyDeploymentObject(deployable, null, name, result.getIncludeConstraints());
-                producedServiceRepository.save((ProducedServiceDeployment) newDeployable);
-                refresh();
-            }
-        }
+        importDeployableController.openDialog(
+                ImmutableSet.of(ProducedServiceDeployment.class),
+                false,
+                result -> {
+                    if (result != null) {
+                        Deployable deployable = (Deployable) result.getObject();
+                        if (deployable != null) {
+                            String name = StringUtils.isEmpty(result.getName()) ? deployable.getName() : result.getName();
+                            Deployable newDeployable = importDeployableService.copyDeploymentObject(deployable, null, name, result.getIncludeConstraints());
+                            producedServiceRepository.save((ProducedServiceDeployment) newDeployable);
+                            refresh();
+                        }
+                        RequestContext.getCurrentInstance().update("out");
+                    }
+                }
+        );
     }
 
     public void save(ProducedServiceDeployment producedServiceDeployment) {

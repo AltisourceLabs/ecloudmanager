@@ -26,47 +26,42 @@ package org.ecloudmanager.web.faces;
 
 import org.ecloudmanager.deployment.core.Endpoint;
 import org.ecloudmanager.jeecore.web.faces.Controller;
-import org.ecloudmanager.jeecore.web.faces.FacesSupport;
-import org.omnifaces.cdi.Param;
-import org.primefaces.context.RequestContext;
-import org.primefaces.event.CloseEvent;
 
-import javax.annotation.PostConstruct;
-import javax.faces.context.FacesContext;
 import javax.inject.Inject;
 import java.io.Serializable;
+import java.util.List;
 
 @Controller
-public class EndpointController extends FacesSupport implements Serializable {
-    @SuppressWarnings("CdiInjectionPointsInspection")
+public class EndpointController extends EntityEditorController<Endpoint> implements Serializable {
     @Inject
-    @Param
-    private String valueParamId;
+    RecipeController recipeController;
 
-    private Endpoint value;
-
-    @PostConstruct
-    public void init() {
-        value = (Endpoint) FacesContext.getCurrentInstance().getExternalContext().getSessionMap().remove(valueParamId);
+    protected EndpointController() {
+        super(Endpoint.class);
     }
 
     public Endpoint getValue() {
-        return value;
+        return getSelected();
     }
 
-    public void setValue(Endpoint value) {
-        this.value = value;
+    @Override
+    public void delete(Endpoint entity) {
     }
 
-    public void handleClose(CloseEvent event) {
-
+    @Override
+    protected void doSave(Endpoint old, Endpoint entity) {
+        if (isEdit()) {
+            List<Endpoint> endpoints = recipeController.getValue().getEndpoints();
+            int position = endpoints.indexOf(old);
+            endpoints.add(position, entity);
+            endpoints.remove(old);
+        } else {
+            doAdd(entity);
+        }
     }
 
-    public void saveEditedEndpoint() {
-        RequestContext.getCurrentInstance().closeDialog(value);
-    }
-
-    public void cancelEditing() {
-        RequestContext.getCurrentInstance().closeDialog(null);
+    @Override
+    protected void doAdd(Endpoint entity) {
+        recipeController.getValue().getEndpoints().add(entity);
     }
 }

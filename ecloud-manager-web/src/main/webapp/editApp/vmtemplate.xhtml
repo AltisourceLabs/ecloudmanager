@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-  ~ MIT License
+  ~ The MIT License (MIT)
   ~
-  ~ Copyright (c) 2016  Altisource
+  ~ Copyright (c) 2016 Altisource Labs
   ~
   ~ Permission is hereby granted, free of charge, to any person obtaining a copy
   ~ of this software and associated documentation files (the "Software"), to deal
@@ -23,32 +23,19 @@
   ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   ~ SOFTWARE.
   -->
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-
-<html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:f="http://java.sun.com/jsf/core"
-      xmlns:h="http://java.sun.com/jsf/html"
-      xmlns:p="http://primefaces.org/ui"
-      xmlns:composite="http://java.sun.com/jsf/composite">
-
-<!-- INTERFACE -->
-<composite:interface>
-    <composite:attribute name="owner" required="true"
-                         type="org.ecloudmanager.deployment.core.Deployable"/>
-</composite:interface>
-
-<!-- IMPLEMENTATION -->
-<composite:implementation>
-    <p:commandButton value="&nbsp;Import Settings..."
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:f="http://xmlns.jcp.org/jsf/core"
+>
+    <p:commandButton value="&#160;Import Settings..."
                      icon="fa fa-cart-arrow-down fa-lg"
-                     action="#{vmTemplateController.startImportVmTemplate()}"
-    >
-        <p:ajax event="dialogReturn" listener="#{vmTemplateController.onImportVmTemplateReturn}"
-                update="@form"/>
-    </p:commandButton>
-    <p:panelGrid id="panelgrid_edit" columns="2" style="margin-bottom:10px" styleClass="ui-panelgrid-blank"
+                     action="#{importVMTemplateController.init()}"
+                     oncomplete="PF('dlg_import_vmtemplate').show()"
+                     update="@widgetVar(dlg_import_vmtemplate)"
+    />
+    <p:panelGrid id="panelgrid_edit" columns="2" style="margin-bottom:10px" styleClass="ui-panelgrid-blank panelgrid-edit-vmtemplate"
                  cellpadding="5" columnClasses="colLabel, colValue">
 
         <p>Name: <p:inputText id="input_name" value="#{vmTemplateController.value.name}"/></p>
@@ -68,7 +55,7 @@
         </p>
     </p:panelGrid>
     <p:dataTable var="recipe" value="#{vmTemplateController.value.runlist}"
-                 draggableRows="true" id="recipes">
+                 draggableRows="true" id="recipes" widgetVar="vmtemplateRecipesTable">
         <f:facet name="header">Chef run list</f:facet>
         <p:ajax event="rowReorder" listener="#{vmTemplateController.onRowReorder}"/>
         <p:column id="column_recipe_id" headerText="Recipe Name">
@@ -84,7 +71,7 @@
     <p:selectOneMenu id="addRecipe" value="#{vmTemplateController.recipeToAdd}"
                      converter="recipeConverter" styleClass="comboAndButton">
         <f:selectItem itemLabel="Select recipe to add" itemValue=""/>
-        <f:selectItems value="#{vmTemplateController.getRecipes(cc.attrs.owner)}"/>
+        <f:selectItems value="#{vmTemplateController.getRecipes(applicationDeploymentEditorController.deployment)}"/>
     </p:selectOneMenu>
     <p:commandButton id="add_recipe" value="Add"
                      styleClass="comboAndButton"
@@ -92,7 +79,5 @@
                      action="#{vmTemplateController.addRecipe}"/>
 
     <p:growl id="vmTemplateMessages" sticky="true" showDetail="true"/>
-
-</composite:implementation>
-</html>
+</ui:composition>
 

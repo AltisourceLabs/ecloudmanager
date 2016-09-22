@@ -28,5 +28,8 @@
                 template="/WEB-INF/templates/default.xhtml">
     <ui:define name="content">
         <components:recipes owner="#{null}"/>
+        <ui:include src="../editApp/import/importRecipe.xhtml"/>
+        <ui:include src="../editChefAttribute.xhtml"/>
+        <ui:include src="../editRecipeEndpoint.xhtml"/>
     </ui:define>
 </ui:composition>

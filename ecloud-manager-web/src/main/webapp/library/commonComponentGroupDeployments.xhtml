@@ -61,10 +61,9 @@
                                      action="#{commonComponentGroupDeploymentsController.startEdit(null)}"/>
                     <p:commandButton value="&#160;Import..."
                                      icon="fa fa-cart-arrow-down fa-lg"
-                                     action="#{commonComponentGroupDeploymentsController.startImportCG()}">
-                        <p:ajax event="dialogReturn" listener="#{commonComponentGroupDeploymentsController.onImportCGReturn}"
-                                update="@form"/>
-                    </p:commandButton>
+                                     action="#{commonComponentGroupDeploymentsController.startImportCG()}"
+                                     update="@widgetVar(dlg_import_deployable)"
+                    />
 
                     <p:growl id="messages" sticky="true" showDetail="true"/>
                 </h:form>
@@ -72,5 +71,7 @@
         </p:outputPanel>
 
         <ui:include src="/editApp/componentGroup.xhtml"/>
+        <ui:include src="/editApp/import/importVmTemplate.xhtml"/>
+        <ui:include src="/editApp/import/importDeployable.xhtml"/>
     </ui:define>
 </ui:composition>

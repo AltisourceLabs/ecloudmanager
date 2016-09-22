@@ -29,7 +29,6 @@
                 xmlns:f="http://java.sun.com/jsf/core"
                 xmlns:h="http://java.sun.com/jsf/html"
                 xmlns:p="http://primefaces.org/ui"
-                xmlns:components="http://java.sun.com/jsf/composite/components"
 >
     <p:dialog header="Edit Component Group"
               widgetVar="dlg_edit_cg"
@@ -71,7 +70,7 @@
 
                     <h:outputText value="VM:"/>
                     <p:panel style="width: 100%">
-                        <components:vmtemplate owner="#{applicationDeploymentEditorController.deployment}"/>
+                        <ui:include src="vmtemplate.xhtml"/>
                     </p:panel>
                     <!--<p:selectOneMenu value="#{componentGroupDeploymentController.value.virtualMachineTemplate}"-->
                     <!--converter="vmTemplateConverter">-->
@@ -84,10 +83,10 @@
 
                 <p:remoteCommand name="saveComponentGroupDeployment"
                                  action="#{producedServiceDeploymentController.saveComponentGroup(componentGroupDeploymentController.value)}"
-                                 rendered="#{applicationDeploymentEditorController.deployment ne null}"/>
+                                 rendered="#{producedServiceDeploymentController.value ne null}"/>
                 <p:remoteCommand name="saveComponentGroupDeployment"
                                  action="#{commonComponentGroupDeploymentsController.save(componentGroupDeploymentController.value)}"
-                                 rendered="#{applicationDeploymentEditorController.deployment eq null}"/>
+                                 rendered="#{producedServiceDeploymentController.value eq null}"/>
 
                 <h:panelGroup>
                     <p:commandButton value="Save"

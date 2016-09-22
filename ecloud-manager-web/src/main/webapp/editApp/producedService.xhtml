@@ -32,7 +32,7 @@
     <p:dialog header="Edit Service" widgetVar="dlg_edit_service" modal="true" closeOnEscape="true" height="600"
               width="600" id="dlg_edit_service">
         <h:panelGroup>
-            <h:form style="width: 95%;height: 95%">
+            <h:form id="edit_service_form" style="width: 95%;height: 95%">
                 <p:confirmDialog id="confirm" global="true" showEffect="fade" hideEffect="fade">
                     <p:commandButton id="yes" value="Yes" type="button" styleClass="ui-confirmdialog-yes"
                                      icon="ui-icon-check"/>
@@ -78,10 +78,9 @@
                                              action="#{producedServiceDeploymentController.newComponentGroup()}"/>
                             <p:commandButton value="&#160;Import..."
                                              icon="fa fa-cart-arrow-down fa-lg"
-                                             action="#{producedServiceDeploymentController.startImportComponentGroup()}">
-                                <p:ajax event="dialogReturn" listener="#{producedServiceDeploymentController.onImportComponentGroupReturn}"
-                                        update="@form"/>
-                            </p:commandButton>
+                                             action="#{producedServiceDeploymentController.startImportComponentGroup()}"
+                                             update="@widgetVar(dlg_import_deployable)"
+                            />
                         </p:panel>
 
                         <p:outputLabel value="HAProxy Frontend Configuration:"/>

@@ -56,13 +56,13 @@
                                 <p:toolbar id="toolbar">
                                     <f:facet name="left">
                                         <p:commandButton id="new" title="New" icon="fa fa-plus"
-                                                         update="@form, @widgetVar(v_table)">
+                                                         update="@form, @widgetVar(recipes_table)">
                                             <p:collector value="#{recipesController.newRecipe}"
                                                          addTo="#{recipesController.recipes}" unique="true"/>
                                         </p:commandButton>
 
                                         <p:commandButton id="delete" title="Delete" icon="fa fa-minus"
-                                                         update="@form, @widgetVar(v_table)"
+                                                         update="@form, @widgetVar(recipes_table)"
                                                          action="#{recipesController.deleteSelected()}"
                                                          disabled="#{recipeController.value == null}">
                                             <p:confirm header="Confirmation" message="Are you sure?"
@@ -71,23 +71,20 @@
                                                          removeFrom="#{recipesController.recipes}" unique="true"/>
                                         </p:commandButton>
                                         <p:commandButton id="copy" title="Copy" icon="fa fa-files-o"
-                                                         update="@form, @widgetVar(v_table)"
+                                                         update="@form, @widgetVar(recipes_table)"
                                                          disabled="#{recipeController.value == null}">
                                             <p:collector value="#{recipeController.createCopy()}"
                                                          addTo="#{recipesController.recipes}" unique="true"/>
                                         </p:commandButton>
                                         <p:commandButton title="Import" icon="fa fa-cart-arrow-down fa-lg"
-                                                         update="@form, @widgetVar(v_table)"
-                                                         action="#{recipeController.startImportRecipe()}"
-                                        >
-                                            <p:ajax event="dialogReturn" listener="#{recipesController.onImportRecipeReturn}"
-                                                    update="@form, @widgetVar(v_table)"/>
-                                        </p:commandButton>
+                                                         oncomplete="PF('dlg_import_recipe').show()"
+                                                         update="@widgetVar(dlg_import_recipe)"
+                                        />
                                     </f:facet>
 
 
                                 </p:toolbar>
-                                <p:dataTable id="table" widgetVar="v_table" var="recipe"
+                                <p:dataTable id="table" widgetVar="recipes_table" var="recipe"
                                              value="#{recipesController.recipes}" selectionMode="single"
                                              selection="#{recipeController.value}" rowKey="#{recipe.id}">
                                     <p:ajax event="rowSelect" listener="#{recipesController.onRowSelect}"
@@ -110,10 +107,10 @@
                                     <p:panelGrid id="recipe_buttons" columns="2" style="margin-bottom:10px"
                                                  styleClass="ui-panelgrid-blank" cellpadding="5">
                                         <p:commandButton id="button_save" value="Save"
-                                                         update="@(.recipesForm) @widgetVar(v_table)"
+                                                         update="@(.recipesForm) @widgetVar(recipes_table)"
                                                          action="#{recipesController.save}"/>
                                         <p:commandButton id="button_cancel" value="Cancel" immediate="true"
-                                                         update="@(.recipesForm) @widgetVar(v_table)"
+                                                         update="@(.recipesForm) @widgetVar(recipes_table)"
                                                          actionListener="#{recipesController.cancel}"/>
                                     </p:panelGrid>
                                     <p:growl id="messages" sticky="true" showDetail="true" escape="false"/>

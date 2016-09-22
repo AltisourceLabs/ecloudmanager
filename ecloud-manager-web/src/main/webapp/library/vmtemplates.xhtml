@@ -26,7 +26,6 @@
                 xmlns:ui="http://java.sun.com/jsf/facelets"
                 xmlns:h="http://java.sun.com/jsf/html"
                 xmlns:p="http://primefaces.org/ui"
-                xmlns:components="http://java.sun.com/jsf/composite/components"
                 template="/WEB-INF/templates/default.xhtml">
     <ui:define name="content">
         <p:outputPanel id="out">
@@ -83,7 +82,7 @@
                         <h:panelGroup rendered="#{!vmTemplatesController.edit}">
                             <h3>Add VM template</h3>
                         </h:panelGroup>
-                        <components:vmtemplate owner="#{null}"/>
+                        <ui:include src="../editApp/vmtemplate.xhtml"/>
                         <h:panelGroup rendered="#{vmTemplatesController.edit}">
                             <p><p:commandButton id="save" value="Save" update="out"
                                                 action="#{vmTemplatesController.save}"/>
@@ -102,5 +101,6 @@
                 </h:panelGroup>
             </p:dialog>
         </p:outputPanel>
+        <ui:include src="/editApp/import/importVmTemplate.xhtml"/>
     </ui:define>
 </ui:composition>

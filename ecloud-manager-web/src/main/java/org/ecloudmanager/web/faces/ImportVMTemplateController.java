@@ -29,11 +29,13 @@ import org.ecloudmanager.deployment.ps.cg.ComponentGroupDeployment;
 import org.ecloudmanager.deployment.vm.VMDeployment;
 import org.ecloudmanager.deployment.vm.VirtualMachineTemplate;
 import org.ecloudmanager.jeecore.web.faces.Controller;
+import org.ecloudmanager.jeecore.web.faces.FacesSupport;
 import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
 import org.ecloudmanager.repository.template.VirtualMachineTemplateRepository;
-import org.primefaces.context.RequestContext;
+import org.ecloudmanager.service.template.VirtualMachineTemplateService;
 
 import javax.annotation.PostConstruct;
+import javax.faces.application.FacesMessage;
 import javax.inject.Inject;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -41,17 +43,25 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Controller
-public class ImportVMTemplateController implements Serializable {
+public class ImportVMTemplateController extends FacesSupport implements Serializable {
     @Inject
     private transient VirtualMachineTemplateRepository virtualMachineTemplateRepository;
     @Inject
     private transient ApplicationDeploymentRepository applicationDeploymentRepository;
+    @Inject
+    private transient VirtualMachineTemplateService vmtemplateService;
+    @Inject
+    private transient VmTemplateController vmTemplateController;
+    @Inject
+    private transient ApplicationDeploymentEditorController applicationDeploymentEditorController;
 
     private ObjectRef selectedTemplate;
     private List<ObjectRef> templateRefs = new ArrayList<>();
 
     @PostConstruct
     public void init() {
+        templateRefs.clear();
+
         List<VirtualMachineTemplate> templates = virtualMachineTemplateRepository.getAll();
         templateRefs.addAll(templates.stream().map(t -> new ObjectRef(null, t)).collect(Collectors.toList()));
 
@@ -89,10 +99,18 @@ public class ImportVMTemplateController implements Serializable {
     }
 
     public void save() {
-        RequestContext.getCurrentInstance().closeDialog(selectedTemplate.getObject());
+        if (selectedTemplate != null) {
+            VirtualMachineTemplate virtualMachineTemplate = (VirtualMachineTemplate) selectedTemplate.getObject();
+            if (virtualMachineTemplate != null) {
+                String message = vmtemplateService.importVm(virtualMachineTemplate, vmTemplateController.getValue(), applicationDeploymentEditorController.getDeployment());
+                if (!message.isEmpty()) {
+                    addMessage(new FacesMessage(message));
+                }
+            }
+        }
     }
 
     public void cancel() {
-        RequestContext.getCurrentInstance().closeDialog(null);
+        selectedTemplate = null;
     }
 }

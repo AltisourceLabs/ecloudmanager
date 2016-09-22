@@ -26,6 +26,7 @@ package org.ecloudmanager.service.deployment;
 
 import com.rits.cloning.Cloner;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.Logger;
 import org.bson.types.ObjectId;
 import org.ecloudmanager.deployment.app.ApplicationDeployment;
 import org.ecloudmanager.deployment.core.Deployable;
@@ -55,6 +56,8 @@ public class ImportDeployableService {
     private ApplicationDeploymentRepository applicationDeploymentRepository;
     @Inject
     private RecipeRepository recipeRepository;
+    @Inject
+    private Logger log;
 
     public void copyDeployment(ApplicationDeployment source, String name, boolean keepConstraints) {
         ApplicationDeployment newDeployment = cloneDeployable(source, null, name, keepConstraints);
@@ -88,8 +91,12 @@ public class ImportDeployableService {
 
         source.stream(VirtualMachineTemplate.class).forEach(vmt -> {
             String path = source.relativePathTo(vmt);
-            VirtualMachineTemplate dstVmt = (VirtualMachineTemplate) newDeploymentObj.getByPath(path);
-            virtualMachineTemplateService.importVm(vmt, dstVmt, dstDeployment);
+            if (!StringUtils.isEmpty(vmt.getName())) {
+                VirtualMachineTemplate dstVmt = (VirtualMachineTemplate) newDeploymentObj.getByPath(path);
+                virtualMachineTemplateService.importVm(vmt, dstVmt, dstDeployment);
+            } else {
+                log.warn("Cannot import vm template with empty name. Skipping. Path: " + source.getPath("/") + path);
+            }
         });
 
         if (dstParentObject != null) {

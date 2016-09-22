@@ -26,56 +26,26 @@ package org.ecloudmanager.web.faces;
 
 import org.ecloudmanager.deployment.vm.provisioning.ChefAttribute;
 import org.ecloudmanager.jeecore.web.faces.Controller;
-import org.ecloudmanager.jeecore.web.faces.FacesSupport;
-import org.omnifaces.cdi.Param;
-import org.primefaces.context.RequestContext;
-import org.primefaces.event.CloseEvent;
 
-import javax.annotation.PostConstruct;
-import javax.faces.context.FacesContext;
 import javax.inject.Inject;
-import java.io.Serializable;
+import java.util.List;
 
 @Controller
-public class ChefAttributeController extends FacesSupport implements Serializable {
+public class ChefAttributeController extends EntityEditorController<ChefAttribute> {
     private static final String ENV_DEFAULT = "Default";
     private static final String ENV_OVERRIDE = "Override";
     private static final String ENV_NO = "No";
 
-    @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
-    @Param
-    private String valueParamId;
+    RecipeController recipeController;
 
-    private ChefAttribute value;
-
-    @PostConstruct
-    public void init() {
-        value = (ChefAttribute) FacesContext.getCurrentInstance().getExternalContext().getSessionMap().remove(valueParamId);
-    }
-
-    public ChefAttribute getValue() {
-        return value;
-    }
-
-    public void setValue(ChefAttribute value) {
-        this.value = value;
-    }
-
-    public void handleClose(CloseEvent event) {
-    }
-
-    public void save() {
-        RequestContext.getCurrentInstance().closeDialog(value);
-    }
-
-    public void cancel() {
-        RequestContext.getCurrentInstance().closeDialog(null);
+    protected ChefAttributeController() {
+        super(ChefAttribute.class);
     }
 
     public String getEditAttributeEnv() {
-        if (value.isEnvironmentAttribute()) {
-            if (value.isEnvironmentDefaultAttribute()) {
+        if (getSelected().isEnvironmentAttribute()) {
+            if (getSelected().isEnvironmentDefaultAttribute()) {
                 return ENV_DEFAULT;
             } else {
                 return ENV_OVERRIDE;
@@ -87,13 +57,34 @@ public class ChefAttributeController extends FacesSupport implements Serializabl
 
     public void setEditAttributeEnv(String editAttributeEnv) {
         if (ENV_NO.equals(editAttributeEnv)) {
-            value.setEnvironmentAttribute(false);
+            getSelected().setEnvironmentAttribute(false);
         } else if (ENV_DEFAULT.equals(editAttributeEnv)) {
-            value.setEnvironmentAttribute(true);
-            value.setEnvironmentDefaultAttribute(true);
+            getSelected().setEnvironmentAttribute(true);
+            getSelected().setEnvironmentDefaultAttribute(true);
         } else {
-            value.setEnvironmentAttribute(true);
-            value.setEnvironmentDefaultAttribute(false);
+            getSelected().setEnvironmentAttribute(true);
+            getSelected().setEnvironmentDefaultAttribute(false);
         }
+    }
+
+    @Override
+    public void delete(ChefAttribute entity) {
+    }
+
+    @Override
+    protected void doSave(ChefAttribute old, ChefAttribute entity) {
+        if (isEdit()) {
+            List<ChefAttribute> attributes = recipeController.getValue().getAttributes();
+            int position = attributes.indexOf(old);
+            attributes.add(position, entity);
+            attributes.remove(old);
+        } else {
+            doAdd(entity);
+        }
+    }
+
+    @Override
+    protected void doAdd(ChefAttribute entity) {
+        recipeController.getValue().getAttributes().add(entity);
     }
 }

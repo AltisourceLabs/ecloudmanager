@@ -21,62 +21,59 @@
   ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   ~ SOFTWARE.
   -->
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-
-<html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:h="http://java.sun.com/jsf/html"
-      xmlns:p="http://primefaces.org/ui">
-
-<h:head>
-    <title>Import Existing ProducedService or VM</title>
-    <h:outputStylesheet name="css/screen.css" />
-</h:head>
-
-<h:body>
-    <h:form>
-        <p:outputPanel>
-            <p:dataTable value="#{importDeployableController.deployables}"
-                         var="deployableRef"
-                         selection="#{importDeployableController.selectedDeployable}"
-                         selectionMode="single"
-                         rowKey="#{deployableRef.id}"
-                         rows="10"
-                         paginator="true"
-                         sortBy="#{deployableRef.deployment ne null ? deployableRef.deployment.name : '-'}"
-            >
-                <p:column headerText="Deployment Name"
-                          filterBy="#{deployableRef.deployment ne null ? deployableRef.deployment.name : '-'}"
-                          filterMatchMode="startsWith"
-                          sortBy="#{deployableRef.deployment ne null ? deployableRef.deployment.name : '-'}"
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+>
+    <p:dialog header="Import Existing ProducedService or VM"
+              widgetVar="dlg_import_deployable"
+              modal="true"
+              closeOnEscape="true"
+              id="dlg_import_deployable"
+              width="640"
+    >
+        <h:form>
+            <p:outputPanel>
+                <p:dataTable value="#{importDeployableController.deployables}"
+                             var="deployableRef"
+                             selection="#{importDeployableController.selectedDeployable}"
+                             selectionMode="single"
+                             rowKey="#{deployableRef.id}"
+                             rows="10"
+                             paginator="true"
+                             sortBy="#{deployableRef.deployment ne null ? deployableRef.deployment.name : '-'}"
                 >
-                    <h:outputText value="#{deployableRef.deployment ne null ? deployableRef.deployment.name : '-'}"/>
-                </p:column>
-                <p:column headerText="Deployment Object"
-                          filterBy="#{deployableRef.object.toString()}"
-                          filterMatchMode="contains"
-                          sortBy="#{deployableRef.object.toString()}"
-                >
-                    <h:outputText value="#{deployableRef.object.toString()}"/>
-                </p:column>
-            </p:dataTable>
-        </p:outputPanel>
-        <p:separator/>
-        <p:panelGrid columns="2" cellpadding="5" styleClass="ui-panelgrid-blank">
-            <h:outputText value="New Name:"/>
-            <p:inputText value="#{importDeployableController.name}"/>
-            <h:outputText value="Include Deployment Constraints:"/>
-            <p:selectBooleanCheckbox value="#{importDeployableController.includeConstraints}"/>
-        </p:panelGrid>
-        <p:separator/>
-        <p:panelGrid columns="2" cellpadding="5" styleClass="ui-panelgrid-blank">
-            <p:commandButton value="Import"
-                             actionListener="#{importDeployableController.save()}"/>
-            <p:commandButton value="Cancel" immediate="true"
-                             actionListener="#{importDeployableController.cancel()}"/>
-        </p:panelGrid>
-    </h:form>
-</h:body>
-
-</html>
+                    <p:column headerText="Deployment Name"
+                              filterBy="#{deployableRef.deployment ne null ? deployableRef.deployment.name : '-'}"
+                              filterMatchMode="startsWith"
+                              sortBy="#{deployableRef.deployment ne null ? deployableRef.deployment.name : '-'}"
+                    >
+                        <h:outputText value="#{deployableRef.deployment ne null ? deployableRef.deployment.name : '-'}"/>
+                    </p:column>
+                    <p:column headerText="Deployment Object"
+                              filterBy="#{deployableRef.object.toString()}"
+                              filterMatchMode="contains"
+                              sortBy="#{deployableRef.object.toString()}"
+                    >
+                        <h:outputText value="#{deployableRef.object.toString()}"/>
+                    </p:column>
+                </p:dataTable>
+            </p:outputPanel>
+            <p:separator/>
+            <p:panelGrid columns="2" cellpadding="5" styleClass="ui-panelgrid-blank">
+                <h:outputText value="New Name:"/>
+                <p:inputText value="#{importDeployableController.name}"/>
+                <h:outputText value="Include Deployment Constraints:"/>
+                <p:selectBooleanCheckbox value="#{importDeployableController.includeConstraints}"/>
+            </p:panelGrid>
+            <p:separator/>
+            <p:panelGrid columns="2" cellpadding="5" styleClass="ui-panelgrid-blank">
+                <p:commandButton value="Import"
+                                 actionListener="#{importDeployableController.save()}"/>
+                <p:commandButton value="Cancel"
+                                 actionListener="#{importDeployableController.cancel()}"/>
+            </p:panelGrid>
+        </h:form>
+    </p:dialog>
+</ui:composition>

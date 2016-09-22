@@ -24,12 +24,13 @@
 
 package org.ecloudmanager.web.faces;
 
+import com.rits.cloning.Cloner;
+import org.bson.types.ObjectId;
 import org.ecloudmanager.deployment.vm.provisioning.Recipe;
 import org.ecloudmanager.jeecore.web.faces.Controller;
 import org.ecloudmanager.repository.template.RecipeRepository;
-import org.primefaces.context.RequestContext;
+import org.ecloudmanager.service.template.RecipeService;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.Serializable;
 import java.util.List;
@@ -37,15 +38,15 @@ import java.util.List;
 @Controller
 public class ImportRecipeController implements Serializable {
     @Inject
+    private transient RecipeService recipeService;
+    @Inject
     private transient RecipeRepository recipeRepository;
+    @Inject
+    private transient RecipesController recipesController;
+    @Inject
+    private transient Cloner cloner;
 
     private List<Recipe> selectedRecipes;
-    private List<Recipe> recipes;
-
-    @PostConstruct
-    public void init() {
-        recipes = recipeRepository.getAll();
-    }
 
     public List<Recipe> getSelectedRecipes() {
         return selectedRecipes;
@@ -56,18 +57,28 @@ public class ImportRecipeController implements Serializable {
     }
 
     public List<Recipe> getRecipes() {
-        return recipes;
-    }
-
-    public void setRecipes(List<Recipe> recipes) {
-        this.recipes = recipes;
+        return recipeRepository.getAll();
     }
 
     public void save() {
-        RequestContext.getCurrentInstance().closeDialog(selectedRecipes);
+        if (selectedRecipes != null) {
+            selectedRecipes.stream().forEach(recipe -> {
+                Recipe newRecipe = cloner.deepClone(recipe);
+                newRecipe.setId(new ObjectId());
+                recipesController.updateOwner(newRecipe);
+                recipeService.saveWithUniqueName(newRecipe);
+                recipesController.refresh();
+            });
+        }
     }
 
     public void cancel() {
-        RequestContext.getCurrentInstance().closeDialog(null);
+        reset();
+    }
+
+    public void reset() {
+        if (selectedRecipes != null) {
+            selectedRecipes.clear();
+        }
     }
 }

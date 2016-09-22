@@ -22,37 +22,36 @@
   ~ SOFTWARE.
   -->
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-
-<html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:h="http://java.sun.com/jsf/html"
-      xmlns:components="http://java.sun.com/jsf/composite/components"
-      xmlns:p="http://primefaces.org/ui">
-
-<h:head>
-    <title>Edit endpoint</title>
-    <style type="text/css">
-        .ui-widget {
-            font-size: 90%;
-        }
-    </style>
-</h:head>
-
-<h:body>
-    <h:form>
-        <p:outputPanel id="endpointDetail" style="text-align:center;" rendered="#{not empty endpointController.value}">
-            <components:endpoint value="#{endpointController.value}" id="endpoint"/>
-        </p:outputPanel>
-        <p:panelGrid id="endpoint_buttons" columns="2" style="margin-bottom:10px"
-                     styleClass="ui-panelgrid-blank" cellpadding="5">
-            <p:commandButton id="endpoint_button_save" value="save"
-                             actionListener="#{endpointController.saveEditedEndpoint}"/>
-            <p:commandButton id="endpoint_button_cancel" value="cancel" immediate="true"
-                             actionListener="#{endpointController.cancelEditing}"/>
-            <!--update="recipes:recipe:recipe:panelgrid_endpoints"-->
-        </p:panelGrid>
-    </h:form>
-</h:body>
-
-</html>
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:components="http://java.sun.com/jsf/composite/components"
+>
+    <p:dialog header="Edit Endpoint"
+              widgetVar="dlg_edit_endpoint"
+              modal="true"
+              closeOnEscape="true"
+              appendTo="@(body)"
+              id="dlg_edit_endpoint">
+        <p:ajax event="close" listener="#{endpointController.handleClose}"/>
+        <h:form>
+            <p:outputPanel id="endpointDetail" style="text-align:center;" rendered="#{not empty endpointController.selected}">
+                <components:endpoint value="#{endpointController.selected}" id="endpoint"/>
+            </p:outputPanel>
+            <p:panelGrid id="endpoint_buttons" columns="2" style="margin-bottom:10px"
+                         styleClass="ui-panelgrid-blank" cellpadding="5">
+                <p:commandButton id="endpoint_button_save" value="Save"
+                                 action="#{endpointController.save}"
+                                 oncomplete="PF('dlg_edit_endpoint').hide();"
+                                 update="@(.endpointsTable)"
+                />
+                <p:commandButton id="endpoint_button_cancel" value="Cancel"
+                                 action="#{endpointController.cancel}"
+                                 oncomplete="PF('dlg_edit_endpoint').hide();"
+                                 update="@(.endpointsTable)"
+                />
+            </p:panelGrid>
+        </h:form>
+    </p:dialog>
+</ui:composition>

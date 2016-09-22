@@ -21,54 +21,57 @@
   ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   ~ SOFTWARE.
   -->
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-
-<html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:h="http://java.sun.com/jsf/html"
-      xmlns:p="http://primefaces.org/ui">
-
-<h:head>
-    <title>Import existing recipe(s)</title>
-    <h:outputStylesheet name="css/screen.css" />
-</h:head>
-
-<h:body>
-    <h:form>
-        <p:outputPanel>
-            <p:dataTable value="#{importRecipeController.recipes}"
-                         var="recipe"
-                         selection="#{importRecipeController.selectedRecipes}"
-                         selectionMode="multiple"
-                         rowKey="#{recipe.id}"
-                         rows="10"
-                         paginator="true"
-                         sortBy="#{recipe.owner ne null ? recipe.owner.name : '-'}"
-            >
-                <p:column headerText="Deployment Name"
-                          filterBy="#{recipe.owner ne null ? recipe.owner.name : '-'}"
-                          filterMatchMode="startsWith"
-                          sortBy="#{recipe.owner ne null ? recipe.owner.name : '-'}"
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+>
+    <p:dialog header="Import existing recipe(s)"
+              widgetVar="dlg_import_recipe"
+              modal="true"
+              closeOnEscape="true"
+              id="dlg_import_recipe"
+              width="640"
+    >
+        <p:ajax event="close" listener="#{importRecipeController.reset()}" update="@widgetVar(dlg_import_recipe)"/>
+        <h:form>
+            <p:outputPanel>
+                <p:dataTable value="#{importRecipeController.recipes}"
+                             var="recipe"
+                             selection="#{importRecipeController.selectedRecipes}"
+                             selectionMode="multiple"
+                             rowKey="#{recipe.id}"
+                             rows="10"
+                             paginator="true"
+                             sortBy="#{recipe.owner ne null ? recipe.owner.name : '-'}"
                 >
-                    <h:outputText value="#{recipe.owner ne null ? recipe.owner.name : '-'}"/>
-                </p:column>
-                <p:column headerText="Recipe Name"
-                          filterBy="#{recipe.name}"
-                          filterMatchMode="contains"
-                          sortBy="#{recipe.name}"
-                >
-                    <h:outputText value="#{recipe.name}"/>
-                </p:column>
-            </p:dataTable>
-        </p:outputPanel>
-        <p:panelGrid columns="2" cellpadding="5" styleClass="ui-panelgrid-blank">
-            <p:commandButton value="Import"
-                             actionListener="#{importRecipeController.save()}"/>
-            <p:commandButton value="Cancel" immediate="true"
-                             actionListener="#{importRecipeController.cancel()}"/>
-        </p:panelGrid>
-    </h:form>
-</h:body>
-
-</html>
+                    <p:column headerText="Deployment Name"
+                              filterBy="#{recipe.owner ne null ? recipe.owner.name : '-'}"
+                              filterMatchMode="startsWith"
+                              sortBy="#{recipe.owner ne null ? recipe.owner.name : '-'}"
+                    >
+                        <h:outputText value="#{recipe.owner ne null ? recipe.owner.name : '-'}"/>
+                    </p:column>
+                    <p:column headerText="Recipe Name"
+                              filterBy="#{recipe.name}"
+                              filterMatchMode="contains"
+                              sortBy="#{recipe.name}"
+                    >
+                        <h:outputText value="#{recipe.name}"/>
+                    </p:column>
+                </p:dataTable>
+            </p:outputPanel>
+            <p:panelGrid columns="2" cellpadding="5" styleClass="ui-panelgrid-blank">
+                <p:commandButton value="Import"
+                                 actionListener="#{importRecipeController.save()}"
+                                 oncomplete="PF('dlg_import_recipe').hide()"
+                                 update="@widgetVar(recipes_table)"
+                />
+                <p:commandButton value="Cancel"
+                                 actionListener="#{importRecipeController.cancel()}"
+                                 oncomplete="PF('dlg_import_recipe').hide()"
+                />
+            </p:panelGrid>
+        </h:form>
+    </p:dialog>
+</ui:composition>
