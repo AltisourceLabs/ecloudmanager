@@ -63,6 +63,9 @@
         <p>Storage (GB): <p:inputText id="input_storage"
                                       value="#{vmTemplateController.value.storage}"/>
         </p>
+        <p>Always run 'chef-client' on update: <p:selectBooleanCheckbox
+                value="#{vmTemplateController.value.forceChefProvisioningUpdate}"/>
+        </p>
     </p:panelGrid>
     <p:dataTable var="recipe" value="#{vmTemplateController.value.runlist}"
                  draggableRows="true" id="recipes">

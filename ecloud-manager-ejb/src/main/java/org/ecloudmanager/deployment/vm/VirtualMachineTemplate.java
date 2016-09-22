@@ -46,9 +46,10 @@ public class VirtualMachineTemplate extends DeploymentObject implements Serializ
     private static final long serialVersionUID = 8513536191362885293L;
     //    Map<String, App> dependencies = new HashMap<>();
     private int processorCount = 1;
-    private int memory = 1;
+    private int memory = 1024;
     private int storage = 20;
 
+    private boolean forceChefProvisioningUpdate = false;
     private List<ObjectId> runlist = new LinkedList<>();
 
     public VirtualMachineTemplate() {
@@ -163,5 +164,13 @@ public class VirtualMachineTemplate extends DeploymentObject implements Serializ
         d.setVirtualMachineTemplate(new ClonerProducer().produceCloner().deepClone(this));
         d.setName(getName());
         return d;
+    }
+
+    public boolean isForceChefProvisioningUpdate() {
+        return forceChefProvisioningUpdate;
+    }
+
+    public void setForceChefProvisioningUpdate(boolean forceChefProvisioningUpdate) {
+        this.forceChefProvisioningUpdate = forceChefProvisioningUpdate;
     }
 }

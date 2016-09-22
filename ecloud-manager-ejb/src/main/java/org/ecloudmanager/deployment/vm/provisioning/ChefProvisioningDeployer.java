@@ -112,10 +112,9 @@ public class ChefProvisioningDeployer implements Deployer<VMDeployment> {
 
     @Override
     public Action getUpdateAction(@NotNull DeploymentAttempt lastAttempt, VMDeployment before, VMDeployment after) {
-        if (
+        if (after.getVirtualMachineTemplate().isForceChefProvisioningUpdate() ||
             chefActions.needUpdateChefEnvironment(after.getChefEnvironment()) ||
-                provisioningActions.needUpdateProvisioning(before, after)
-            ) {
+                provisioningActions.needUpdateProvisioning(before, after)) {
             return provisioningActions.getProvisionVmUpdateAction(after, nodeAPI, credentials);
         } else {
             return null;
