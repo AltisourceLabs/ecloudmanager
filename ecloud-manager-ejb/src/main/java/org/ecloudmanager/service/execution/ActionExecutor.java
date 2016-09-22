@@ -56,8 +56,7 @@ public class ActionExecutor {
             while (!action.isDone()) {
                 SingleAction a = action.getAvailableAction(action);
                 if (a != null) {
-                    ActionLogger actionLog = loggingEventRepository.createActionLogger(ActionExecutor.class, a.getId(), listeners);
-
+                    ActionLogger actionLog = loggingEventRepository.createActionLogger(a.getDeployable().getPath(":"), a.getId(), listeners);
                     log.info("Submitting action for execution: " + a.getLabel());
                     a.setStatus(Action.Status.RUNNING);
                     executorService.submit(() -> a.apply(actionLog));

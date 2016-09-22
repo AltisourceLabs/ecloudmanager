@@ -9,6 +9,7 @@ import org.ecloudmanager.node.model.LoggingEvent;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -17,13 +18,13 @@ import java.util.stream.Collectors;
 public class ActionLogger implements LoggingEventListener {
     private LoggingEventRepository repository;
     private String actionId;
-    private String fqcn;
+    private String logger;
     private ExecutorService executor;
     private Collection<LoggingEventListener> listeners;
 
-    ActionLogger(Class caller, String actionId, LoggingEventRepository repository, ExecutorService executor, LoggingEventListener... listeners) {
+    ActionLogger(String logger, String actionId, LoggingEventRepository repository, ExecutorService executor, LoggingEventListener... listeners) {
         this.actionId = actionId;
-        this.fqcn = caller.getName();
+        this.logger = logger;
         this.repository = repository;
         this.executor = executor;
         this.listeners = Arrays.asList(listeners);
@@ -35,8 +36,13 @@ public class ActionLogger implements LoggingEventListener {
 
     @Override
     public void log(Collection<LoggingEvent> events) {
-        listeners.forEach(l -> l.log(events));
-        repository.saveAll(events.stream().map(e -> new LoggingEventEntity(actionId, e)).collect(Collectors.toList()));
+        List<LoggingEvent> eventList = events.stream().map(e -> new LoggingEvent()
+                .level(e.getLevel())
+                .logger(logger + (e.getLogger() == null ? "" : " [" + e.getLogger() + "]"))
+                .message(e.getMessage()).throwable(e.getThrowable()).timeStamp(e.getTimeStamp()))
+                .collect(Collectors.toList());
+        listeners.forEach(l -> l.log(eventList));
+        repository.saveAll(eventList.stream().map(e -> new LoggingEventEntity(actionId, e)).collect(Collectors.toList()));
     }
 
     public void log(LoggingEvent event) {
@@ -44,7 +50,7 @@ public class ActionLogger implements LoggingEventListener {
     }
 
     private void recordEvent(String level, String msg, Throwable throwable) {
-        log(new LoggingEvent().level(level).logger(fqcn).message(msg)
+        log(new LoggingEvent().level(level).message(msg)
                 .throwable(throwable == null ? null : ExceptionUtils.getStackTrace(throwable))
                 .timeStamp(System.currentTimeMillis()));
     }

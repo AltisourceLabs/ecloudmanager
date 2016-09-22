@@ -53,8 +53,8 @@ public class LoggingEventRepository extends MongoDBRepositorySupport<LoggingEven
                 .collect(Collectors.toList());
     }
 
-    public ActionLogger createActionLogger(Class caller, String actionId, LoggingEventListener... listeners) {
-        return new ActionLogger(caller, actionId, this, executorService, listeners);
+    public ActionLogger createActionLogger(String logger, String actionId, LoggingEventListener... listeners) {
+        return new ActionLogger(logger, actionId, this, executorService, listeners);
     }
 
 }
