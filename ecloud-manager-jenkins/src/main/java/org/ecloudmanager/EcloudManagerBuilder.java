@@ -36,9 +36,11 @@ import hudson.util.FormValidation;
 import jenkins.tasks.SimpleBuildStep;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
+import org.ecloudmanager.web.model.LoggingEvent;
 import org.ecloudmanager.web.rest.ApiClient;
 import org.ecloudmanager.web.rest.ApiException;
 import org.ecloudmanager.web.rest.client.DeploymentApi;
+import org.ecloudmanager.web.rest.client.TasksApi;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -47,6 +49,7 @@ import javax.servlet.ServletException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -123,13 +126,34 @@ public class EcloudManagerBuilder extends Notifier implements SimpleBuildStep {
                 }
 
                 // TODO - deploy
-                listener.getLogger().println(deployments.get(0));
+                String deploymentId = deployments.get(0);
+                String taskId = deploymentApi.deploy(deploymentId);
+                TasksApi tasksApi = new TasksApi(apiClient);
+                while (!tasksApi.getTask(taskId).getDone()) {
+                    List<LoggingEvent> loggingEvents = tasksApi.pollLog(taskId);
+                    loggingEvents.forEach(e -> {
+                        listener.getLogger().println(convertLoggingEventToString(e));
+                    });
+                }
+                LoggingEvent exception = tasksApi.getTask(taskId).getException();
+                if (exception != null) {
+                    build.setResult(Result.FAILURE);
+                    listener.getLogger().println("Ecloud manager deployment failed: ");
+                    listener.getLogger().println(convertLoggingEventToString(exception));
+                } else {
+                    listener.getLogger().println("Ecloud manager deployment successfully completed.");
+                }
             } catch (ApiException e) {
                 listener.getLogger().println("Error: unable to use ecloud manager API: " + e);
                 listener.getLogger().println(StringUtils.join(e.getStackTrace(), "\n"));
                 build.setResult(Result.FAILURE);
             }
         }
+    }
+
+    private String convertLoggingEventToString(LoggingEvent loggingEvent) {
+        return new Date(loggingEvent.getTimeStamp()) + " " +
+               loggingEvent.getLevel() + ": " + loggingEvent.getMessage() + " " + loggingEvent.getThrowable();
     }
 
     // Overridden for better type safety.
