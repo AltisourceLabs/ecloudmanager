@@ -52,7 +52,7 @@
         -->
 
         <swagger-core-version>1.5.9</swagger-core-version>
-        <ecloud-manager-web-version>0.0.1-SNAPSHOT</ecloud-manager-web-version>
+        <ecloud-manager-version>0.0.1-SNAPSHOT</ecloud-manager-version>
         <okhttp-version>2.7.5</okhttp-version>
         <gson-version>2.6.2</gson-version>
         <jodatime-version>2.9.3</jodatime-version>
@@ -122,7 +122,7 @@
                                     <groupId>org.ecloudmanager</groupId>
                                     <artifactId>ecloud-manager-web</artifactId>
                                     <type>war</type>
-                                    <version>${ecloud-manager-web-version}</version>
+                                    <version>${ecloud-manager-version}</version>
                                     <outputDirectory>${project.build.directory}</outputDirectory>
                                     <includes>WEB-INF/classes/swagger.yaml</includes>
                                 </artifactItem>
@@ -180,10 +180,28 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.jenkins-ci.tools</groupId>
+                <artifactId>maven-hpi-plugin</artifactId>
+                <configuration>
+                    <pluginFirstClassLoader>true</pluginFirstClassLoader>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
     <dependencies>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>19.0</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.ecloudmanager</groupId>
+            <artifactId>node-api</artifactId>
+            <version>${ecloud-manager-version}</version>
+        </dependency>
         <dependency>
             <groupId>io.swagger</groupId>
             <artifactId>swagger-annotations</artifactId>

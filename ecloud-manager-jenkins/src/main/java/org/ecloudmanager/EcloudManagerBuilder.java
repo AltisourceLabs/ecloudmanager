@@ -36,6 +36,7 @@ import hudson.util.FormValidation;
 import jenkins.tasks.SimpleBuildStep;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
+import org.ecloudmanager.node.util.SynchronousPoller;
 import org.ecloudmanager.web.model.LoggingEvent;
 import org.ecloudmanager.web.rest.ApiClient;
 import org.ecloudmanager.web.rest.ApiException;
@@ -51,6 +52,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 /**
  * Sample {@link Builder}.
@@ -128,18 +130,16 @@ public class EcloudManagerBuilder extends Notifier implements SimpleBuildStep {
                 String deploymentId = deployments.get(0);
                 String taskId = deploymentApi.deploy(deploymentId);
                 TasksApi tasksApi = new TasksApi(apiClient);
-                while (!tasksApi.getTask(taskId).getDone()) {
+
+                Callable<Boolean> pollLogs = () -> {
                     List<LoggingEvent> loggingEvents = tasksApi.pollLog(taskId);
                     loggingEvents.forEach(e -> {
                         listener.getLogger().println(convertLoggingEventToString(e));
                     });
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        listener.getLogger().println("WARNING: Deployment logs polling was interrupted. Deployment result is unknown.");
-                        return;
-                    }
-                }
+                    return tasksApi.getTask(taskId).getDone();
+                };
+                new SynchronousPoller().poll(pollLogs, b -> b, 1, 10000, 3, "update ecloud manager app deployment");
+
                 LoggingEvent exception = tasksApi.getTask(taskId).getException();
                 if (exception != null) {
                     build.setResult(Result.FAILURE);
