@@ -125,7 +125,6 @@ public class EcloudManagerBuilder extends Notifier implements SimpleBuildStep {
                     listener.getLogger().println(StringUtils.join(deployments, "\n"));
                 }
 
-                // TODO - deploy
                 String deploymentId = deployments.get(0);
                 String taskId = deploymentApi.deploy(deploymentId);
                 TasksApi tasksApi = new TasksApi(apiClient);
@@ -134,6 +133,12 @@ public class EcloudManagerBuilder extends Notifier implements SimpleBuildStep {
                     loggingEvents.forEach(e -> {
                         listener.getLogger().println(convertLoggingEventToString(e));
                     });
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        listener.getLogger().println("WARNING: Deployment logs polling was interrupted. Deployment result is unknown.");
+                        return;
+                    }
                 }
                 LoggingEvent exception = tasksApi.getTask(taskId).getException();
                 if (exception != null) {
