@@ -34,10 +34,12 @@ import hudson.model.TaskListener;
 import hudson.tasks.*;
 import hudson.util.FormValidation;
 import jenkins.tasks.SimpleBuildStep;
+import net.jodah.failsafe.Failsafe;
+import net.jodah.failsafe.RetryPolicy;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
-import org.ecloudmanager.node.util.SynchronousPoller;
 import org.ecloudmanager.web.model.LoggingEvent;
+import org.ecloudmanager.web.model.TaskInfo;
 import org.ecloudmanager.web.rest.ApiClient;
 import org.ecloudmanager.web.rest.ApiException;
 import org.ecloudmanager.web.rest.client.DeploymentApi;
@@ -53,6 +55,7 @@ import java.net.URL;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Sample {@link Builder}.
@@ -131,14 +134,17 @@ public class EcloudManagerBuilder extends Notifier implements SimpleBuildStep {
                 String taskId = deploymentApi.deploy(deploymentId);
                 TasksApi tasksApi = new TasksApi(apiClient);
 
-                Callable<Boolean> pollLogs = () -> {
+                RetryPolicy untilTaskDone = new RetryPolicy()
+                        .<TaskInfo>retryIf(t -> !t.getDone())
+                        .withDelay(3, TimeUnit.SECONDS)
+                        .withMaxDuration(10000, TimeUnit.SECONDS);
+                Failsafe.with(untilTaskDone).get(() -> {
                     List<LoggingEvent> loggingEvents = tasksApi.pollLog(taskId);
                     loggingEvents.forEach(e -> {
                         listener.getLogger().println(convertLoggingEventToString(e));
                     });
-                    return tasksApi.getTask(taskId).getDone();
-                };
-                new SynchronousPoller().poll(pollLogs, b -> b, 1, 10000, 3, "update ecloud manager app deployment");
+                    return tasksApi.getTask(taskId);
+                });
 
                 LoggingEvent exception = tasksApi.getTask(taskId).getException();
                 if (exception != null) {

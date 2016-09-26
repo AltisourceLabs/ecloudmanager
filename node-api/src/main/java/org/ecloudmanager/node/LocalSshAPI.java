@@ -1,12 +1,13 @@
 package org.ecloudmanager.node;
 
 import com.jcraft.jsch.*;
+import net.jodah.failsafe.Failsafe;
+import net.jodah.failsafe.RetryPolicy;
 import org.apache.commons.lang3.StringUtils;
 import org.ecloudmanager.node.model.Command;
 import org.ecloudmanager.node.model.Credentials;
 import org.ecloudmanager.node.model.NodeInfo;
 import org.ecloudmanager.node.model.SSHCredentials;
-import org.ecloudmanager.node.util.SynchronousPoller;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
@@ -14,17 +15,30 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.ConnectException;
 import java.util.Stack;
-import java.util.concurrent.Callable;
-import java.util.function.Predicate;
+import java.util.concurrent.TimeUnit;
 
 public class LocalSshAPI {
 
     private static org.slf4j.Logger log = LoggerFactory.getLogger(LocalSshAPI.class);
     private NodeBaseAPI nodeBaseAPI;
-    private SynchronousPoller synchronousPoller = new SynchronousPoller();
+
     public LocalSshAPI(NodeBaseAPI nodeBaseAPI) {
         this.nodeBaseAPI = nodeBaseAPI;
 
+    }
+
+    private static Session failSafeConnect(Session session) {
+        RetryPolicy sshRetryPolicy = new RetryPolicy()
+                .retryOn(e -> JSchException.class.isInstance(e) && ConnectException.class.isInstance(e.getCause()))
+                .withDelay(3, TimeUnit.SECONDS)
+                .withMaxDuration(10, TimeUnit.MINUTES)
+                .withMaxRetries(100);
+        Failsafe.with(sshRetryPolicy).run(ctx -> {
+            log.info("SSH connection to {}@{}:{}, attempt #{}", session.getUserName(), session.getHost(), session.getPort(), ctx.getExecutions());
+            session.connect();
+        });
+        log.info("Established SSH connection to {}@{}:{}", session.getUserName(), session.getHost(), session.getPort());
+        return session;
     }
 
     public void uploadFile(Credentials credentials, SSHCredentials sshCredentials, String nodeId, InputStream file, String path) throws Exception {
@@ -90,52 +104,25 @@ public class LocalSshAPI {
         return exitStatus;
     }
 
-    private Session createSession(String username, String host, String privateKey, String passphrase) throws
-            JSchException {
-        Callable<Session> tryConnect = () -> {
-            try {
-                JSch jsch = new JSch();
-                jsch.addIdentity(username, privateKey.getBytes(), null, passphrase == null ? null : passphrase.getBytes());
-                Session session = jsch.getSession(username, host);
-                session.setConfig("StrictHostKeyChecking", "no");
-                session.connect();
-                return session;
-            } catch (JSchException e) {
-                if (e.getCause() instanceof ConnectException) {
-                    return null;
-                } else {
-                    throw e;
-                }
-            }
-        };
-        Predicate<Session> sessionConnected = session -> session != null && session.isConnected();
-        return synchronousPoller.poll(tryConnect, sessionConnected, 1, 600, 30, "wait for SSH to become available");
+    private Session createSession(String username, String host, String privateKey, String passphrase) throws JSchException {
+        JSch jsch = new JSch();
+        jsch.addIdentity(username, privateKey.getBytes(), null, passphrase == null ? null : passphrase.getBytes());
+        Session session = jsch.getSession(username, host);
+        session.setConfig("StrictHostKeyChecking", "no");
+        return failSafeConnect(session);
     }
 
     private Session createForwardingSession(Session parentSession, String username, String host, String privateKey,
                                             String passphrase) throws JSchException {
-        Callable<Session> tryConnect = () -> {
-            try {
-                if (!parentSession.isConnected()) {
-                    throw new IllegalArgumentException("Parent session must be connected.");
-                }
-                int assinged_port = parentSession.setPortForwardingL(0, host, 22);
-                JSch jsch = new JSch();
-                jsch.addIdentity(username, privateKey.getBytes(), null, passphrase == null ? null : passphrase.getBytes());
-                Session session = jsch.getSession(username, "127.0.0.1", assinged_port);
-                session.setConfig("StrictHostKeyChecking", "no");
-                session.connect();
-                return session;
-            } catch (JSchException e) {
-                if (e.getCause() instanceof ConnectException) {
-                    return null;
-                } else {
-                    throw e;
-                }
-            }
-        };
-        Predicate<Session> sessionConnected = session -> session != null && session.isConnected();
-        return synchronousPoller.poll(tryConnect, sessionConnected, 1, 600, 30, "wait for SSH to become available");
+        if (!parentSession.isConnected()) {
+            throw new IllegalArgumentException("Parent session must be connected.");
+        }
+        int assinged_port = parentSession.setPortForwardingL(0, host, 22);
+        JSch jsch = new JSch();
+        jsch.addIdentity(username, privateKey.getBytes(), null, passphrase == null ? null : passphrase.getBytes());
+        Session session = jsch.getSession(username, "127.0.0.1", assinged_port);
+        session.setConfig("StrictHostKeyChecking", "no");
+        return failSafeConnect(session);
     }
 
 

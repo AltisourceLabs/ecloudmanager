@@ -2,10 +2,11 @@ package org.ecloudmanager.node.verizon;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
+import net.jodah.failsafe.Failsafe;
+import net.jodah.failsafe.RetryPolicy;
 import org.apache.commons.lang3.tuple.Pair;
 import org.ecloudmanager.node.NodeBaseAPI;
 import org.ecloudmanager.node.model.*;
-import org.ecloudmanager.node.util.SynchronousPoller;
 import org.ecloudmanager.tmrk.cloudapi.model.*;
 import org.ecloudmanager.tmrk.cloudapi.service.device.VirtualMachineService;
 import org.ecloudmanager.tmrk.cloudapi.util.TmrkUtils;
@@ -15,11 +16,8 @@ import org.slf4j.LoggerFactory;
 import javax.xml.bind.JAXBElement;
 import java.math.BigDecimal;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.function.Predicate;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import static org.ecloudmanager.tmrk.cloudapi.model.VirtualMachineStatus.NOT_DEPLOYED;
 
 public class VerizonNodeAPI implements NodeBaseAPI {
     private static final Set<Integer> ALLOWED_CPU_VALUES = Sets.newHashSet(1, 2, 4, 8);
@@ -387,49 +385,27 @@ public class VerizonNodeAPI implements NodeBaseAPI {
     }
 
     private void waitUntilMachineIsPoweredOff(String vmId, CloudServicesRegistry registry) {
-        Callable<Boolean> poll = () -> {
-            VirtualMachineType virtualMachineType = registry.getVirtualMachineService().getVirtualMachineById(vmId);
-            return !virtualMachineType.getPoweredOn().getValue();
-        };
-        new SynchronousPoller().poll(
-                poll, x -> x,
-                1, VZ_TASK_TIMEOUT_SEC,
-                "waiting for node " + vmId + " to become powered off"
-        );
+        RetryPolicy vmRetryPolicy = new RetryPolicy()
+                .<VirtualMachineType>retryIf(vm -> !vm.getPoweredOn().getValue())
+                .withDelay(1, TimeUnit.SECONDS)
+                .withMaxDuration(VZ_TASK_TIMEOUT_SEC, TimeUnit.SECONDS);
+        Failsafe.with(vmRetryPolicy).get(() -> registry.getVirtualMachineService().getVirtualMachineById(vmId));
     }
 
     private void waitUntilTaskNotFinished(TaskType task, CloudServicesRegistry registry) {
-        Callable<TaskStatus> poll = () -> {
-            TaskType obtainedTask = registry.getTaskService().getTaskById(getResourceId(task));
-            return obtainedTask.getStatus().getValue();
-        };
-        Predicate<TaskStatus> check =
-                (status) -> !(TaskStatus.QUEUED.equals(status) || TaskStatus.RUNNING.equals(status));
-        new SynchronousPoller().poll(
-                poll, check,
-                1, VZ_TASK_TIMEOUT_SEC,
-                "waiting for task '" + task.getName() + "' to complete."
-        );
+        RetryPolicy taskRetryPolicy = new RetryPolicy()
+                .<TaskType>retryIf(t -> Arrays.asList(TaskStatus.COMPLETE, TaskStatus.ERROR).contains(t))
+                .withDelay(1, TimeUnit.SECONDS)
+                .withMaxDuration(VZ_TASK_TIMEOUT_SEC, TimeUnit.SECONDS);
+        Failsafe.with(taskRetryPolicy).get(() -> registry.getTaskService().getTaskById(getResourceId(task)));
     }
 
     private VirtualMachineType waitUntilMachineIsNotReady(String vmId, CloudServicesRegistry registry, boolean waitForIP) {
-        VirtualMachineService vmService = registry.getVirtualMachineService();
-        List<VirtualMachineStatus> badStatuses = Arrays.asList(
-                VirtualMachineStatus.COPY_IN_PROGRESS,
-                VirtualMachineStatus.TASK_IN_PROGRESS,
-                NOT_DEPLOYED,
-                VirtualMachineStatus.ORPHANED
-        );
-
-        Callable<VirtualMachineType> poll = () -> vmService.getVirtualMachineById(vmId);
-        Predicate<VirtualMachineType> check = (vm) -> !badStatuses.contains(vm.getStatus().getValue()) && (!waitForIP || getIpAddress(vm, registry) != null);
-
-        return new SynchronousPoller().poll(
-                    poll, check,
-                    1, VZ_TASK_TIMEOUT_SEC,
-                    "waiting for virtual machine " + vmId + " to become ready"
-            );
-
+        RetryPolicy vmRetryPolicy = new RetryPolicy()
+                .<VirtualMachineType>retryIf(vm -> !vm.getStatus().getValue().equals(VirtualMachineStatus.DEPLOYED) && (!waitForIP || getIpAddress(vm, registry) != null))
+                .withDelay(1, TimeUnit.SECONDS)
+                .withMaxDuration(VZ_TASK_TIMEOUT_SEC, TimeUnit.SECONDS);
+        return Failsafe.with(vmRetryPolicy).get(() -> registry.getVirtualMachineService().getVirtualMachineById(vmId));
     }
 
     @Override

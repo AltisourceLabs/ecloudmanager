@@ -38,7 +38,6 @@ import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
 import org.ecloudmanager.service.NodeAPIConfigurationService;
 import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
 import org.ecloudmanager.service.execution.Action;
-import org.ecloudmanager.service.execution.SynchronousPoller;
 
 import javax.inject.Inject;
 import java.util.Map;
@@ -49,8 +48,6 @@ import static org.ecloudmanager.node.LoggableFuture.waitFor;
 public class VmActions {
     static String CREATE_VM = "Create VM";
     static String CONFIGURE_VM = "Configure VM";
-    @Inject
-    SynchronousPoller synchronousPoller;
     @Inject
     private ApplicationDeploymentService applicationDeploymentService;
 

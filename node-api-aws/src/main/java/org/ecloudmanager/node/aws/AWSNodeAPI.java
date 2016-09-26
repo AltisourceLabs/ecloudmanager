@@ -9,17 +9,18 @@ import com.amazonaws.services.route53.AmazonRoute53;
 import com.amazonaws.services.route53.model.*;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import net.jodah.failsafe.Failsafe;
+import net.jodah.failsafe.RetryPolicy;
 import org.apache.commons.lang3.StringUtils;
 import org.ecloudmanager.node.NodeBaseAPI;
 import org.ecloudmanager.node.model.*;
-import org.ecloudmanager.node.util.SynchronousPoller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -32,7 +33,6 @@ public class AWSNodeAPI implements NodeBaseAPI {
     private static String TAG_CREATOR = "Creator";
     private static String TAG_HOSTED_ZONE = "Hosted Zone";
     private static APIInfo API_INFO = new APIInfo().id("AWS").description("Amazon EC2");
-
     static {
         try {
             GitInfo gitInfo = GitInfo.get();
@@ -55,7 +55,7 @@ public class AWSNodeAPI implements NodeBaseAPI {
                 new FirewallRule().type(FirewallRule.TypeEnum.IP).protocol(permission.getIpProtocol()).port(permission.getToPort()).from(range)).collect(Collectors.toList());
     }
 
-    private static Predicate<Exception> errorCode(String errorCode) {
+    private static Predicate<Throwable> errorCode(String errorCode) {
         return e -> AmazonServiceException.class.isInstance(e) && errorCode.equals(AmazonServiceException.class.cast(e).getErrorCode());
     }
 
@@ -188,19 +188,18 @@ public class AWSNodeAPI implements NodeBaseAPI {
             throw t;
         }
         String vmId;
+        RetryPolicy createNodeRetryPolicy = new RetryPolicy()
+                .retryOn(e -> AmazonServiceException.class.isInstance(e) && "InvalidGroup.NotFound".equals(AmazonServiceException.class.cast(e).getErrorCode()))
+                .withDelay(1, TimeUnit.SECONDS)
+                .withMaxDuration(10, TimeUnit.MINUTES);
         try {
-            vmId = runWithRetry("Create node", () -> createNode(ec2, storage, securityGroupId, subnet, image, instanceType, keyPair), errorCode("InvalidGroup.NotFound"));
+            vmId = Failsafe.with(createNodeRetryPolicy).get(() -> createNode(ec2, storage, securityGroupId, subnet, image, instanceType, keyPair));
             log.info("VM created with id: " + vmId);
         } catch (Exception t) {
             log.error("Can't create node", t);
             deleteSecurityGroupOnFailure(ec2, securityGroupId);
             throw t;
         }
-        runWithRetry("Create 'Name' tag",
-                () -> setInstanceName(ec2, vmId, name)
-                , null, null);
-
-
         return region + ":" + vmId;
     }
 
@@ -301,7 +300,6 @@ public class AWSNodeAPI implements NodeBaseAPI {
         AmazonEC2 ec2 = AWS.ec2(accessKey, secretKey, region);
         AmazonRoute53 route53 = AWS.route53(accessKey, secretKey);
 
-        SynchronousPoller poller = new SynchronousPoller();
         Instance instance = getInstance(ec2, vmId);
 
         String oldName = getInstanceName(instance);
@@ -338,12 +336,11 @@ public class AWSNodeAPI implements NodeBaseAPI {
             log.info("Stopping AWS instance " + vmId + "(" + newName + ")");
             StopInstancesRequest stopInstancesRequest = new StopInstancesRequest().withInstanceIds(vmId);
             ec2.stopInstances(stopInstancesRequest);
-
-            Callable<DescribeInstancesResult> poll =
-                    () -> ec2.describeInstances(new DescribeInstancesRequest().withInstanceIds(vmId));
-            Predicate<DescribeInstancesResult> check =
-                    (stopResult) -> "stopped".equals(stopResult.getReservations().get(0).getInstances().get(0).getState().getName());
-            poller.poll(poll, check, 1, 600, "wait for instance " + vmId + " to stop.");
+            RetryPolicy untilInstanceStopped = new RetryPolicy()
+                    .<DescribeInstancesResult>retryIf((r) -> !"stopped".equals(r.getReservations().get(0).getInstances().get(0).getState().getName()))
+                    .withDelay(1, TimeUnit.SECONDS)
+                    .withMaxDuration(10, TimeUnit.MINUTES);
+            Failsafe.with(untilInstanceStopped).get(() -> ec2.describeInstances(new DescribeInstancesRequest().withInstanceIds(vmId)));
         }
 
         if (needUpdateInstanceType) {
@@ -362,11 +359,11 @@ public class AWSNodeAPI implements NodeBaseAPI {
             CreateSnapshotResult createSnapshotResult = ec2.createSnapshot(createSnapshotRequest);
             String snapshotId = createSnapshotResult.getSnapshot().getSnapshotId();
 
-            Callable<DescribeSnapshotsResult> poll =
-                    () -> ec2.describeSnapshots(new DescribeSnapshotsRequest().withSnapshotIds(snapshotId));
-            Predicate<DescribeSnapshotsResult> check =
-                    (snapshotResult) -> "completed".equals(snapshotResult.getSnapshots().get(0).getState());
-            poller.poll(poll, check, 1, 600, "wait for snapshot " + snapshotId + " to be completed.");
+            RetryPolicy untilSnapshotCompleted = new RetryPolicy()
+                    .<Snapshot>retryIf(s -> !"completed".equals(s.getState()))
+                    .withDelay(1, TimeUnit.SECONDS)
+                    .withMaxDuration(10, TimeUnit.MINUTES);
+            Failsafe.with(untilSnapshotCompleted).get(() -> ec2.describeSnapshots(new DescribeSnapshotsRequest().withSnapshotIds(snapshotId)).getSnapshots().get(0));
 
             DescribeVolumesRequest describeVolumesRequest = new DescribeVolumesRequest().withVolumeIds(volumeId);
             DescribeVolumesResult describeVolumesResult = ec2.describeVolumes(describeVolumesRequest);
@@ -380,11 +377,14 @@ public class AWSNodeAPI implements NodeBaseAPI {
 
             log.info("New volume " + newVolumeId + " was created from snapshot " + snapshotId);
 
-            Callable<DescribeVolumesResult> pollVol =
-                    () -> ec2.describeVolumes(new DescribeVolumesRequest().withVolumeIds(newVolumeId));
-            Predicate<DescribeVolumesResult> checkVol =
-                    (volResult) -> "available".equals(volResult.getVolumes().get(0).getState());
-            poller.poll(pollVol, checkVol, 1, 600, "wait for volume " + newVolumeId + " to become available.");
+            RetryPolicy untilVolumeAvailable = new RetryPolicy()
+                    .<Volume>retryIf(v -> !"available".equals(v.getState()))
+                    .withDelay(1, TimeUnit.SECONDS)
+                    .withMaxDuration(10, TimeUnit.MINUTES);
+
+            Failsafe.with(untilVolumeAvailable).get(() -> ec2.describeVolumes(new DescribeVolumesRequest().withVolumeIds(newVolumeId)).getVolumes().get(0));
+
+
 
             log.info("Detaching old volume " + volumeId + " from " + vmId + "(" + newName + ")");
             ec2.detachVolume(new DetachVolumeRequest(volumeId));
@@ -404,15 +404,11 @@ public class AWSNodeAPI implements NodeBaseAPI {
             log.info("Starting AWS instance " + vmId + "(" + newName + ")");
             ec2.startInstances(new StartInstancesRequest().withInstanceIds(vmId));
 
-            Callable<Instance> poll =
-                    () -> ec2.describeInstances(new DescribeInstancesRequest().withInstanceIds(vmId)).getReservations().get(0).getInstances().get(0);
-            Predicate<Instance> check =
-                    (i) -> "running".equals(i.getState().getName()) && !Strings.isNullOrEmpty(i.getPrivateIpAddress());
-            poller.poll(
-                    poll, check,
-                    1, 600, 20,
-                    "wait for instance " + vmId + " to become ready."
-            );
+            RetryPolicy untilInstanceReady = new RetryPolicy()
+                    .<Instance>retryIf(i -> !"running".equals(i.getState().getName()) || !Strings.isNullOrEmpty(i.getPrivateIpAddress()))
+                    .withDelay(1, TimeUnit.SECONDS)
+                    .withMaxDuration(10, TimeUnit.MINUTES);
+            Failsafe.with(untilInstanceReady).get(() -> ec2.describeInstances(new DescribeInstancesRequest().withInstanceIds(vmId)).getReservations().get(0).getInstances().get(0));
         }
         return getNode(credentials, nodeId);
     }
@@ -440,7 +436,15 @@ public class AWSNodeAPI implements NodeBaseAPI {
                 resourceRecordSet)));
         ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest = new ChangeResourceRecordSetsRequest()
                 .withHostedZoneId(hostedZone.getId()).withChangeBatch(changeBatch);
-        return runWithRetry("Route53 request", () -> route53.changeResourceRecordSets(changeResourceRecordSetsRequest), PriorRequestNotCompleteException.class::isInstance);
+        return failsafeChangeResourceRecordSets(route53, changeResourceRecordSetsRequest);
+    }
+
+    private ChangeResourceRecordSetsResult failsafeChangeResourceRecordSets(AmazonRoute53 route53, ChangeResourceRecordSetsRequest request) {
+        RetryPolicy route53RetryPolicy = new RetryPolicy()
+                .retryOn(PriorRequestNotCompleteException.class)
+                .withDelay(1, TimeUnit.SECONDS)
+                .withMaxDuration(10, TimeUnit.MINUTES);
+        return Failsafe.with(route53RetryPolicy).get(() -> route53.changeResourceRecordSets(request));
     }
 
     private HostedZone getHostedZone(String awsHostedZone, AmazonRoute53 route53) {
@@ -473,47 +477,10 @@ public class AWSNodeAPI implements NodeBaseAPI {
                 filtered.get(0))));
         ChangeResourceRecordSetsRequest changeResourceRecordSetsRequest = new ChangeResourceRecordSetsRequest()
                 .withHostedZoneId(hostedZone.getId()).withChangeBatch(changeBatch);
-        ChangeResourceRecordSetsResult changeResourceRecordSetsResult =
-                runWithRetry("Route53 request", () -> route53.changeResourceRecordSets(changeResourceRecordSetsRequest), PriorRequestNotCompleteException.class::isInstance);
-//        ChangeResourceRecordSetsResult changeResourceRecordSetsResult =
-//                guardedChangeResourceRecordSets(route53, changeResourceRecordSetsRequest);
-        log.info("Submitted delete recordset request " + changeResourceRecordSetsResult.getChangeInfo().toString());
+        ChangeResourceRecordSetsResult result = failsafeChangeResourceRecordSets(route53, changeResourceRecordSetsRequest);
+        log.info("Submitted delete recordset request " + result.getChangeInfo().toString());
     }
 
-    private void runWithRetry(String operation, Runnable runnable, Predicate<Exception> retry, Predicate<Exception> ignore) {
-        runWithRetry(operation, () -> {
-            runnable.run();
-            return new Object();
-        }, retry, ignore, new Object());
-    }
-
-    private <T> T runWithRetry(String operation, Callable<T> callable, Predicate<Exception> retry) {
-        return runWithRetry(operation, callable, retry, null, null);
-    }
-
-    private <T> T runWithRetry(String operation, Callable<T> callable, Predicate<Exception> retry, Predicate<Exception> ignore, T returnOnIgnore) {
-        Callable<T> poll =
-                () -> {
-                    try {
-                        return callable.call();
-                    } catch (Exception e) {
-                        if (ignore != null && ignore.test(e)) {
-                            log.warn(operation + " failed, returning default value", e);
-                            if (returnOnIgnore == null) {
-                                throw new NullPointerException();
-                            }
-                            return returnOnIgnore;
-                        }
-                        if (retry == null || retry.test(e)) {
-                            log.warn(operation + " failed, retrying...", e);
-                            return null;
-                        }
-                        log.error(operation + " failed", e);
-                        throw e;
-                    }
-                };
-        return new SynchronousPoller().poll(poll, Objects::nonNull, 1, RETRY_TIMEOUT, "wait for " + operation + " to be submitted");
-    }
 
     @Override
     public void deleteNode(Credentials credentials, String nodeId) throws AWS.RegionNotExistException, ExecutionException {
