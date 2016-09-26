@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <Match>
+        <Class name="org.ecloudmanager.web.rest.ApiClient"/>
+        <Method name="applySslSettings"/>
+        <Bug pattern="DLS_DEAD_LOCAL_STORE,NP_LOAD_OF_KNOWN_NULL_VALUE"/>
+    </Match>
+</FindBugsFilter>
