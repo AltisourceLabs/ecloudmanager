@@ -120,7 +120,12 @@
                                  message="Passwords are not equal" showMessageFor="newPassword" />
             </h:panelGrid>
             <p:spacer/>
-            <p:commandButton value="Change" validateClient="true" action="#{usersController.changePassword()}" oncomplete="if (args &amp;&amp; !args.validationFailed) PF('dlg_change_password').hide()"/>
+            <p:commandButton value="Change"
+                             validateClient="true"
+                             action="#{usersController.changePassword()}"
+                             oncomplete="if (args &amp;&amp; !args.validationFailed) PF('dlg_change_password').hide()"
+                             update="messages"
+            />
             <p:commandButton value="Cancel" oncomplete="PF('dlg_change_password').hide()" immediate="true"/>
         </h:form>
     </p:dialog>

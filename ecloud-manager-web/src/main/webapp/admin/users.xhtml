@@ -63,9 +63,8 @@
                 </p:dataTable>
                 <p:commandButton value="New" icon="ui-icon-plus" id="new"
                                  update="dlg_edit" oncomplete="PF('dlg_edit').show();"/>
-
-                <p:growl id="messages" sticky="true" showDetail="true"/>
             </h:form>
+            <p:growl id="messages" sticky="true" showDetail="true"/>
         </h:panelGroup>
         <p:dialog header="#{usersController.edit ? 'Edit' : 'Add'} User"
                   widgetVar="dlg_edit"
