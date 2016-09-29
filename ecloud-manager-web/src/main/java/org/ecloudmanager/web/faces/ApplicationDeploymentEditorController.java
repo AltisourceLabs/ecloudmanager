@@ -144,6 +144,7 @@ public class ApplicationDeploymentEditorController extends FacesSupport implemen
             applicationDeploymentService.update(deployment);
         }
         addMessage(new FacesMessage("Application deployment saved.", ""));
+        applicationDeploymentController.save();
         applicationDeploymentController.resetTree();
     }
 
