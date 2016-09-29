@@ -43,7 +43,6 @@ import org.ecloudmanager.repository.deployment.ApplicationDeploymentRepository;
 import org.ecloudmanager.repository.deployment.DeploymentAttemptRepository;
 import org.ecloudmanager.service.chef.ChefGenerationService;
 import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
-import org.omnifaces.cdi.Param;
 import org.primefaces.event.NodeSelectEvent;
 import org.primefaces.model.TreeNode;
 
@@ -80,10 +79,10 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
         nodeIcons.put(GatewayVMDeployment.class, "fa fa-desktop pull-left");
     }
 
-    @SuppressWarnings("CdiInjectionPointsInspection")
-    @Inject
-    @Param(converter = "topLevelDeployableConverter")
-    private ApplicationDeployment deployment;
+//    @SuppressWarnings("CdiInjectionPointsInspection")
+//    @Inject
+//    @Param(converter = "topLevelDeployableConverter")
+//    private ApplicationDeployment deployment;
 
     @Inject
     private transient ApplicationDeploymentService applicationDeploymentService;
@@ -115,13 +114,13 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
 
     @PostConstruct
     public void init() {
-        if (deployment == null) {
-            deployment = applicationDeploymentEditorController.getDeployment();
-        }
+//        if (deployment == null) {
+//            deployment = applicationDeploymentEditorController.getDeployment();
+//        }
     }
 
-    public Deployable getDeployment() {
-        return deployment;
+    public ApplicationDeployment getDeployment() {
+        return applicationDeploymentEditorController.getDeployment();
     }
 
     public TreeNode getTree() {
@@ -138,10 +137,10 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
     private TreeNode initTree() {
         SortableDefaultTreeNode root = new SortableDefaultTreeNode("root");
 
-        if (deployment == null) {
+        if (getDeployment() == null) {
             return root;
         }
-        getTree(deployment, root);
+        getTree(getDeployment(), root);
         root.sort();
 
 //        new DefaultTreeNode(deployment, root);
@@ -196,7 +195,7 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
 
     private List<SelectItem> initConstraintList() {
         List<SelectItem> result = new ArrayList<>();
-        deployment.stream()
+        getDeployment().stream()
             .filter(deploymentObject -> deploymentObject.getConstraintFields().size() > 0)
             .forEach(deploymentObject -> {
                 result.add(createGroup(deploymentObject.getName(), DeploymentConstraint.getPrefix
@@ -229,7 +228,7 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
     }
 
     public void save() {
-        applicationDeploymentService.update(deployment);
+        applicationDeploymentService.update(getDeployment());
     }
 
     public void generateChefEnv(ActionEvent ev) {
@@ -238,7 +237,7 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
             VMDeployment vmDeployment = (VMDeployment) selectedNode.getData();
             chefGenerationService.generateChefNodeEnv(sw, vmDeployment);
         } else {
-            chefGenerationService.generateChefEnv(sw, ChefEnvironmentDeployer.getChefEnvironment(deployment));
+            chefGenerationService.generateChefEnv(sw, ChefEnvironmentDeployer.getChefEnvironment(getDeployment()));
         }
         ObjectMapper mapper = new ObjectMapper();
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
@@ -257,12 +256,12 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
     }
 
     public boolean canDeploy() {
-        return deployment != null && deployment.stream().allMatch(d -> d.satisfied());
+        return getDeployment() != null && getDeployment().stream().allMatch(d -> d.satisfied());
     }
 
     public boolean canUndeploy() {
-        if (deployment != null) {
-            DeploymentAttempt lastAttempt = deploymentAttemptRepository.findLastAttempt(deployment);
+        if (getDeployment() != null) {
+            DeploymentAttempt lastAttempt = deploymentAttemptRepository.findLastAttempt(getDeployment());
             return lastAttempt != null &&
                 (lastAttempt.getType() == DeploymentAttempt.Type.CREATE || lastAttempt.getType() == DeploymentAttempt
                     .Type.UPDATE);
@@ -271,9 +270,9 @@ public class ApplicationDeploymentController extends FacesSupport implements Ser
     }
 
     public void scaleComponentGroups() {
-        deployment.stream(ComponentGroupDeployment.class).collect(Collectors.toList()).forEach
+        getDeployment().stream(ComponentGroupDeployment.class).collect(Collectors.toList()).forEach
             (ComponentGroupDeployment::scale);
-        deployment.specifyConstraints();
+        getDeployment().specifyConstraints();
         // rebuild the tree
         resetTree();
     }
