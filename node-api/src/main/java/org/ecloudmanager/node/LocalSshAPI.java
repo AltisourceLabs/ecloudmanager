@@ -156,7 +156,7 @@ public class LocalSshAPI {
                 .retryIf(sessionNotConnected)
                 .withDelay(3, TimeUnit.SECONDS)
                 .withMaxDuration(10, TimeUnit.MINUTES)
-                .withMaxRetries(30);
+                .withMaxRetries(100); // > 300 sec
         return Failsafe.with(sshRetryPolicy).get(tryConnect);
     }
 
