@@ -127,7 +127,7 @@
                 </p:dataTable>
             </h:form>
             <h:form id="buttons" styleClass="contentForm" style="height: 40%">
-                <p:commandButton value="Save" update="@(.constraintFields) @(.constraintsTree)" action="#{applicationDeploymentEditorController.save}"/>
+                <p:commandButton value="Save" update="@(.constraintFields) @(.constraintsTree)" action="#{applicationDeploymentController.save}"/>
                 <p:commandButton value="Generate Chef Env."
                                  actionListener="#{applicationDeploymentController.generateChefEnv}" update="@widgetVar(dlg1)" oncomplete="PF('dlg1').show();" />
                 <p:commandButton id="deployButton" value="Deploy..." action="#{applicationDeploymentController.saveAndRedirectToAction}"
