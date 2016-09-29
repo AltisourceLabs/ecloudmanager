@@ -1,0 +1,127 @@
+<!--
+  ~ The MIT License (MIT)
+  ~
+  ~ Copyright (c) 2016 Altisource Labs
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:f="http://xmlns.jcp.org/jsf/core"
+                xmlns:o="http://omnifaces.org/ui"
+>
+    <h:panelGroup>
+        <h:form id="edit_form" styleClass="#{usersController.current ? 'contentForm' : ''}">
+            <h:panelGroup>
+                <h3>#{usersController.edit ? 'Edit' : 'Add'} User</h3>
+            </h:panelGroup>
+
+            <!--<input style="display:none" type="text" name="fakeusernameremembered"/>-->
+            <!--<input style="display:none" type="password" name="fakepasswordremembered"/>-->
+            <p:messages id="msgs" for="fields"/>
+
+            <h:panelGrid columns="2" cellpadding="5" id="fields">
+                <h:outputLabel value="Username:" for="loginName"/>
+                <p:inputText id="loginName" value="#{usersController.user.loginName}" required="true" requiredMessage="Username is required" readonly="#{usersController.edit}" autocomplete="off"/>
+                <h:outputText value="Password:"
+                              rendered="#{!usersController.edit}"
+                />
+                <p:password value="#{usersController.password}"
+                            required="#{!usersController.edit}"
+                            requiredMessage="Password is required"
+                            autocomplete="new-password"
+                            rendered="#{!usersController.edit}"
+                            redisplay="false"
+                />
+                <h:outputText value="First Name:"/>
+                <p:inputText value="#{usersController.user.firstName}" required="false"/>
+                <h:outputText value="Last Name:"/>
+                <p:inputText value="#{usersController.user.lastName}" required="false"/>
+                <h:outputText value="Email:"/>
+                <p:inputText value="#{usersController.user.email}" required="false"/>
+            </h:panelGrid>
+
+            <p:commandButton value="Change Password" rendered="#{usersController.edit}" update="@widgetVar(dlg_change_password)" oncomplete="PF('dlg_change_password').show()"/>
+            <p:separator rendered="#{usersController.current}"/>
+
+            <p:spacer/>
+
+            <p:dataList value="#{usersController.userRoles}" var="userRole" type="definition" rendered="#{!usersController.current}">
+                <f:facet name="header">
+                    Roles
+                </f:facet>
+
+                <p:selectBooleanCheckbox value="#{userRole.granted}" style="margin: 5px"/>
+                <h:outputText value="#{userRole.role.name}" style="font: 120%/1 sans-serif; margin-right: 5px; vertical-align: super"/>
+            </p:dataList>
+
+            <h:panelGroup>
+                <p:spacer/>
+                <p:commandButton id="save" value="Save" update="out" action="#{usersController.save()}"/>
+                <p:commandButton id="cancel" value="Cancel" update="out" actionListener="#{usersController.cancel()}" rendered="#{!usersController.current}" immediate="true"/>
+            </h:panelGroup>
+        </h:form>
+    </h:panelGroup>
+    <p:dialog header="Change Password"
+              widgetVar="dlg_change_password"
+              modal="true"
+              closeOnEscape="true"
+              appendTo="@(body)"
+    >
+        <p:ajax event="close" listener="#{usersController.resetChangePassword()}"/>
+        <h:form>
+            <p:messages autoUpdate="true"/>
+            <h:panelGrid columns="2" cellpadding="5">
+                <h:outputLabel value="Old Password:" for="oldPassword"/>
+                <p:password id="oldPassword"
+                            value="#{usersController.oldPassword}"
+                            autocomplete="new-password"
+                            redisplay="false"
+                            required="true"
+                            requiredMessage="Old password should not be empty"
+                            validator="#{usersController.validateOldPassword}"
+                />
+                <h:outputLabel value="New Password:" for="newPassword"/>
+                <p:password id="newPassword"
+                            value="#{usersController.newPassword}"
+                            autocomplete="new-password"
+                            redisplay="false"
+                            required="true"
+                            requiredMessage="Password should not be empty"
+                />
+                <h:outputLabel value="Repeat New Password:" for="repeatPassword"/>
+                <p:password id="repeatPassword"
+                            value="#{usersController.newPassword1}"
+                            autocomplete="new-password"
+                            redisplay="false"
+                            required="true"
+                            requiredMessage="Password should not be empty"
+                />
+                <o:validateEqual id="equal" components="newPassword repeatPassword"
+                                 message="Passwords are not equal" showMessageFor="newPassword" />
+            </h:panelGrid>
+            <p:spacer/>
+            <p:commandButton value="Change" validateClient="true" action="#{usersController.changePassword()}" oncomplete="if (args &amp;&amp; !args.validationFailed) PF('dlg_change_password').hide()"/>
+            <p:commandButton value="Cancel" oncomplete="PF('dlg_change_password').hide()" immediate="true"/>
+        </h:form>
+    </p:dialog>
+</ui:composition>

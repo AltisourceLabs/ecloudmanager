@@ -33,14 +33,14 @@ import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
 import java.util.List;
 
-public class MongoDBRepositorySupport<T> {
+public abstract class MongoDBRepositorySupport<T> implements RepositorySupport {
 
     @Inject
     protected Datastore datastore;
     @Inject
     private Logger log;
     @SuppressWarnings("unchecked")
-    protected Class<T> getEntityType() {
+    public Class<T> getEntityType() {
         ParameterizedType type = (ParameterizedType) getClass().getGenericSuperclass();
         return (Class<T>) type.getActualTypeArguments()[0];
     }

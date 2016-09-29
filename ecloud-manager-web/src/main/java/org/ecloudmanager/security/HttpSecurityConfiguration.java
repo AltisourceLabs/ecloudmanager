@@ -35,19 +35,29 @@ public class HttpSecurityConfiguration {
 
         builder
                 .http()
-                .forPath("/api/*").authenticateWith().basic()
+
                 .allPaths()
-                .authenticateWith()
-                .form()
+                .authenticateWith().form()
                 .authenticationUri("/login.xhtml")
                 .loginPage("/login.xhtml")
                 .errorPage("/login.xhtml?error=true")
                 .restoreOriginalRequest()
+
+                .forPath("/api/*").authenticateWith().basic()
+
                 .forPath("/logout")
                 .logout()
                 .redirectTo("/login.xhtml")
+
                 .forPath("/javax.faces.resource/*").unprotected()
-                .forPath("/admin/*").authorizeWith().role("administrator");
+
+                .forPath("/admin/*")
+                .authorizeWith().role("administrator")
+                .authenticateWith().form()
+                .authenticationUri("/login.xhtml")
+                .loginPage("/login.xhtml")
+                .errorPage("/login.xhtml?error=true")
+                .restoreOriginalRequest();
 //                .forPath("/javax.faces.resource/*.css.xhtml").unprotected()
 //                .forPath("/javax.faces.resource/primefaces.js.xhtml").unprotected()
 //                .forPath("/javax.faces.resource/jquery/*").unprotected()

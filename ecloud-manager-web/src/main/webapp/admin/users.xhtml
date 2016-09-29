@@ -26,7 +26,6 @@
                 xmlns:ui="http://java.sun.com/jsf/facelets"
                 xmlns:h="http://java.sun.com/jsf/html"
                 xmlns:p="http://primefaces.org/ui"
-                xmlns:components="http://java.sun.com/jsf/composite/components" xmlns:f="http://xmlns.jcp.org/jsf/core"
                 template="/WEB-INF/templates/default.xhtml">
 <ui:define name="content">
     <p:outputPanel id="out">
@@ -68,50 +67,14 @@
                 <p:growl id="messages" sticky="true" showDetail="true"/>
             </h:form>
         </h:panelGroup>
-        <p:dialog header="#{usersController.edit ? 'Edit' : 'Add'} User" widgetVar="dlg_edit" modal="true" closeOnEscape="true" height="90%"
-                  width="auto" id="dlg_edit">
+        <p:dialog header="#{usersController.edit ? 'Edit' : 'Add'} User"
+                  widgetVar="dlg_edit"
+                  modal="true"
+                  closeOnEscape="true"
+                  id="dlg_edit"
+        >
             <p:ajax event="close" listener="#{usersController.handleClose}"/>
-            <h:panelGroup>
-                <h:form id="edit_form" style="width: auto; height: 90%">
-                    <h:panelGroup>
-                        <h3>#{usersController.edit ? 'Edit' : 'Add'} User</h3>
-                    </h:panelGroup>
-
-                    <!--<input style="display:none" type="text" name="fakeusernameremembered"/>-->
-                    <!--<input style="display:none" type="password" name="fakepasswordremembered"/>-->
-                    <p:messages id="msgs" for="fields"/>
-
-                    <h:panelGrid columns="2" cellpadding="5" id="fields">
-                        <h:outputText value="Username:"/>
-                        <p:inputText value="#{usersController.user.loginName}" required="true" readonly="#{usersController.edit}" autocomplete="off"/>
-                        <h:outputText value="Password:"/>
-                        <p:password value="#{usersController.password}" required="#{!usersController.edit}" autocomplete="new-password" redisplay="true"/>
-                        <h:outputText value="First Name:"/>
-                        <p:inputText value="#{usersController.user.firstName}" required="false"/>
-                        <h:outputText value="Last Name:"/>
-                        <p:inputText value="#{usersController.user.lastName}" required="false"/>
-                        <h:outputText value="Email:"/>
-                        <p:inputText value="#{usersController.user.email}" required="false"/>
-                    </h:panelGrid>
-
-                    <p:spacer/>
-
-                    <p:dataList value="#{usersController.userRoles}" var="userRole" type="definition">
-                        <f:facet name="header">
-                            Roles
-                        </f:facet>
-
-                        <p:selectBooleanCheckbox value="#{userRole.granted}" style="margin: 5px"/>
-                        <h:outputText value="#{userRole.role.name}" style="font: 120%/1 sans-serif; margin-right: 5px; vertical-align: super"/>
-                    </p:dataList>
-
-                    <h:panelGroup>
-                        <p:spacer/>
-                        <p:commandButton id="save" value="Save" update="out" action="#{usersController.save()}"/>
-                        <p:commandButton id="cancel" value="Cancel" update="out" action="#{usersController.cancel}" immediate="true"/>
-                    </h:panelGroup>
-                </h:form>
-            </h:panelGroup>
+            <ui:include src="/user.xhtml"/>
         </p:dialog>
     </p:outputPanel>
 </ui:define>

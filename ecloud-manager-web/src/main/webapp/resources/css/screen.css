@@ -110,23 +110,23 @@ form {
   /*width: 375px;*/
   border: 1px solid #D5D5D5;
 }
-label {
-  float: left;
-  width: 90%;
-  margin-left: 20px;
-  margin-right: 0.5em;
-  padding-top: 0.2em;
-  text-align: right;
-  font-weight: bold;
-  color:#363636;
-}
+/*label {*/
+  /*float: left;*/
+  /*width: 90%;*/
+  /*margin-left: 20px;*/
+  /*margin-right: 0.5em;*/
+  /*padding-top: 0.2em;*/
+  /*text-align: right;*/
+  /*font-weight: bold;*/
+  /*color:#363636;*/
+/*}*/
 /*input {*/
   /*margin-bottom: 8px;*/
 /*}*/
-.register {
-  float: left;
-  margin-left: 85px;
-}
+/*.register {*/
+  /*float: left;*/
+  /*margin-left: 85px;*/
+/*}*/
 
 /*  -----  table style  -------  */
 
