@@ -88,6 +88,11 @@
         </dependency>
         <dependency>
             <groupId>org.ecloudmanager</groupId>
+            <artifactId>node-api-existing</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.ecloudmanager</groupId>
             <artifactId>node-api-verizon</artifactId>
             <version>${project.version}</version>
             <exclusions>
