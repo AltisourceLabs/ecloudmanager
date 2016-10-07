@@ -40,12 +40,12 @@
                     <p:tab title="Deployment Structure" disabled="#{applicationDeploymentEditorController.isGatewayDeployment()}">
                         <h:form id="edit">
                             <p>Name: <p:inputText value="#{applicationDeploymentEditorController.deployment.name}"/></p>
-                            <p>Infrastructure:
+                            <p>Agent:
                                 <p:selectOneMenu value="#{applicationDeploymentEditorController.deployment.infrastructure}">
                                     <f:selectItems value="#{applicationDeploymentEditorController.nodeApiIds}"/>
                                 </p:selectOneMenu>
                             </p>
-                            <p>Entries:</p>
+                            <p>Deployment Objects:</p>
                             <p:dataTable id="children" var="srv"
                                          value="#{applicationDeploymentEditorController.editableChildren()}"
                                          resizableColumns="true" liveResize="true" styleClass="childrenTable">

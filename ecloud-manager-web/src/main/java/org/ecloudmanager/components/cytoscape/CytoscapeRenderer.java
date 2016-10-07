@@ -96,7 +96,7 @@ public class CytoscapeRenderer extends CoreRenderer {
     protected void encodeScript(FacesContext context, Cytoscape cytoscape) throws IOException {
         String clientId = cytoscape.getClientId(context);
         WidgetBuilder wb = getWidgetBuilder(context);
-        wb.init("Cytoscape", cytoscape.resolveWidgetVar(), clientId, "cytoscape");
+        wb.init("Cytoscape", cytoscape.resolveWidgetVar(), clientId);
 
         CyModel model = (CyModel) cytoscape.getValue();
         if(model != null) {

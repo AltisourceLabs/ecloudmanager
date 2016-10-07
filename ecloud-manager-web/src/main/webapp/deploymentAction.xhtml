@@ -69,15 +69,8 @@
 
         <p:outputPanel id="out">
             <h:panelGroup>
-                <h:form id="graphCs" styleClass="contentForm cytoscapeContainer" style="padding: 5px;">
-                    <ec:cytoscape widgetVar="cs" value="#{deploymentActionController.graphModel}" style="height: 600px;">
-                        <p:poll interval="5" listener="#{deploymentActionController.loadActionStatuses}" onstart="saveScrollPos()" oncomplete="getScrollPos()" onsuccess="PrimeFaces.widgets.cs.synchronize()" update=":log:logs"/>
-                        <p:ajax event="selectNode" listener="#{deploymentActionController.onSelectNode}" update=":log:logs" />
-                        <p:ajax event="unselectNode" listener="#{deploymentActionController.onUnselectNode}" update=":log:logs" />
-                    </ec:cytoscape>
-                </h:form>
                 <h:form id="buttons" styleClass="contentForm">
-                    <p:commandButton widgetVar="runButton" value="Run Deployment Action"
+                    <p:commandButton widgetVar="runButton" value="Run"
                                      actionListener="#{deploymentActionController.executeAction}"
                                      styleClass="greenButton"
                                      rendered="#{empty deploymentActionController.deploymentAttempt}"
@@ -90,6 +83,13 @@
                         <f:param name="tabindex" value="2"/>
                     </p:button>
                     <p:button value="Layout View" onclick="PrimeFaces.widgets.cs.doLayout(); return false;"/>
+                </h:form>
+                <h:form id="graphCs" styleClass="contentForm cytoscapeContainer" style="padding: 5px;">
+                    <ec:cytoscape widgetVar="cs" value="#{deploymentActionController.graphModel}" style="height: 600px;">
+                        <p:poll interval="5" listener="#{deploymentActionController.loadActionStatuses}" onstart="saveScrollPos()" oncomplete="getScrollPos()" onsuccess="PrimeFaces.widgets.cs.synchronize()" update=":log:logs"/>
+                        <p:ajax event="selectNode" listener="#{deploymentActionController.onSelectNode}" update=":log:logs" />
+                        <p:ajax event="unselectNode" listener="#{deploymentActionController.onUnselectNode}" update=":log:logs" />
+                    </ec:cytoscape>
                 </h:form>
                 <h:form id="log" styleClass="contentForm">
                     <!--<o:scrollPosition autoSaveScrollPos="true" for="logs.ui-datatable-scrollable-body"/>-->

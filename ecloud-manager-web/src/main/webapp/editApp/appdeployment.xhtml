@@ -30,7 +30,7 @@
                 xmlns:pe="http://primefaces.org/ui/extensions">
     <p:outputPanel id="out">
         <h:panelGroup>
-            <h:form styleClass="contentForm constraintsTree" style="height: 40%">
+            <h:form styleClass="constraintsTree" style="height: 40%">
                 <p:contextMenu for="tree">
                     <p:menuitem value="Copy Values" actionListener="#{applicationDeploymentController.copyConstraints}" icon="fa fa-copy"/>
                     <p:menuitem value="Paste Values" actionListener="#{applicationDeploymentController.pasteConstraints}" update="@(.constraintFields)" icon="fa fa-paste"/>
@@ -54,7 +54,7 @@
                     </p:column>
                 </p:treeTable>
             </h:form>
-            <h:form styleClass="contentForm constraintFields" style="height: 40%">
+            <h:form styleClass="embeddedContentForm constraintFields" style="height: 40%">
                 <p:toolbar>
                     <f:facet name="left">
                         <p:commandButton title="Copy Values" icon="fa fa-copy"
@@ -87,8 +87,8 @@
                                         itemLabel="#{suggestion.class.name == 'java.lang.String' ? suggestion : suggestion.label}"
                                         itemValue="#{suggestion.class.name == 'java.lang.String' ? suggestion : suggestion.value}"
                                         scrollHeight="200"
-                                        style="width:98%"
-                                        inputStyle="width:95%"
+                                        style="width: 98%"
+                                        inputStyle="width:94%"
                                         label="Value"
                                         widgetVar="constraintAutocomplete_#{rowIndex}"
                                         rendered="#{constraint.ui eq 'autocompleteConstraint'}">
@@ -118,7 +118,7 @@
                         <h:outputText value="#{constraint.defaultValue}"
                                       rendered="#{constraint.ui eq 'defaultConstraint'}"/>
                         <p:selectOneMenu value="#{constraint.reference}"
-                                         style="width:98%"
+                                         style="width:96%"
                                          rendered="#{constraint.ui eq 'referenceConstraint'}" editable="true">
                             <f:selectItems value="#{applicationDeploymentController.constraintList}" />
                             <p:ajax update="@(.constraintFields) @(.constraintsTree)"/>
@@ -126,7 +126,7 @@
                     </p:column>
                 </p:dataTable>
             </h:form>
-            <h:form id="buttons" styleClass="contentForm" style="height: 40%">
+            <h:form id="buttons" styleClass="embeddedContentForm" style="height: 40%">
                 <p:commandButton value="Save" update="@(.constraintFields) @(.constraintsTree)" action="#{applicationDeploymentEditorController.save}"/>
                 <p:commandButton value="Generate Chef Env."
                                  actionListener="#{applicationDeploymentController.generateChefEnv}" update="@widgetVar(dlg1)" oncomplete="PF('dlg1').show();" />

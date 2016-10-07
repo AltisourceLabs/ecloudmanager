@@ -46,7 +46,6 @@ import java.util.Map;
 
 @ResourceDependencies({
         @ResourceDependency(library="primefaces", name="jquery/jquery.js"),
-        @ResourceDependency(library="primefaces", name="primefaces.js"),
         @ResourceDependency(library="primefaces", name="cytoscape/cytoscape.css"),
         @ResourceDependency(library="primefaces", name="cytoscape/dagre/dagre.js"),
         @ResourceDependency(library="primefaces", name="cytoscape/cytoscape.js"),
