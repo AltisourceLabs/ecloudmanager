@@ -266,16 +266,16 @@ form {
     word-wrap: break-word;
 }
 
-.log-INFO {
+.log-INFO.logRow {
   background-color: #5DFF5D;
 }
-.log-ERROR, .log-FATAL {
+.log-ERROR.logRow, .log-FATAL.logRow {
   background-color: #FF9999;
 }
-.log-WARN {
+.log-WARN.logRow {
   background-color: #FFFF77;
 }
-.log-DEBUG, .log-TRACE {
+.log-DEBUG.logRow, .log-TRACE.logRow {
   background-color: #F7F7FA;
 }
 
