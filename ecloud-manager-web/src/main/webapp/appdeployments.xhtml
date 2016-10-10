@@ -39,19 +39,18 @@
 
                     <p:dataTable id="deployments" var="appDeployment" value="#{applicationDeploymentsController.applicationDeployments}"
                                  paginator="true" rows="10" resizableColumns="true" liveResize="true">
-                        <p:column headerText="Name" sortBy="#{appDeployment.name}">
+                        <p:column headerText="Deployment Name" sortBy="#{appDeployment.name}">
                             <h:outputText value="#{appDeployment.name}"/>
                         </p:column>
-                        <p:column width="60%">
+                        <p:column headerText="Deployment Components" width="60%">
                             <h:outputText value="#{appDeployment.children()}"/>
                         </p:column>
-                        <p:column width="142">
-                            <p:button title="Edit Blueprint" outcome="editApp/editApplicationDeployment" icon="fa fa-cubes">
+                        <p:column headerText="Actions" width="142">
+                            <p:button title="Edit" outcome="editApp/editApplicationDeployment" icon="ui-icon-pencil">
                                 <f:param name="deployment" value="#{appDeployment.id.toString()}"/>
                             </p:button>
-                            <p:button title="Edit Constraints" outcome="editApp/editApplicationDeployment" icon="fa fa-th-list">
+                            <p:button title="Deployment History" outcome="/deploymentAttempts" icon="fa fa-history">
                                 <f:param name="deployment" value="#{appDeployment.id.toString()}"/>
-                                <f:param name="tabindex" value="2"/>
                             </p:button>
                             <p:commandButton oncomplete="PF('dlg_copy').show();"
                                              icon="fa fa-files-o" title="Copy Deployment"

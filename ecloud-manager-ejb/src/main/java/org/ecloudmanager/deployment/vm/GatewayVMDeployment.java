@@ -56,7 +56,7 @@ public class GatewayVMDeployment extends VMDeployment {
         selinux.addChefAttribute(selinuxAttribute);
 
         Recipe haproxy = new Recipe("haproxy");
-        haproxy.setVersion("= 1.6.6");
+        haproxy.setVersion("= 1.6.7");
         ChefAttribute attribute = new ChefAttribute("haproxy",
                 "{" +
                 "\"members\":[], " +
@@ -69,10 +69,10 @@ public class GatewayVMDeployment extends VMDeployment {
         haproxyStats.setConstant(true);
         haproxy.addEndpoint(haproxyStats);
 
-        Recipe confd = new Recipe("rf_infra-confd");
+        Recipe confd = new Recipe("ecloudmanager-confd");
         confd.setVersion("= 0.1.0");
         String reloadCommand = "/usr/local/bin/optimize_maps.sh; haproxy -f /etc/haproxy/haproxy.cfg -f /var/lib/haproxy/haproxy-confd.cfg -p /var/run/haproxy.pid -D -sf $(cat /var/run/haproxy.pid)";
-        ChefAttribute confdAttrs = new ChefAttribute("rf_infra-confd", "{\"etcd_nodes\":[\"{{" + ETCD_NODE + "}}\"], \"etcd_path\":\"{{" + ETCD_PATH + "}}\", \"haproxy_reload_cmd\":\"" + reloadCommand + "\"}");
+        ChefAttribute confdAttrs = new ChefAttribute("ecloudmanager-confd", "{\"etcd_nodes\":[\"{{" + ETCD_NODE + "}}\"], \"etcd_path\":\"{{" + ETCD_PATH + "}}\", \"haproxy_reload_cmd\":\"" + reloadCommand + "\"}");
         confdAttrs.setEnvironmentAttribute(false);
         confd.addChefAttribute(confdAttrs);
 

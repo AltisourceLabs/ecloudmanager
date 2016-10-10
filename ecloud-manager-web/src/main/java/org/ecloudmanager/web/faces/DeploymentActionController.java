@@ -158,7 +158,7 @@ public class DeploymentActionController extends FacesSupport implements Serializ
             "background-color: #FF9999;" +
             "} " +
             "node.failed:parent {" +
-            "background-color: #FF8888;" +
+            "background-color: #cccccc;" + //#ffbfbf
             "}"
         /////////////////////////////////////////////////
         ;

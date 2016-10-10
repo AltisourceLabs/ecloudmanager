@@ -42,7 +42,6 @@ import org.ecloudmanager.service.deployment.ApplicationDeploymentService;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.joda.time.Period;
-import org.picketlink.common.util.StringUtil;
 import org.primefaces.event.NodeSelectEvent;
 import org.primefaces.event.TabChangeEvent;
 import org.primefaces.model.TreeNode;
@@ -153,7 +152,9 @@ public class ServiceMonitoringController extends FacesSupport implements Seriali
         ) {
             ServiceMonitoringTreeNode node = new ServiceMonitoringTreeNode(deployable, parent);
             for (DeploymentObject d : deployable.children()) {
-                addNode(d, node);
+                if (!(d instanceof VMDeployment) || d.getParent() != d.getTop()) { // Exclude top-level VMDeployments
+                    addNode(d, node);
+                }
             }
             node.setExpanded(true);
 

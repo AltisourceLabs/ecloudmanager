@@ -28,7 +28,7 @@
       xmlns:ui="http://java.sun.com/jsf/facelets"
       xmlns:p="http://primefaces.org/ui">
 <h:head>
-   <title>E-Cloud Manager</title>
+   <title>Cloudply</title>
    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
    <h:outputStylesheet name="css/screen.css" />
     <!--<h:outputStylesheet name="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" />-->
@@ -37,19 +37,19 @@
    <div id="container">
       <div class="logo">
         <span class="fa-stack cloudLogo">
-          <i class="fa fa-cloud fa-stack-2x" style="color: white"/>
-          <i class="fa fa-power-off fa-stack-1x" style="color: grey"/>
+          <i class="fa fa-cloud fa-stack-2x" style="color: #1f89ce"/>
+          <i class="fa fa-power-off fa-stack-1x" style="color: #ffffff"/>
         </span>
           <div class="ecloudCaption">
               <h:link outcome="/appdeployments" styleClass="ecloudCaption">
-                  <b>E-Cloud Manager</b>
+                  <b>Cloudply</b>
               </h:link>
           </div>
       </div>
       <div id="content">
          <h:form id="menu_form" styleClass="menubarForm" rendered="#{identity.loggedIn}">
              <p:menubar styleClass="menubar" id="menubar">
-                <p:menuitem value="Application Deployments" outcome="/appdeployments"/>
+                <p:menuitem value="Deployments" outcome="/appdeployments"/>
                 <p:menuitem value="Gateways" outcome="/gateways"/>
                 <p:submenu label="Library">
                     <p:menuitem value="Produced Services" outcome="/library/commonProducedServices"/>

@@ -25,21 +25,26 @@
 body {
   margin: 0;
   padding: 0;
-  background-color: #eff3f6;
+  background-color: #ffffff;
   font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
   font-size: 0.8em;
   color:#363636;
 }
 
 #container {
-  margin: 0 auto;
-  padding: 0 20px 10px 20px;
-  width: 90%; /* subtract 40px from banner width for padding */
-  background: #dfe4e6;
-  padding-top: 22px;
+    margin: 0 auto;
+    padding: 0 40px 10px 20px;
+
+    width: -moz-calc(100% - 40px);
+    width: -webkit-calc(100% - 40px);
+    width: calc(100% - 100px);
+
+    background: #ffffff;
+    padding-top: 22px;
     margin-top: 20px;
     margin-bottom: 20px;
-  box-shadow: 3px 3px 15px #d5d5d5;
+
+    box-shadow: 3px 3px 15px #d5d5d5;
 }
 #content {
   float: left;
@@ -243,7 +248,13 @@ form {
 }
 
 .greenButton {
-  background: #49dd49 -webkit-gradient(linear, left top, left bottom, from(rgba(255,255,255,0.8)), to(rgba(255,255,255,0)));
+  background: #49DD49 !important;
+  border-color: #00BB00 !important;
+}
+
+.greenButton:hover {
+    background: #00BB00 !important;
+    border-color: #008800 !important;
 }
 
 .ui-datatable tbody td.wrap, .preformatted {
@@ -255,16 +266,16 @@ form {
     word-wrap: break-word;
 }
 
-.log-INFO {
+.log-INFO.logRow {
   background-color: #5DFF5D;
 }
-.log-ERROR, .log-FATAL {
+.log-ERROR.logRow, .log-FATAL.logRow {
   background-color: #FF9999;
 }
-.log-WARN {
+.log-WARN.logRow {
   background-color: #FFFF77;
 }
-.log-DEBUG, .log-TRACE {
+.log-DEBUG.logRow, .log-TRACE.logRow {
   background-color: #F7F7FA;
 }
 
@@ -317,6 +328,10 @@ form > button.ui-button {
     margin-top: 4px;
 }
 
+.ecloudCaption a:hover {
+    text-decoration: none;
+}
+
 .cloudLogo {
     margin-left: 1px;
     float: left;
@@ -329,6 +344,17 @@ form > button.ui-button {
 
 .ui-menubar .ui-menuitem-link {
     margin-left: 0.3em;
+}
+
+.ui-menubar {
+    /*background-color: #fafafb;*/
+    background: #f6f7f9 0 0 repeat-x;
+    background: -moz-linear-gradient(top,#f6f7f9 0, #f0f2f5 100%);
+    background: -webkit-gradient(linear,left top,left bottom,color-stop(0%,#f6f7f9),color-stop(100%,#f0f2f5));
+    background: -webkit-linear-gradient(top,#f6f7f9 0,#f0f2f5 100%);
+    background: -o-linear-gradient(top,#f6f7f9 0,#f0f2f5 100%);
+    background: -ms-linear-gradient(top,#f6f7f9 0,#f0f2f5 100%);
+    background: linear-gradient(top,#f6f7f9 0,#f0f2f5 100%);
 }
 
 .selectRecipe {
@@ -396,3 +422,20 @@ form > button.ui-button {
     margin-top: 10px;
     margin-right: 5px;
 }
+
+.ui-datatable-odd {
+    background-color: #ffffff;
+}
+
+div.appDeploymentTabs div.ui-tabs-panel {
+    padding: 0;
+}
+
+.embeddedContentForm {
+    border-top: 0;
+}
+
+/*.ui-state-highlight {*/
+    /*!*background: #186ba0;*!*/
+    /*background: #2095dc !important;*/
+/*}*/
