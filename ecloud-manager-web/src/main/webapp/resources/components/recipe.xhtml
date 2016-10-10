@@ -106,7 +106,9 @@
                     </p:commandButton>
                 </p:column>
             </p:dataTable>
+            <p:spacer height="5px" style="display: block"/>
             <p:commandButton id="new_endpoint" icon="ui-icon-plusthick"
+                             value="Add Endpoint"
                              disabled="#{cc.attrs.value == null}"
                              oncomplete="PF('dlg_edit_endpoint').show()"
                              update="@widgetVar(dlg_edit_endpoint)"
@@ -153,7 +155,9 @@
                     </p:commandButton>
                 </p:column>
             </p:dataTable>
+            <p:spacer height="5px" style="display: block"/>
             <p:commandButton id="new_attr" icon="ui-icon-plusthick"
+                             value="Add Attribute"
                              disabled="#{cc.attrs.value == null}"
                              oncomplete="PF('dlg_edit_chef_attribute').show()"
                              update="@widgetVar(dlg_edit_chef_attribute)"

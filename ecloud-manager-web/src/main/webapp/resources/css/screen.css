@@ -435,7 +435,59 @@ div.appDeploymentTabs div.ui-tabs-panel {
     border-top: 0;
 }
 
-/*.ui-state-highlight {*/
-    /*!*background: #186ba0;*!*/
-    /*background: #2095dc !important;*/
+/* change highlinting background color from 186ba0 and border color from 156090 */
+.ui-state-highlight, .ui-widget-content .ui-state-highlight, .ui-widget-header .ui-state-highlight  {
+    border: 1px solid #1f89ce;
+    background: #009AE9;
+    color: #FFFFFF;
+}
+.ui-datepicker-current-day a {
+    background: #009AE9 !important;
+    color: #FFFFFF !important;
+}
+/*button.ui-button.ui-state-active, .ui-button.ui-state-active {*/
+    /*border: 1px solid #156090;*/
+    /*background: #186ba0;*/
 /*}*/
+.ui-radiobutton-box.ui-state-focus.ui-state-active{
+    border: 1px solid #1f89ce;
+    background: #009AE9;
+    color: #FFFFFF;
+}
+.ui-chkbox-box.ui-state-active,
+.ui-chkbox-box.ui-state-focus.ui-state-active,
+.ui-radiobutton-box.ui-state-active,
+.ui-radiobutton-box.ui-state-focus.ui-state-active{
+    border: 1px solid #1f89ce;
+    background: #009AE9;
+    color: #FFFFFF;
+}
+.ui-inputswitch-on {
+    background: #009AE9 !important;
+    color: #ffffff !important;
+}
+.ui-paginator .ui-paginator-page.ui-state-active {
+    background: #009AE9;
+    color: #ffffff;
+    border-color: #1f89ce;
+}
+.ui-datatable th.ui-state-active{
+    background: #a0a0a0;
+    color: #ffffff;
+}
+.ui-treetable th.ui-state-active{
+    background: #009AE9;
+    color: #ffffff;
+}
+.ui-selectbooleanbutton.ui-button.ui-state-active,
+.ui-selectonebutton .ui-button.ui-state-active,
+.ui-selectmanybutton .ui-button.ui-state-active {
+    border: 1px solid #1f89ce;
+    background: #009AE9;
+    color: #FFFFFF;
+}
+.ui-tabmenu li.ui-state-active {
+    border: 1px solid #1f89ce;
+    background: #009AE9;
+    color: #FFFFFF;
+}
