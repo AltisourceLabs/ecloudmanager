@@ -31,6 +31,7 @@ import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployer;
 import org.ecloudmanager.deployment.vm.infrastructure.InfrastructureDeployerImpl;
 import org.ecloudmanager.jeecore.service.Service;
 import org.ecloudmanager.node.AsyncNodeAPI;
+import org.ecloudmanager.node.model.APIInfo;
 import org.ecloudmanager.node.model.Credentials;
 import org.ecloudmanager.node.model.NodeInfo;
 import org.ecloudmanager.repository.deployment.ActionLogger;
@@ -57,23 +58,28 @@ public class VmActions {
     private ApplicationDeploymentRepository applicationDeploymentRepository;
 
     public Action getCreateVmAction(VMDeployment vmDeployment, AsyncNodeAPI api, Credentials credentials, Map<String, String> parameters) {
+        APIInfo info = api.getAPIInfo();
+        Action createAction = Action.single(CREATE_VM, (ActionLogger actionLog) -> {
+            clearVmConstraints(vmDeployment);
+            String nodeId = waitFor(api.createNode(credentials, parameters), actionLog);
+            InfrastructureDeployer.addVMId(vmDeployment, nodeId);
+            applicationDeploymentService.update((ApplicationDeployment) vmDeployment.getTop());
+            return nodeId;
+        }, vmDeployment);
+        if (!info.getFirewalled() && !info.getConfigureOnCreate()) {
+            return createAction;
+        }
 
         return Action.actionSequence("Create and Start VM",
-                Action.single(CREATE_VM, (ActionLogger actionLog) -> {
-                    clearVmConstraints(vmDeployment);
-                    String nodeId = waitFor(api.createNode(credentials, parameters), actionLog);
-                    InfrastructureDeployer.addVMId(vmDeployment, nodeId);
-                    applicationDeploymentService.update((ApplicationDeployment) vmDeployment.getTop());
-                    return nodeId;
-                }, vmDeployment),
-                Action.single(CONFIGURE_VM, (ActionLogger actionLog) -> {
+                createAction,
+                info.getConfigureOnCreate() ? Action.single(CONFIGURE_VM, (ActionLogger actionLog) -> {
                     NodeInfo node = waitFor(api.configureNode(credentials, InfrastructureDeployer.getVmId(vmDeployment), parameters), actionLog);
                     actionLog.info("Node IP: " + node.getIp());
                     InfrastructureDeployer.addIP(vmDeployment, node.getIp());
                     applicationDeploymentService.update((ApplicationDeployment) vmDeployment.getTop());
                     return node;
-                }, vmDeployment),
-                new CreateFirewallRulesAction(vmDeployment, api, credentials));
+                }, vmDeployment) : null,
+                info.getFirewalled() ? new CreateFirewallRulesAction(vmDeployment, api, credentials) : null);
     }
 
 

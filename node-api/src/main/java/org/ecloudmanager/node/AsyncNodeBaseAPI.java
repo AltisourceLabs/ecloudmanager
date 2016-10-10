@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface AsyncNodeBaseAPI {
-    APIInfo getAPIInfo() throws Exception;
+    APIInfo getAPIInfo();
 
     List<NodeParameter> getNodeParameters(Credentials credentials) throws Exception;
 

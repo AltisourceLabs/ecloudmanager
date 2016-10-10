@@ -49,6 +49,12 @@ public class HAProxyActions {
     NodeAPIConfigurationService nodeAPIProvider;
 
     public Action getCreatePublicEndpointFirewallRulesAction(ProducedServiceDeployment producedServiceDeployment) {
+        GatewayVMDeployment gatewayVmDeployment = HAProxyDeployer.getGatewayVmDeployment(producedServiceDeployment);
+        String apiId = ((ApplicationDeployment) (gatewayVmDeployment.getTop())).getInfrastructure();
+        AsyncNodeAPI nodeAPI = nodeAPIProvider.getAPI(apiId);
+        if (!nodeAPI.getAPIInfo().getFirewalled()) {
+            return null;
+        }
         return Action.single("Create Firewall Rules for Public Endpoints",
                 (ActionLogger actionLog) -> {
                     ApplicationDeployment ad = (ApplicationDeployment) producedServiceDeployment.getTop();
@@ -58,11 +64,8 @@ public class HAProxyActions {
                         int port = endpoint.getPort();
                         String publicEndpointName = producedServiceDeployment.getName() + ":" + endpoint.getName();
                         if (ad.getPublicEndpoints().contains(publicEndpointName)) {
-                            GatewayVMDeployment gatewayVmDeployment = HAProxyDeployer.getGatewayVmDeployment(producedServiceDeployment);
                             String vmId = InfrastructureDeployerImpl.getVmId(gatewayVmDeployment);
-                            String apiId = ((ApplicationDeployment) (gatewayVmDeployment.getTop())).getInfrastructure();
                             FirewallRule rule = new FirewallRule().type(FirewallRule.TypeEnum.ANY).port(port).protocol("TCP");
-                            AsyncNodeAPI nodeAPI = nodeAPIProvider.getAPI(apiId);
                             try {
                                 waitFor(nodeAPI.updateNodeFirewallRules(nodeAPIProvider.getCredentials(apiId), vmId, new FirewallUpdate().create(Arrays.asList(rule))), actionLog);
                             } catch (Exception e) {
@@ -75,6 +78,12 @@ public class HAProxyActions {
     }
 
     public Action getDeletePublicEndpointFirewallRulesAction(ProducedServiceDeployment producedServiceDeployment) {
+        GatewayVMDeployment gatewayVmDeployment = HAProxyDeployer.getGatewayVmDeployment(producedServiceDeployment);
+        String apiId = ((ApplicationDeployment) (gatewayVmDeployment.getTop())).getInfrastructure();
+        AsyncNodeAPI nodeAPI = nodeAPIProvider.getAPI(apiId);
+        if (!nodeAPI.getAPIInfo().getFirewalled()) {
+            return null;
+        }
         return Action.single("Delete Firewall Rules for Public Endpoints", (ActionLogger actionLog) -> {
             ApplicationDeployment ad = (ApplicationDeployment) producedServiceDeployment.getTop();
             // TODO - here we use the same port from endpoint both for frontend and backend. They should be different.
@@ -83,11 +92,7 @@ public class HAProxyActions {
                 int port = endpoint.getPort();
                 String publicEndpointName = producedServiceDeployment.getName() + ":" + endpoint.getName();
                 if (ad.getPublicEndpoints().contains(publicEndpointName)) {
-                    GatewayVMDeployment gatewayVmDeployment = HAProxyDeployer.getGatewayVmDeployment(producedServiceDeployment);
                     String vmId = InfrastructureDeployerImpl.getVmId(gatewayVmDeployment);
-                    String apiId = ((ApplicationDeployment) (gatewayVmDeployment.getTop())).getInfrastructure();
-
-                    AsyncNodeAPI nodeAPI = nodeAPIProvider.getAPI(apiId);
                     FirewallRule rule = new FirewallRule().type(FirewallRule.TypeEnum.ANY).port(port).protocol("TCP");
                     try {
                         waitFor(nodeAPI.updateNodeFirewallRules(nodeAPIProvider.getCredentials(apiId), vmId, new FirewallUpdate().delete(Arrays.asList(rule))), actionLog);

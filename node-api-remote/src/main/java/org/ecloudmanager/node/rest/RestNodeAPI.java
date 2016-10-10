@@ -31,8 +31,12 @@ public class RestNodeAPI implements org.ecloudmanager.node.AsyncNodeAPI {
 
 
     @Override
-    public APIInfo getAPIInfo() throws ApiException {
-        return nodeApi.getInfo();
+    public APIInfo getAPIInfo() {
+        try {
+            return nodeApi.getInfo();
+        } catch (ApiException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

@@ -552,6 +552,12 @@
           type: string
         revision:
           type: string
+        firewalled:
+          type: boolean
+          default: true
+        configureOnCreate:
+          type: boolean
+          default: true
     Node:
       properties:
         parameters:

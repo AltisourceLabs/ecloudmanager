@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 public class ExistingNodeAPI implements NodeBaseAPI {
     static Logger log = LoggerFactory.getLogger(ExistingNodeAPI.class);
 
-    private static APIInfo API_INFO = new APIInfo().id("Existing Node").description("Provisioning to existing node");
+    private static APIInfo API_INFO = new APIInfo().id("Existing Node").description("Provisioning to existing node").firewalled(false).configureOnCreate(false);
 
     @Override
     public APIInfo getAPIInfo() {
